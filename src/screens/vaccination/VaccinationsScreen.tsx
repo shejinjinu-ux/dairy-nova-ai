@@ -1,28 +1,24 @@
 import React, { useState } from 'react';
 import { useAppData } from '../../contexts/AppDataContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { VaccinationRecord, VaccinationStatus } from '../../types';
 import { MobileHeader } from '../../components/common/MobileHeader';
 import { BottomNavigation } from '../../components/common/BottomNavigation';
 import { StatusBadge } from '../../components/common/StatusBadge';
-import { MetricCard } from '../../components/common/MetricCard';
 import { EmptyState } from '../../components/common/FeedbackStates';
 import { formatDate } from '../../utils/formatters';
 import {
   Syringe,
   CheckCircle2,
-  Clock,
-  AlertOctagon,
   Calendar,
   Search,
   Check,
   X,
-  Plus,
-  Layers,
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
 
 export const VaccinationsScreen: React.FC = () => {
-  const { vaccinations, animals, navigate, markVaccinated } = useAppData();
+  const { vaccinations, navigate, markVaccinated } = useAppData();
+  const { t } = useLanguage();
 
   const [search, setSearch] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<'All' | VaccinationStatus>('All');
@@ -50,12 +46,6 @@ export const VaccinationsScreen: React.FC = () => {
   const handleConfirmMarkVaccinated = () => {
     if (!selectedVacToMark) return;
     markVaccinated(selectedVacToMark.id, vetName, vetNotes);
-    confetti({
-      particleCount: 40,
-      spread: 60,
-      origin: { y: 0.6 },
-      colors: ['#16a34a', '#0d9488', '#f59e0b'],
-    });
     setSelectedVacToMark(null);
   };
 

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Animal, MilkRecord } from '../../types';
+import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { VoiceInput } from '../common/VoiceInput';
 import { X, Milk, Check, Save, Sun, Moon } from 'lucide-react';
-import confetti from 'canvas-confetti';
 
 interface RecordMilkModalProps {
   animals: Animal[];
@@ -19,6 +20,9 @@ export const RecordMilkModal: React.FC<RecordMilkModalProps> = ({
   onMilkRecorded,
   preselectedAnimalId,
 }) => {
+  const { user } = useAuth();
+  const { t } = useLanguage();
+
   const [selectedAnimalId, setSelectedAnimalId] = useState<string>(
     preselectedAnimalId || (animals.length > 0 ? animals[0].id : '')
   );
@@ -35,12 +39,10 @@ export const RecordMilkModal: React.FC<RecordMilkModalProps> = ({
   const currentAnimal = animals.find((a) => a.id === selectedAnimalId) || animals[0];
 
   const handleSave = () => {
-    if (!currentAnimal) return;
-
     onMilkRecorded({
-      animalId: currentAnimal.id,
-      animalTag: currentAnimal.tagId,
-      animalName: currentAnimal.name,
+      animalId: currentAnimal ? currentAnimal.id : 'ani-general',
+      animalTag: currentAnimal ? currentAnimal.tagId : 'HERD',
+      animalName: currentAnimal ? currentAnimal.name : 'Daily Bulk Milk',
       date: new Date().toISOString().split('T')[0],
       shift,
       quantityLiters,
@@ -48,21 +50,14 @@ export const RecordMilkModal: React.FC<RecordMilkModalProps> = ({
       snfPercent,
       lactometerReading,
       notes,
-      recordedBy: 'Ramesh Kumar',
-    });
-
-    confetti({
-      particleCount: 35,
-      spread: 60,
-      origin: { y: 0.7 },
-      colors: ['#16a34a', '#38bdf8', '#fbbf24'],
+      recordedBy: user?.name || 'Farmer',
     });
 
     setIsSaved(true);
     setTimeout(() => {
       onClose();
       setIsSaved(false);
-    }, 1200);
+    }, 1000);
   };
 
   return (
@@ -72,162 +67,171 @@ export const RecordMilkModal: React.FC<RecordMilkModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-dairy-100 dark:bg-dairy-950/80 text-dairy-700 dark:text-dairy-300 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 flex items-center justify-center">
               <Milk size={18} />
             </div>
             <div>
               <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                Record Milk Yield
+                {t.recordMilk || 'Log Milk Yield'}
               </h3>
-              <p className="text-[10px] text-slate-500">Individual Animal Shift Collection</p>
+              <p className="text-[10px] text-slate-400">
+                Shift Collection & Fat/SNF Log
+              </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 flex items-center justify-center"
+            aria-label="Close"
+            className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 flex items-center justify-center active:scale-95 transition"
           >
             <X size={16} />
           </button>
         </div>
 
-        {isSaved ? (
-          <div className="py-8 text-center space-y-2 animate-fadeIn">
-            <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-900 text-emerald-600 rounded-full flex items-center justify-center mx-auto animate-bounce">
-              <Check size={28} />
-            </div>
-            <h4 className="font-bold text-sm text-slate-900 dark:text-white">Milk Record Saved!</h4>
-            <p className="text-xs text-slate-500">{quantityLiters} L logged for {currentAnimal?.name}</p>
+        {/* Animal Selector */}
+        {animals.length > 0 ? (
+          <div>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+              Selected Animal
+            </label>
+            <select
+              value={selectedAnimalId}
+              onChange={(e) => setSelectedAnimalId(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              {animals.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.tagId} — {a.name} ({a.breed})
+                </option>
+              ))}
+            </select>
           </div>
         ) : (
-          <div className="space-y-3.5 text-xs animate-fadeIn">
-            
-            {/* Animal Selector */}
-            <div>
-              <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Select Animal *
-              </label>
-              <select
-                value={selectedAnimalId}
-                onChange={(e) => setSelectedAnimalId(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold"
-              >
-                {animals.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.tagId} — {a.name} ({a.breed})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Shift Picker */}
-            <div>
-              <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Milking Shift *
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShift('Morning')}
-                  className={`py-2 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 ${
-                    shift === 'Morning'
-                      ? 'bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/30'
-                      : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-slate-700 dark:text-slate-300'
-                  }`}
-                >
-                  <Sun size={14} /> Morning Shift
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setShift('Evening')}
-                  className={`py-2 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 ${
-                    shift === 'Evening'
-                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/30'
-                      : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-slate-700 dark:text-slate-300'
-                  }`}
-                >
-                  <Moon size={14} /> Evening Shift
-                </button>
-              </div>
-            </div>
-
-            {/* Quantity */}
-            <div>
-              <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Milk Quantity (Liters) *
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="40"
-                  value={quantityLiters}
-                  onChange={(e) => setQuantityLiters(Number(e.target.value))}
-                  className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-extrabold text-base text-dairy-600 focus:ring-2 focus:ring-dairy-500"
-                />
-                <span className="absolute right-3 top-3 font-semibold text-slate-400">Liters</span>
-              </div>
-            </div>
-
-            {/* Fat & SNF */}
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                  Fat %
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={fatPercent}
-                  onChange={(e) => setFatPercent(Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold"
-                />
-              </div>
-
-              <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                  SNF %
-                </label>
-                <input
-                  type="number"
-                  step="0.05"
-                  value={snfPercent}
-                  onChange={(e) => setSnfPercent(Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold"
-                />
-              </div>
-            </div>
-
-            {/* Notes & Voice Input */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="font-semibold text-slate-700 dark:text-slate-300">
-                  Notes / Quality Remarks
-                </label>
-                <VoiceInput
-                  onTranscript={(t) => setNotes((prev) => (prev ? `${prev} ${t}` : t))}
-                  placeholderPrompt="Milked smoothly. Clean rich fat quality."
-                />
-              </div>
-              <input
-                type="text"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="e.g. Good letdown, clean milk strip test"
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs"
-              />
-            </div>
-
-            <button
-              type="button"
-              onClick={handleSave}
-              className="w-full py-2.5 rounded-xl bg-dairy-600 hover:bg-dairy-700 text-white font-bold shadow-md shadow-dairy-600/30 flex items-center justify-center gap-1.5 active:scale-95 transition mt-2"
-            >
-              <Save size={14} /> Save Milk Record
-            </button>
+          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-xs text-slate-500">
+            Logging as general herd daily collection
           </div>
         )}
+
+        {/* Shift Toggle */}
+        <div>
+          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+            Milking Shift
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setShift('Morning')}
+              className={`py-2 px-3 min-h-[40px] rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 ${
+                shift === 'Morning'
+                  ? 'bg-amber-500 text-white shadow-md shadow-amber-500/30'
+                  : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+              }`}
+            >
+              <Sun size={15} /> Morning Shift
+            </button>
+            <button
+              type="button"
+              onClick={() => setShift('Evening')}
+              className={`py-2 px-3 min-h-[40px] rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 ${
+                shift === 'Evening'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+              }`}
+            >
+              <Moon size={15} /> Evening Shift
+            </button>
+          </div>
+        </div>
+
+        {/* Quantity (Liters) Input */}
+        <div>
+          <div className="flex justify-between items-center mb-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Yield Quantity (Liters)
+            </label>
+            <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
+              {quantityLiters.toFixed(1)} L
+            </span>
+          </div>
+          <input
+            type="number"
+            step="0.1"
+            min="0.5"
+            max="50"
+            value={quantityLiters}
+            onChange={(e) => setQuantityLiters(Number(e.target.value))}
+            className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-900 dark:text-white"
+          />
+        </div>
+
+        {/* Fat % and SNF % */}
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+              Fat % (Optional)
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              value={fatPercent}
+              onChange={(e) => setFatPercent(Number(e.target.value))}
+              className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+              SNF % (Optional)
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              value={snfPercent}
+              onChange={(e) => setSnfPercent(Number(e.target.value))}
+              className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold"
+            />
+          </div>
+        </div>
+
+        {/* Notes */}
+        <div>
+          <div className="flex justify-between items-center mb-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Milking Notes (Optional)
+            </label>
+            <VoiceInput onTranscript={(text: string) => setNotes((prev) => `${prev} ${text}`.trim())} />
+          </div>
+          <input
+            type="text"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="e.g. Fed Super Napier green grass before milking"
+            className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs"
+          />
+        </div>
+
+        {/* Save Button */}
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={isSaved}
+            className={`w-full py-3 rounded-2xl font-bold text-xs shadow-md flex items-center justify-center gap-2 active:scale-95 transition ${
+              isSaved
+                ? 'bg-emerald-600 text-white'
+                : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30'
+            }`}
+          >
+            {isSaved ? (
+              <>
+                <Check size={16} /> Logged Successfully
+              </>
+            ) : (
+              <>
+                <Save size={16} /> Save Milk Record
+              </>
+            )}
+          </button>
+        </div>
 
       </div>
     </div>

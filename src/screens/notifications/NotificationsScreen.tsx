@@ -1,51 +1,52 @@
 import React from 'react';
 import { useAppData } from '../../contexts/AppDataContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { NotificationItem } from '../../types';
 import { MobileHeader } from '../../components/common/MobileHeader';
 import { BottomNavigation } from '../../components/common/BottomNavigation';
 import { EmptyState } from '../../components/common/FeedbackStates';
 import {
   Bell,
-  CheckCheck,
-  AlertOctagon,
   AlertTriangle,
   Syringe,
+  Milk,
   Wheat,
   Activity,
-  Milk,
+  CheckCheck,
   ChevronRight,
 } from 'lucide-react';
 
 export const NotificationsScreen: React.FC = () => {
   const { notifications, markAllNotificationsRead, navigate, unreadNotificationsCount } = useAppData();
+  const { t } = useLanguage();
 
-  const getNotificationIcon = (type: string, severity: string) => {
-    if (severity === 'critical') return <AlertOctagon size={18} className="text-rose-500" />;
+  const getNotificationIcon = (type: NotificationItem['type'], severity: NotificationItem['severity']) => {
     switch (type) {
-      case 'vaccination':
-        return <Syringe size={18} className="text-amber-500" />;
       case 'health':
-        return <AlertTriangle size={18} className="text-rose-500" />;
+        return <AlertTriangle size={18} className={severity === 'critical' ? 'text-rose-500' : 'text-amber-500'} />;
+      case 'vaccination':
+        return <Syringe size={18} className="text-blue-500" />;
+      case 'milk':
+        return <Milk size={18} className="text-dairy-500" />;
       case 'feed':
         return <Wheat size={18} className="text-amber-500" />;
       case 'silage':
         return <Activity size={18} className="text-teal-500" />;
-      case 'milk':
-        return <Milk size={18} className="text-dairy-500" />;
       default:
-        return <Bell size={18} className="text-slate-400" />;
+        return <Bell size={18} className="text-slate-500" />;
     }
   };
 
   return (
     <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-950">
-      <MobileHeader showBack={true} title="Notification Center" subtitle={`${unreadNotificationsCount} unread alerts`} />
+      <MobileHeader showBack={true} title="Notification Center" subtitle="Alerts & Veterinary Reminders" />
 
       <main className="p-4 sm:p-5 space-y-4 pb-20 animate-fadeIn">
         
         {/* Top Action Bar */}
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-            Priority Herd & Hardware Alerts
+            {unreadNotificationsCount} Unread Notifications
           </span>
 
           {unreadNotificationsCount > 0 && (

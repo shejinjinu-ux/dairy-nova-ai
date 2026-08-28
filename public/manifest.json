@@ -1,0 +1,32 @@
+{
+  "name": "Dairy Nova AI - Smart Dairy Farming",
+  "short_name": "Dairy Nova",
+  "description": "Multilingual AI Assistant for Bovine Health, Nutrition Balancing, Silage Quality & Milk Yield",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#020617",
+  "theme_color": "#15803d",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["agriculture", "productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "AI Chat",
+      "url": "/#ai-chat",
+      "description": "Ask Dairy Nova AI Assistant"
+    },
+    {
+      "name": "Disease Scan",
+      "url": "/#health",
+      "description": "AI Cattle Disease Screening"
+    }
+  ]
+}

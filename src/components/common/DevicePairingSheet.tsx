@@ -104,9 +104,9 @@ export const DevicePairingSheet: React.FC<DevicePairingSheetProps> = ({
                   <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">● Sensor Paired & Calibrated</span>
                 </div>
               </div>
-              <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
-                <Battery size={14} className="text-emerald-500" /> 94%
-              </div>
+              <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-md">
+                BLE Active
+              </span>
             </div>
 
             {/* Live Telemetry Snapshot */}

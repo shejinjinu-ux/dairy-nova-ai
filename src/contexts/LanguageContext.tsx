@@ -29,7 +29,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const value: LanguageContextType = {
     language,
     setLanguage,
-    t: TRANSLATIONS[language] || TRANSLATIONS.en,
+    t: { ...TRANSLATIONS.en, ...(TRANSLATIONS[language] || {}) },
     languageOptions: LANGUAGE_OPTIONS,
   };
 

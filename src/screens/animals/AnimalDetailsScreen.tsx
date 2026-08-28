@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { MobileHeader } from '../../components/common/MobileHeader';
@@ -8,6 +8,8 @@ import { EditAnimalModal } from '../../components/animals/EditAnimalModal';
 import { DiseaseScreeningModal } from '../../components/health/DiseaseScreeningModal';
 import { RecordMilkModal } from '../../components/milk/RecordMilkModal';
 import { FeedAnalysisModal } from '../../components/feed/FeedAnalysisModal';
+import { feedApi } from '../../services/api/feedApi';
+import { NutritionRecommendationResponse } from '../../types';
 import { formatDate } from '../../utils/formatters';
 import {
   Sparkles,
@@ -25,6 +27,7 @@ import {
   CheckCircle2,
   Clock,
   AlertTriangle,
+  Loader2,
 } from 'lucide-react';
 
 export const AnimalDetailsScreen: React.FC = () => {
@@ -50,7 +53,37 @@ export const AnimalDetailsScreen: React.FC = () => {
   const [isRecordMilkOpen, setIsRecordMilkOpen] = useState<boolean>(false);
   const [isFeedCheckOpen, setIsFeedCheckOpen] = useState<boolean>(false);
 
+  // Nutrition / Ration Formulation State
+  const [rationData, setRationData] = useState<NutritionRecommendationResponse | null>(null);
+  const [isRationLoading, setIsRationLoading] = useState<boolean>(false);
+  const [rationError, setRationError] = useState<string>('');
+
   const animal = animals.find((a) => a.id === selectedAnimalId) || animals[0];
+
+  useEffect(() => {
+    if (activeTab === 'feed' && animal) {
+      setIsRationLoading(true);
+      setRationError('');
+      feedApi
+        .recommendNutrition({
+          species: animal.type,
+          breed: animal.breed,
+          body_weight_kg: animal.weightKg,
+          daily_milk_yield_kg: animal.dailyMilkYieldL,
+          milk_fat_percent: 4.0,
+          lactation_stage: animal.lactationStage,
+          pregnancy_status: animal.pregnancyStatus === 'Pregnant',
+        })
+        .then((res) => {
+          setRationData(res);
+          setIsRationLoading(false);
+        })
+        .catch((err: any) => {
+          setRationError(err.message || 'Unable to fetch real-time ration from backend.');
+          setIsRationLoading(false);
+        });
+    }
+  }, [activeTab, animal?.id, animal?.weightKg, animal?.dailyMilkYieldL]);
 
   if (!animal) {
     return (
@@ -104,59 +137,49 @@ export const AnimalDetailsScreen: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Action Button Ribbon */}
-          <div className="p-3 bg-slate-50 dark:bg-slate-950/60 border-t border-slate-100 dark:border-slate-800 flex items-center justify-around gap-1 text-[10px] font-bold">
+          {/* Quick Action Matrix */}
+          <div className="grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-800 border-t border-slate-100 dark:border-slate-800 p-2 text-center text-xs">
             <button
               onClick={() => setIsDiseaseCheckOpen(true)}
-              className="flex-1 py-2 px-1 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-teal-500 flex flex-col items-center gap-1 text-slate-700 dark:text-slate-300 active:scale-95 transition"
+              className="py-2 px-1 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition flex flex-col items-center gap-1 text-slate-700 dark:text-slate-300 font-bold"
             >
-              <Stethoscope size={15} className="text-teal-600" />
-              <span>Disease Check</span>
+              <Stethoscope size={16} className="text-rose-500" />
+              <span>Health Check</span>
             </button>
-
-            <button
-              onClick={() => setIsFeedCheckOpen(true)}
-              className="flex-1 py-2 px-1 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-amber-500 flex flex-col items-center gap-1 text-slate-700 dark:text-slate-300 active:scale-95 transition"
-            >
-              <Wheat size={15} className="text-amber-600" />
-              <span>Feed Check</span>
-            </button>
-
             <button
               onClick={() => setIsRecordMilkOpen(true)}
-              className="flex-1 py-2 px-1 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-dairy-500 flex flex-col items-center gap-1 text-slate-700 dark:text-slate-300 active:scale-95 transition"
+              className="py-2 px-1 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition flex flex-col items-center gap-1 text-slate-700 dark:text-slate-300 font-bold"
             >
-              <Milk size={15} className="text-dairy-600" />
-              <span>Record Milk</span>
+              <Milk size={16} className="text-dairy-600" />
+              <span>Log Milk</span>
             </button>
-
             <button
-              onClick={() => navigate('ai-chat', { chatAnimal: animal })}
-              className="flex-1 py-2 px-1 rounded-xl bg-gradient-to-tr from-teal-50 to-dairy-50 dark:from-teal-950 dark:to-dairy-950 border border-teal-300 dark:border-teal-700 flex flex-col items-center gap-1 text-teal-800 dark:text-teal-200 active:scale-95 transition"
+              onClick={() => setIsFeedCheckOpen(true)}
+              className="py-2 px-1 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition flex flex-col items-center gap-1 text-slate-700 dark:text-slate-300 font-bold"
             >
-              <Sparkles size={15} className="text-teal-600 animate-pulse" />
-              <span>Ask AI</span>
+              <Wheat size={16} className="text-amber-500" />
+              <span>Feed NIR</span>
             </button>
           </div>
         </div>
 
-        {/* 6 Tabs Navigation */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 custom-scrollbar border-b border-slate-200 dark:border-slate-800 text-xs">
+        {/* Tab Navigation */}
+        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
           {[
             { id: 'overview', label: 'Overview' },
             { id: 'health', label: `Health (${animalAlerts.length})` },
             { id: 'vaccination', label: `Vaccines (${animalVaccinations.length})` },
-            { id: 'milk', label: `Milk (${animalMilkRecords.length})` },
-            { id: 'feed', label: 'Feed & Ration' },
+            { id: 'feed', label: 'ICAR Ration Plan' },
+            { id: 'milk', label: `Milk Logs (${animalMilkRecords.length})` },
             { id: 'history', label: 'History' },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-3 py-2 rounded-t-xl font-bold whitespace-nowrap transition-all ${
+              className={`py-2 px-3.5 rounded-2xl font-bold whitespace-nowrap transition active:scale-95 ${
                 activeTab === tab.id
-                  ? 'border-b-2 border-dairy-600 text-dairy-700 dark:text-dairy-400 bg-dairy-50/50 dark:bg-dairy-950/40'
-                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+                  ? 'bg-dairy-600 text-white shadow-md shadow-dairy-600/30'
+                  : 'bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-600 dark:text-slate-400'
               }`}
             >
               {tab.label}
@@ -166,66 +189,76 @@ export const AnimalDetailsScreen: React.FC = () => {
 
         {/* Tab 1: Overview */}
         {activeTab === 'overview' && (
-          <div className="space-y-3 animate-fadeIn text-xs">
+          <div className="space-y-3.5 animate-fadeIn text-xs">
+            {/* Primary Vitals Grid */}
             <div className="grid grid-cols-2 gap-2.5">
-              <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-1">
+              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-card-soft space-y-1">
                 <span className="text-[10px] text-slate-400 block font-medium">Daily Milk Yield</span>
-                <span className="text-base font-extrabold text-dairy-600 dark:text-dairy-400">{animal.dailyMilkYieldL} L/day</span>
+                <span className="text-xl font-extrabold text-dairy-600 dark:text-dairy-400">{animal.dailyMilkYieldL} L / day</span>
+                <span className="text-[10px] text-slate-400 block">Lactation: {animal.lactationStage} Stage</span>
               </div>
 
-              <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-1">
-                <span className="text-[10px] text-slate-400 block font-medium">Lactation Stage</span>
-                <span className="text-sm font-bold text-slate-900 dark:text-white">{animal.lactationStage} Stage</span>
-              </div>
-
-              <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-1">
-                <span className="text-[10px] text-slate-400 block font-medium">Pregnancy Status</span>
-                <span className="text-sm font-bold text-slate-900 dark:text-white">{animal.pregnancyStatus}</span>
-              </div>
-
-              <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-1">
-                <span className="text-[10px] text-slate-400 block font-medium">Body Temperature</span>
-                <span className={`text-sm font-bold ${animal.temperatureC > 39.2 ? 'text-rose-600' : 'text-slate-900 dark:text-white'}`}>
-                  {animal.temperatureC}°C
-                </span>
+              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-card-soft space-y-1">
+                <span className="text-[10px] text-slate-400 block font-medium">Body Weight</span>
+                <span className="text-xl font-extrabold text-slate-800 dark:text-slate-200">{animal.weightKg} kg</span>
+                <span className="text-[10px] text-slate-400 block">Status: {animal.pregnancyStatus}</span>
               </div>
             </div>
 
-            {/* AI Health Summary Card */}
-            <div className="p-3.5 rounded-2xl bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 space-y-1.5">
+            {/* IoT Telemetry Strip */}
+            <div className="p-4 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 text-white border border-slate-800 shadow-lg space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-teal-900 dark:text-teal-200 flex items-center gap-1">
-                  <Sparkles size={13} className="text-teal-600" /> Dairy Nova AI Health Synthesis
+                <span className="text-xs font-bold text-teal-300 flex items-center gap-1.5">
+                  <Activity size={14} className="text-teal-400" /> Real-time Neck Collar Telemetry
                 </span>
-                <SourceTag source="AI Screening" />
+                <SourceTag source="Sensor Reading" />
               </div>
-              <p className="text-[11px] text-teal-800 dark:text-teal-300 leading-relaxed">
-                {animal.notes || 'Animal telemetry indicates steady metabolic balance and normal rumination.'}
-              </p>
+
+              <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                  <span className="text-[10px] text-slate-400 block">Temperature</span>
+                  <span className="font-bold text-white text-sm">{animal.temperatureC || 38.5}°C</span>
+                </div>
+                <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                  <span className="text-[10px] text-slate-400 block">Rumination</span>
+                  <span className="font-bold text-white text-sm">{animal.ruminationMinutesPerDay || 480}m</span>
+                </div>
+                <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                  <span className="text-[10px] text-slate-400 block">Activity</span>
+                  <span className="font-bold text-emerald-400 text-sm">{animal.activityLevel || 'Normal'}</span>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
         {/* Tab 2: Health */}
         {activeTab === 'health' && (
-          <div className="space-y-3 animate-fadeIn">
+          <div className="space-y-3 animate-fadeIn text-xs">
             {animalAlerts.length > 0 ? (
               animalAlerts.map((alert) => (
-                <div key={alert.id} className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+                <div
+                  key={alert.id}
+                  className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-card-soft space-y-2"
+                >
                   <div className="flex items-start justify-between">
-                    <h4 className="font-bold text-slate-900 dark:text-white">{alert.title}</h4>
-                    <StatusBadge status={alert.severity === 'critical' ? 'Critical Alert' : 'Needs Attention'} size="sm" />
+                    <div>
+                      <span className="font-bold text-rose-600 dark:text-rose-400 text-sm block">
+                        {alert.title || alert.possibleConcern}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block">{formatDate(alert.timestamp)}</span>
+                    </div>
+                    <StatusBadge status={alert.severity} size="sm" />
                   </div>
-                  <p className="text-[11px] text-slate-600 dark:text-slate-300">{alert.description}</p>
-                  <p className="text-[11px] text-teal-700 dark:text-teal-300 font-medium">
-                    <strong>Guidance:</strong> {alert.preliminaryGuidance}
+                  <p className="text-slate-600 dark:text-slate-300 text-[11px] leading-relaxed">
+                    {alert.preliminaryGuidance || alert.veterinaryAdvice || alert.description}
                   </p>
                 </div>
               ))
             ) : (
               <div className="p-6 text-center rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 text-xs text-slate-500">
-                <CheckCircle2 size={24} className="text-emerald-500 mx-auto mb-1" />
-                No active health alerts for {animal.name}.
+                <CheckCircle2 size={32} className="text-emerald-500 mx-auto mb-2" />
+                No active health flags. All telemetry vitals are within normal range.
               </div>
             )}
           </div>
@@ -234,28 +267,40 @@ export const AnimalDetailsScreen: React.FC = () => {
         {/* Tab 3: Vaccination */}
         {activeTab === 'vaccination' && (
           <div className="space-y-2.5 animate-fadeIn text-xs">
-            {animalVaccinations.map((vac) => (
-              <div key={vac.id} className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                <div>
-                  <h4 className="font-bold text-slate-900 dark:text-white">{vac.diseaseName}</h4>
-                  <p className="text-[11px] text-slate-400">{vac.vaccineName} • Dose {vac.doseNumber}</p>
-                  <span className="text-[10px] text-slate-500 font-medium">Scheduled: {vac.scheduledDate}</span>
+            {animalVaccinations.length > 0 ? (
+              animalVaccinations.map((vac) => (
+                <div
+                  key={vac.id}
+                  className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-card-soft flex items-center justify-between"
+                >
+                  <div>
+                    <h4 className="font-bold text-slate-900 dark:text-white">{vac.diseaseName}</h4>
+                    <span className="text-[10px] text-slate-400 block">{vac.vaccineName} • Dose {vac.doseNumber}</span>
+                    <span className="text-[10px] text-slate-500 mt-1 block">Due: {formatDate(vac.scheduledDate)}</span>
+                  </div>
+                  <StatusBadge status={vac.status} size="sm" />
                 </div>
-                <StatusBadge status={vac.status} size="sm" />
+              ))
+            ) : (
+              <div className="p-6 text-center rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 text-xs text-slate-500">
+                No vaccination schedules recorded.
               </div>
-            ))}
+            )}
           </div>
         )}
 
-        {/* Tab 4: Milk */}
+        {/* Tab 4: Milk Logs */}
         {activeTab === 'milk' && (
           <div className="space-y-2.5 animate-fadeIn text-xs">
             {animalMilkRecords.length > 0 ? (
               animalMilkRecords.map((m) => (
-                <div key={m.id} className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div
+                  key={m.id}
+                  className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-card-soft flex items-center justify-between"
+                >
                   <div>
-                    <span className="font-bold text-slate-900 dark:text-white">{m.shift} Shift</span>
-                    <p className="text-[11px] text-slate-400">{m.date}</p>
+                    <span className="text-[10px] text-slate-400 block">{formatDate(m.date)} • {m.shift} Shift</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{m.recordedBy}</span>
                   </div>
                   <div className="text-right">
                     <span className="text-sm font-extrabold text-dairy-600">{m.quantityLiters} L</span>
@@ -265,25 +310,144 @@ export const AnimalDetailsScreen: React.FC = () => {
               ))
             ) : (
               <div className="p-6 text-center rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 text-xs text-slate-500">
-                No recent milk records. Tap "Record Milk" above to log a shift yield.
+                No recent milk records. Tap "Log Milk" above to log a shift yield.
               </div>
             )}
           </div>
         )}
 
-        {/* Tab 5: Feed & Ration */}
+        {/* Tab 5: Real ICAR-NIANP Feed & Ration Plan */}
         {activeTab === 'feed' && (
-          <div className="space-y-3 animate-fadeIn text-xs">
-            <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
-              <h4 className="font-bold text-slate-900 dark:text-white">Recommended Daily Ration Plan</h4>
-              <ul className="space-y-1.5 text-slate-600 dark:text-slate-300 text-[11px]">
-                <li>• <strong>Green Fodder (Super Napier / Maize):</strong> 25 - 30 kg / day</li>
-                <li>• <strong>Dry Roughage (Paddy Straw):</strong> 4 - 5 kg / day</li>
-                <li>• <strong>Balanced Concentrate Pellets (22% CP):</strong> 3.5 kg / day</li>
-                <li>• <strong>Chelated Mineral Mixture:</strong> 50 g / day</li>
-                <li>• <strong>Fresh Drinking Water:</strong> Ad-libitum (70 - 90 L/day)</li>
-              </ul>
-            </div>
+          <div className="space-y-3.5 animate-fadeIn text-xs">
+            {isRationLoading ? (
+              <div className="p-8 text-center rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
+                <Loader2 size={24} className="animate-spin text-dairy-600 mx-auto" />
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Calculating ICAR-NIANP Least-Cost Ration from FastAPI...
+                </p>
+              </div>
+            ) : rationError ? (
+              <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 space-y-1">
+                <p className="font-bold flex items-center gap-1.5">
+                  <AlertTriangle size={14} /> Optimization Error
+                </p>
+                <p className="text-[11px]">{rationError}</p>
+              </div>
+            ) : rationData ? (
+              <div className="space-y-3">
+                
+                {/* Daily Cost & Summary Card */}
+                <div className="p-4 rounded-3xl bg-gradient-to-br from-dairy-700 to-teal-900 text-white shadow-lg space-y-2">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-dairy-200">
+                        ICAR Least-Cost Balanced Daily Ration
+                      </span>
+                      <h4 className="text-2xl font-black">
+                        ₹{rationData.total_daily_cost_inr.toFixed(2)} <span className="text-xs font-normal text-dairy-200">/ animal / day</span>
+                      </h4>
+                      <span className="text-[11px] text-teal-100 font-semibold">
+                        Optimized for {animal.weightKg}kg • {animal.dailyMilkYieldL} L/day Yield
+                      </span>
+                    </div>
+                    <SourceTag source="AI Screening" />
+                  </div>
+                </div>
+
+                {/* Requirements Summary */}
+                {rationData.nutrient_requirements && (
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-center">
+                      <span className="text-[10px] text-slate-400 block">DMI Target</span>
+                      <span className="font-black text-slate-900 dark:text-white text-xs">
+                        {rationData.nutrient_requirements.req_dmi_kg_per_day.toFixed(2)} kg
+                      </span>
+                    </div>
+                    <div className="p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-center">
+                      <span className="text-[10px] text-slate-400 block">TDN Energy</span>
+                      <span className="font-black text-slate-900 dark:text-white text-xs">
+                        {rationData.nutrient_requirements.req_tdn_kg_per_day.toFixed(2)} kg
+                      </span>
+                    </div>
+                    <div className="p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-center">
+                      <span className="text-[10px] text-slate-400 block">Crude Protein</span>
+                      <span className="font-black text-teal-600 dark:text-teal-400 text-xs">
+                        {rationData.nutrient_requirements.req_cp_g_per_day.toFixed(0)} g
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Recommended Daily Ration Items */}
+                <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-2.5">
+                  <h4 className="font-bold text-slate-900 dark:text-white flex items-center justify-between">
+                    <span>Daily Feed Quantities</span>
+                    <span className="text-[10px] text-slate-400 font-normal">Fresh Weight Basis</span>
+                  </h4>
+
+                  <div className="space-y-2">
+                    {rationData.recommended_ration.map((item) => (
+                      <div
+                        key={item.feed_id}
+                        className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]"
+                      >
+                        <div>
+                          <strong className="text-slate-900 dark:text-white block font-bold">
+                            {item.feed_name}
+                          </strong>
+                          <span className="text-[10px] text-slate-400">
+                            {item.feed_category} • ₹{item.cost_per_kg_inr}/kg
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-black text-dairy-600 dark:text-dairy-400 text-xs block">
+                            {item.quantity_kg_per_day >= 1
+                              ? `${item.quantity_kg_per_day.toFixed(1)} kg`
+                              : `${(item.quantity_kg_per_day * 1000).toFixed(0)} g`}
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            ₹{item.daily_cost_inr.toFixed(1)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Nutrient Balance Badges */}
+                {rationData.nutrient_balance && (
+                  <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                      Nutrient Balance & Fulfillment
+                    </span>
+                    <div className="grid grid-cols-2 gap-2 text-[11px]">
+                      {Object.entries(rationData.nutrient_balance).map(([key, bal]) => (
+                        <div
+                          key={key}
+                          className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800"
+                        >
+                          <span className="capitalize text-slate-600 dark:text-slate-400">
+                            {key.replace('_', ' ')}
+                          </span>
+                          <span
+                            className={`font-bold px-1.5 py-0.5 rounded text-[10px] ${
+                              bal.status === 'Balanced'
+                                ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
+                                : bal.status === 'Surplus'
+                                ? 'bg-teal-100 dark:bg-teal-950/80 text-teal-700 dark:text-teal-300'
+                                : 'bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300'
+                            }`}
+                          >
+                            {bal.percentage_fulfilled.toFixed(0)}% ({bal.status})
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            ) : null}
           </div>
         )}
 

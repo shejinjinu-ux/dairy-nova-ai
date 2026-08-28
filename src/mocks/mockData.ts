@@ -15,19 +15,87 @@ import {
   UserProfile,
 } from '../types';
 
+export const ALL_INDIAN_COW_BREEDS: string[] = [
+  'Gir',
+  'Sahiwal',
+  'Red Sindhi',
+  'Tharparkar',
+  'Rathi',
+  'Kankrej',
+  'Ongole',
+  'Hariana',
+  'Deoni',
+  'Kangayam',
+  'Hallikar',
+  'Amritmahal',
+  'Khillari',
+  'Krishna Valley',
+  'Dangi',
+  'Malvi',
+  'Nimari',
+  'Nagori',
+  'Siri',
+  'Ponwar',
+  'Punganur',
+  'Vechur',
+  'Bargur',
+  'Umblachery',
+  'Pulikulam',
+  'Alambadi',
+  'Gaolao',
+  'Mewati',
+  'Bachaur',
+  'Kenkatha',
+  'Kherigarh',
+  'Motu',
+  'Ghumusari',
+  'Binjharpuri',
+  'Khariar',
+  'Gangatiri',
+  'Badri',
+  'Belahi',
+  'Shweta Kapila',
+  'Holstein Friesian (HF Cross)',
+  'Jersey (Cross)',
+  'Desi / Indigenous Cross',
+  'Unknown Cow',
+  'Other Cow Breed',
+];
+
+export const ALL_INDIAN_BUFFALO_BREEDS: string[] = [
+  'Murrah Buffalo',
+  'Nili-Ravi',
+  'Jaffarabadi',
+  'Surti',
+  'Mehsana',
+  'Bhadawari',
+  'Nagpuri',
+  'Pandharpuri',
+  'Toda',
+  'Banni',
+  'Chilika',
+  'Kalahandi',
+  'Marathwadi',
+  'Swamp / Desi Buffalo',
+  'Unknown Buffalo',
+  'Other Buffalo Breed',
+];
+
 export const INITIAL_USER: UserProfile = {
-  id: 'farmer-001',
-  name: 'Ramesh Kumar',
+  id: 'farmer-demo',
+  name: 'Demo Farmer',
   mobile: '+91 98450 23456',
-  email: 'ramesh.dairy@gmail.com',
-  farmName: 'Sri Lakshmi Dairy Farm',
+  email: 'farmer@dairynova.ai',
+  farmName: 'Dairy Nova Model Farm',
   farmLocation: 'Erode, Tamil Nadu',
   role: 'farmer',
   language: 'en',
-  avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+  avatarUrl: '',
   totalAnimals: 12,
   memberSince: 'March 2022',
   cooperativeId: 'TN-ERD-COOP-882',
+  isOnboarded: true,
+  hasCattle: true,
 };
 
 export const OFFICER_USER: UserProfile = {
@@ -35,17 +103,21 @@ export const OFFICER_USER: UserProfile = {
   name: 'Dr. S. Sundaram, B.V.Sc.',
   mobile: '+91 94432 99881',
   email: 'sundaram.coop@aavin.tn.gov.in',
-  farmName: 'Erode District Milk Cooperative Union (Aavin)',
+  farmName: 'Erode District Milk Cooperative Union',
   farmLocation: 'Erode Central Hub',
   role: 'officer',
   language: 'en',
-  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+  avatarUrl: '',
   totalAnimals: 310,
   memberSince: 'January 2018',
   cooperativeId: 'TN-MILK-UNION-01',
+  isOnboarded: true,
+  hasCattle: true,
 };
 
-export const INITIAL_ANIMALS: Animal[] = [
+export const INITIAL_ANIMALS: Animal[] = [];
+
+export const DEMO_HERD_ANIMALS: Animal[] = [
   {
     id: 'ani-001',
     tagId: 'TAG-101',
@@ -371,6 +443,111 @@ export const BREEDS_DATA: BreedInfo[] = [
     bestPractices: ['Provide 2 hours of water wallowing or sprinkler baths daily', 'Feed high-protein mustard or cotton seed cake supplement'],
   },
   {
+    id: 'breed-tharparkar',
+    name: 'Tharparkar',
+    animalType: 'Cow',
+    nativeRegion: 'Thar Desert / Rajasthan & Kutch',
+    avgDailyMilkYield: '12 - 18 Liters',
+    fatPercentageRange: '4.4% - 4.9% (A2 Milk)',
+    climateTolerance: 'Superb Desert & Drought Resilience',
+    feedRequirement: 'Thrives on sparse desert vegetation and dry fodder',
+    diseaseResistance: 'High immunity against tropical tick-borne ailments',
+    imageUrl: 'https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=500&auto=format&fit=crop&q=80',
+    description: 'White or light grey dual-purpose breed from the Thar Desert. Renowned for continuing high milk production even under severe drought and thermal stress.',
+    characteristics: ['Lyre-shaped horns and broad forehead', 'White to light grey coat reflecting sunlight', 'Docile temperament and hardy hooves'],
+    bestPractices: ['Provide clean water and mineral lick blocks', 'Ideal for arid and semi-arid agro-climatic zones'],
+  },
+  {
+    id: 'breed-rathi',
+    name: 'Rathi',
+    animalType: 'Cow',
+    nativeRegion: 'Bikaner / Ganganagar / Rajasthan',
+    avgDailyMilkYield: '13 - 18 Liters',
+    fatPercentageRange: '4.2% - 4.8%',
+    climateTolerance: 'Extreme Temperature Fluctuations (0°C to 48°C)',
+    feedRequirement: 'Efficient converter of crop residues and roughages',
+    diseaseResistance: 'High general disease tolerance',
+    imageUrl: 'https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=500&auto=format&fit=crop&q=80',
+    description: 'Brown and white patched dairy breed from northwest Rajasthan. Highly economical milk producer with low maintenance requirements.',
+    characteristics: ['Brown patches with white spots (piebald)', 'Medium sized body with active posture', 'Consistent milker through dry seasons'],
+    bestPractices: ['Feed green fodder mixed with mustard straw', 'Maintain shaded stalls during hot summers'],
+  },
+  {
+    id: 'breed-kankrej',
+    name: 'Kankrej',
+    animalType: 'Cow',
+    nativeRegion: 'Rann of Kutch & Banaskantha (Gujarat)',
+    avgDailyMilkYield: '12 - 16 Liters',
+    fatPercentageRange: '4.5% - 5.0%',
+    climateTolerance: 'High heat tolerance and swamp resistance',
+    feedRequirement: 'Moderate grazing and stall-fed roughage',
+    diseaseResistance: 'Highly resistant to contagious bovine pleuropneumonia',
+    imageUrl: 'https://images.unsplash.com/photo-1527153857715-3908f2ae5e81?w=500&auto=format&fit=crop&q=80',
+    description: 'Majestic zebu breed characterized by huge lyre-shaped horns and a characteristic sawai chal (smooth walking gait).',
+    characteristics: ['Massive lyre horns and powerful hump', 'Silver-grey to dark iron grey coat', 'High longevity and strong maternal instincts'],
+    bestPractices: ['Ensure adequate calcium supplementation for strong bone density', 'Provide daily grazing or open paddock exercise'],
+  },
+  {
+    id: 'breed-kangayam',
+    name: 'Kangayam',
+    animalType: 'Cow',
+    nativeRegion: 'Kongu Region (Erode, Tiruppur, Coimbatore), Tamil Nadu',
+    avgDailyMilkYield: '8 - 12 Liters',
+    fatPercentageRange: '4.8% - 5.4% (Rich A2 Milk)',
+    climateTolerance: 'Exceptional drought tolerance in semi-arid zones',
+    feedRequirement: 'Low feed cost; thrives on Cenchrus grass (Korangadu pasture)',
+    diseaseResistance: 'Extremely high natural immunity against endemic tropical diseases',
+    imageUrl: 'https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=500&auto=format&fit=crop&q=80',
+    description: 'Legendary indigenous breed of Tamil Nadu. Known for compact sturdy build, black-tipped horns, and medicinal quality rich A2 milk.',
+    characteristics: ['Grey coat with black markings on knees and hump', 'Short strong legs with dark hard hooves', 'High endurance in harsh tropical weather'],
+    bestPractices: ['Maintain organic natural grazing where possible', 'Supplement with cottonseed cake during peak lactation'],
+  },
+  {
+    id: 'breed-punganur',
+    name: 'Punganur',
+    animalType: 'Cow',
+    nativeRegion: 'Chittoor District, Andhra Pradesh',
+    avgDailyMilkYield: '3 - 5 Liters',
+    fatPercentageRange: '6.0% - 8.0% (Ultra High Fat)',
+    climateTolerance: 'Hardy dwarf breed adaptable to diverse climates',
+    feedRequirement: 'Very low (approx 5kg fodder per day)',
+    diseaseResistance: 'High resilience against tick fever',
+    imageUrl: 'https://images.unsplash.com/photo-1527153857715-3908f2ae5e81?w=500&auto=format&fit=crop&q=80',
+    description: 'The world’s shortest humped cattle breed (70-90 cm height). Yields extraordinary high butterfat A2 milk rich in AU and AU-NP minerals.',
+    characteristics: ['Miniature dwarf stature with broad forehead', 'Light brown to white coat', 'Ideal for backyard and homestead dairy farming'],
+    bestPractices: ['Feed green grass mash with small concentrate pellets', 'Protect from deep water ponds due to short stature'],
+  },
+  {
+    id: 'breed-nili-ravi',
+    name: 'Nili-Ravi Buffalo',
+    animalType: 'Buffalo',
+    nativeRegion: 'Ferozepur & Amritsar (Punjab border)',
+    avgDailyMilkYield: '14 - 20 Liters',
+    fatPercentageRange: '6.8% - 7.8%',
+    climateTolerance: 'Requires water wallowing or shade during hot humid periods',
+    feedRequirement: 'High green fodder & balanced protein meals',
+    diseaseResistance: 'Strong immunity to mastitis and foot rot',
+    imageUrl: 'https://images.unsplash.com/photo-1546445317-29f4545e9d53?w=500&auto=format&fit=crop&q=80',
+    description: 'Renowned for "Panch Kalyani" markings (white forehead star, white muzzle, white socks on all four feet, white tail switch, and wall eyes).',
+    characteristics: ['Jet black with 5 distinct white patches', 'Enclosed circular horns', 'High milk persistency and docile milking nature'],
+    bestPractices: ['Wash twice daily and provide access to wallowing pond', 'Feed calcium-rich concentrate during peak yield'],
+  },
+  {
+    id: 'breed-jaffarabadi',
+    name: 'Jaffarabadi Buffalo',
+    animalType: 'Buffalo',
+    nativeRegion: 'Gir Forest & Saurashtra, Gujarat',
+    avgDailyMilkYield: '15 - 22 Liters',
+    fatPercentageRange: '7.5% - 8.8%',
+    climateTolerance: 'Adapted to coastal humid and arid tropical conditions',
+    feedRequirement: 'Heavy dry matter intake with cottonseed cake',
+    diseaseResistance: 'High natural resistance to tropical protozoal infections',
+    imageUrl: 'https://images.unsplash.com/photo-1546445317-29f4545e9d53?w=500&auto=format&fit=crop&q=80',
+    description: 'Massive heavy riverine buffalo known for wide drooping horns and highest butterfat solids.',
+    characteristics: ['Broad prominent forehead with heavy drooping horns', 'Large deep body frame', 'Rich creamy milk ideal for ghee and mawa production'],
+    bestPractices: ['Provide ample stall space for large body size', 'Ensure 24/7 ad-libitum clean drinking water'],
+  },
+  {
     id: 'breed-hf',
     name: 'Holstein Friesian (HF Cross)',
     animalType: 'Cow',
@@ -417,7 +594,9 @@ export const BREEDS_DATA: BreedInfo[] = [
   },
 ];
 
-export const INITIAL_HEALTH_ALERTS: HealthAlert[] = [
+export const INITIAL_HEALTH_ALERTS: HealthAlert[] = [];
+
+export const DEMO_HEALTH_ALERTS: HealthAlert[] = [
   {
     id: 'alt-001',
     animalId: 'ani-006',
@@ -471,7 +650,9 @@ export const INITIAL_HEALTH_ALERTS: HealthAlert[] = [
   },
 ];
 
-export const INITIAL_VACCINATIONS: VaccinationRecord[] = [
+export const INITIAL_VACCINATIONS: VaccinationRecord[] = [];
+
+export const DEMO_VACCINATIONS: VaccinationRecord[] = [
   {
     id: 'vac-001',
     animalId: 'ani-001',
@@ -524,35 +705,11 @@ export const INITIAL_VACCINATIONS: VaccinationRecord[] = [
     administeredBy: 'Dr. S. Sundaram (Veterinary Asst. Surgeon)',
     notes: 'Single lifetime calfhood immunization verified.',
   },
-  {
-    id: 'vac-005',
-    animalId: 'ani-007',
-    animalTag: 'TAG-107',
-    animalName: 'Ganga',
-    diseaseName: 'Deworming & Fluke Treatment',
-    vaccineName: 'Albendazole + Oxyclozanide Bolus',
-    doseNumber: 6,
-    scheduledDate: '2026-08-15',
-    completedDate: '2026-08-15',
-    status: 'Completed',
-    administeredBy: 'Farmer Self-Administered',
-    notes: 'Administered in morning before feeding.',
-  },
-  {
-    id: 'vac-006',
-    animalId: 'ani-003',
-    animalTag: 'TAG-103',
-    animalName: 'Kaali',
-    diseaseName: 'Theileriosis Vaccine',
-    vaccineName: 'Raksha-Vac T',
-    doseNumber: 1,
-    scheduledDate: '2026-09-10',
-    status: 'Upcoming',
-    nextBoosterDate: '2027-09-10',
-  },
 ];
 
-export const INITIAL_FEED_ANALYSES: FeedAnalysisResult[] = [
+export const INITIAL_FEED_ANALYSES: FeedAnalysisResult[] = [];
+
+export const DEMO_FEED_ANALYSES: FeedAnalysisResult[] = [
   {
     id: 'feed-001',
     batchId: 'DN-FEED-2026-0825-A1',
@@ -612,39 +769,11 @@ export const INITIAL_FEED_ANALYSES: FeedAnalysisResult[] = [
     isSafeForLactating: true,
     qrBatchId: 'QR-FEED-PELLET-9920',
   },
-  {
-    id: 'feed-003',
-    batchId: 'DN-FEED-2026-0818-C3',
-    date: '2026-08-18',
-    feedCategory: 'Dry Roughage',
-    feedName: 'Paddy Straw (Stored in Open Shed)',
-    imageUrl: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=500&auto=format&fit=crop&q=80',
-    overallScore: 54,
-    qualityGrade: 'Grade B (Acceptable)',
-    crudeProteinPercent: 4.1,
-    moisturePercent: 17.8,
-    dryMatterPercent: 82.2,
-    crudeFiberPercent: 38.5,
-    tdnEnergyPercent: 44.0,
-    calciumPercent: 0.32,
-    phosphorusPercent: 0.12,
-    ureaRisk: 'Safe / None',
-    silicaSandRisk: 'Moderate (2-4%)',
-    mycotoxinRisk: 'Moderate Concern',
-    fungalMouldRisk: 'Mild Spores',
-    aiAdvisory: 'High moisture (17.8%) has initiated mild fungal colonization. Not recommended for pregnant or high-yield heifers without sun-drying.',
-    recommendations: [
-      'Sun dry for 4-6 hours on tarpaulin before feeding',
-      'Treat with 4% urea + 40% water solution for ammoniation (if dry)',
-      'Discard black discolored bottom layer from storage stack',
-    ],
-    inputSource: 'Manual Entry',
-    isSafeForLactating: false,
-    qrBatchId: 'QR-FEED-STRAW-3310',
-  },
 ];
 
-export const INITIAL_SILAGE_ANALYSES: SilageAnalysisResult[] = [
+export const INITIAL_SILAGE_ANALYSES: SilageAnalysisResult[] = [];
+
+export const DEMO_SILAGE_ANALYSES: SilageAnalysisResult[] = [
   {
     id: 'sil-001',
     batchId: 'DN-SIL-2026-0824-M01',
@@ -668,28 +797,6 @@ export const INITIAL_SILAGE_ANALYSES: SilageAnalysisResult[] = [
     inputSource: 'Mock IoT Storage Monitoring',
     qrBatchId: 'QR-SILAGE-MAIZE-4412',
   },
-  {
-    id: 'sil-002',
-    batchId: 'DN-SIL-2026-0810-S02',
-    date: '2026-08-10',
-    silageType: 'Sorghum + Cowpea Silage',
-    imageUrl: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=500&auto=format&fit=crop&q=80',
-    overallQuality: 'Good Fermentation',
-    phValue: 4.25,
-    moisturePercent: 68.0,
-    storageDurationDays: 90,
-    internalTemperatureC: 29.5,
-    fermentationStatus: 'Optimal Lactic Acid',
-    spoilageRisk: 'Low',
-    mouldRisk: 'Surface Crust Only',
-    storageAdvice: 'Stable fermentation. Remove 2-inch top crust before feeding to calves.',
-    recommendations: [
-      'Discard outer exposed crust into vermicompost bin',
-      'Do not expose face to rain water',
-    ],
-    inputSource: 'Portable Scanner Simulation',
-    qrBatchId: 'QR-SILAGE-SORGH-1109',
-  },
 ];
 
 export const MOCK_IOT_SILAGE_READINGS: IoTSilageReading[] = [
@@ -701,7 +808,9 @@ export const MOCK_IOT_SILAGE_READINGS: IoTSilageReading[] = [
   { timestamp: '20:00', ph: 3.84, moisture: 66.4, temperature: 26.0, spoilageIndex: 4, deviceStatus: 'online' },
 ];
 
-export const INITIAL_MILK_RECORDS: MilkRecord[] = [
+export const INITIAL_MILK_RECORDS: MilkRecord[] = [];
+
+export const DEMO_MILK_RECORDS: MilkRecord[] = [
   {
     id: 'rec-001',
     animalId: 'ani-001',
@@ -728,59 +837,6 @@ export const INITIAL_MILK_RECORDS: MilkRecord[] = [
     snfPercent: 9.2,
     lactometerReading: 30.0,
     notes: 'High butterfat test.',
-    recordedBy: 'Ramesh Kumar',
-    isSynced: true,
-  },
-  {
-    id: 'rec-003',
-    animalId: 'ani-004',
-    animalTag: 'TAG-104',
-    animalName: 'Padma',
-    date: '2026-08-27',
-    shift: 'Morning',
-    quantityLiters: 8.0,
-    fatPercent: 4.6,
-    snfPercent: 8.8,
-    recordedBy: 'Ramesh Kumar',
-    isSynced: true,
-  },
-  {
-    id: 'rec-004',
-    animalId: 'ani-006',
-    animalTag: 'TAG-106',
-    animalName: 'Daisy',
-    date: '2026-08-27',
-    shift: 'Morning',
-    quantityLiters: 7.2,
-    fatPercent: 3.2,
-    snfPercent: 8.1,
-    notes: 'Milk yield down due to mastitis fever.',
-    recordedBy: 'Ramesh Kumar',
-    isSynced: true,
-  },
-  {
-    id: 'rec-005',
-    animalId: 'ani-007',
-    animalTag: 'TAG-107',
-    animalName: 'Ganga',
-    date: '2026-08-27',
-    shift: 'Morning',
-    quantityLiters: 8.8,
-    fatPercent: 7.9,
-    snfPercent: 9.3,
-    recordedBy: 'Ramesh Kumar',
-    isSynced: true,
-  },
-  {
-    id: 'rec-006',
-    animalId: 'ani-001',
-    animalTag: 'TAG-101',
-    animalName: 'Gouri',
-    date: '2026-08-26',
-    shift: 'Evening',
-    quantityLiters: 7.7,
-    fatPercent: 4.9,
-    snfPercent: 9.0,
     recordedBy: 'Ramesh Kumar',
     isSynced: true,
   },
@@ -812,7 +868,9 @@ export const MILK_QUALITY_SUMMARY: MilkQualitySummary = {
   ],
 };
 
-export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
+export const INITIAL_NOTIFICATIONS: NotificationItem[] = [];
+
+export const DEMO_NOTIFICATIONS: NotificationItem[] = [
   {
     id: 'notif-001',
     title: 'Vaccination Overdue: TAG-106 Daisy',
@@ -833,39 +891,11 @@ export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     isRead: false,
     actionRoute: 'health',
   },
-  {
-    id: 'notif-003',
-    title: 'Silage IoT Monitoring Alert',
-    message: 'Corn Silage Pit M01 temperature is optimal at 26.2°C with pH 3.85.',
-    timestamp: '3 hours ago',
-    type: 'silage',
-    severity: 'low',
-    isRead: true,
-    actionRoute: 'silage',
-  },
-  {
-    id: 'notif-004',
-    title: 'Feed Moisture Warning',
-    message: 'Paddy Straw batch C3 reported 17.8% moisture. Sun-dry before feeding.',
-    timestamp: 'Yesterday',
-    type: 'feed',
-    severity: 'medium',
-    isRead: true,
-    actionRoute: 'feed',
-  },
-  {
-    id: 'notif-005',
-    title: 'Daily Milk Target Surpassed',
-    message: 'Today total herd collection reached 154.2 L (+2.8% vs last week average).',
-    timestamp: 'Yesterday',
-    type: 'milk',
-    severity: 'low',
-    isRead: true,
-    actionRoute: 'milk',
-  },
 ];
 
-export const INITIAL_QR_BATCHES: QRBatch[] = [
+export const INITIAL_QR_BATCHES: QRBatch[] = [];
+
+export const DEMO_QR_BATCHES: QRBatch[] = [
   {
     batchId: 'DN-BATCH-2026-F884',
     itemType: 'Feed',

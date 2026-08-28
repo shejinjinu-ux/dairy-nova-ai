@@ -1,8 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { UserProfile, UserRole } from '../types';
+﻿import React, { createContext, useContext, useState } from 'react';
+import { UserProfile, UserRole, Language } from '../types';
 import { authApi } from '../services/api/authApi';
-import { INITIAL_USER, OFFICER_USER } from '../mocks/mockData';
-import { getStoredItem } from '../services/api/apiHelper';
+import { getStoredItem, setStoredItem } from '../services/api/apiHelper';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -10,11 +9,14 @@ interface AuthContextType {
   role: UserRole | null;
   isLoading: boolean;
   isLoggingOut: boolean;
+  sendOtp: (mobile: string) => Promise<{ success: boolean; message: string; demoOtp?: string }>;
+  verifyOtp: (mobile: string, otp: string) => Promise<{ success: boolean; user: UserProfile | null; isNewUser: boolean }>;
+  completeFarmerProfile: (params: { name: string; mobile: string; farmName?: string; farmLocation?: string; language?: Language }) => Promise<UserProfile>;
   loginFarmer: (mobileOrEmail?: string, password?: string) => Promise<void>;
   loginOfficer: () => Promise<void>;
-  register: (data: Partial<UserProfile>) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
+  setUser: (user: UserProfile | null) => void;
   showLogoutModal: boolean;
   setShowLogoutModal: (show: boolean) => void;
   logoutSuccessToast: boolean;
@@ -32,10 +34,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [showLogoutModal, setShowLogoutModal] = useState<boolean>(false);
   const [logoutSuccessToast, setLogoutSuccessToast] = useState<boolean>(false);
 
-  const loginFarmer = async (mobileOrEmail: string = '9845023456', password?: string) => {
+  const sendOtp = async (mobile: string) => {
     setIsLoading(true);
     try {
-      const loggedUser = await authApi.loginFarmer(mobileOrEmail, password);
+      return await authApi.sendOtp(mobile);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verifyOtp = async (mobile: string, otp: string) => {
+    setIsLoading(true);
+    try {
+      const res = await authApi.verifyOtp(mobile, otp);
+      if (res.user) {
+        setUser(res.user);
+      }
+      return res;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const completeFarmerProfile = async (params: {
+    name: string;
+    mobile: string;
+    farmName?: string;
+    farmLocation?: string;
+    language?: Language;
+  }) => {
+    setIsLoading(true);
+    try {
+      const createdUser = await authApi.completeFarmerProfile(params);
+      setUser(createdUser);
+      return createdUser;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loginFarmer = async (mobileOrEmail: string = '9845023456', _password?: string) => {
+    setIsLoading(true);
+    try {
+      const loggedUser = await authApi.loginFarmer(mobileOrEmail);
       setUser(loggedUser);
     } finally {
       setIsLoading(false);
@@ -47,16 +88,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const officer = await authApi.loginOfficer();
       setUser(officer);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const register = async (data: Partial<UserProfile>) => {
-    setIsLoading(true);
-    try {
-      const newUser = await authApi.registerUser(data);
-      setUser(newUser);
     } finally {
       setIsLoading(false);
     }
@@ -89,11 +120,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     role: user ? user.role : null,
     isLoading,
     isLoggingOut,
+    sendOtp,
+    verifyOtp,
+    completeFarmerProfile,
     loginFarmer,
     loginOfficer,
-    register,
     logout,
     updateProfile,
+    setUser,
     showLogoutModal,
     setShowLogoutModal,
     logoutSuccessToast,

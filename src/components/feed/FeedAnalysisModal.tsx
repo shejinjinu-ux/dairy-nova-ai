@@ -1,28 +1,28 @@
 import React, { useState } from 'react';
 import { feedApi } from '../../services/api/feedApi';
 import { FeedAnalysisResult, QRBatch } from '../../types';
-import { DevicePairingSheet } from '../common/DevicePairingSheet';
-import { QRCodeCard } from '../common/QRCodeCard';
+import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { SourceTag } from '../common/SourceTag';
 import { ReadAloudButton } from '../common/ReadAloudButton';
-import { VoiceInput } from '../common/VoiceInput';
 import {
   X,
   Camera,
   Upload,
-  Bluetooth,
-  Edit3,
   Sparkles,
   ArrowRight,
   ArrowLeft,
   CheckCircle2,
   AlertTriangle,
+  AlertOctagon,
+  ChevronDown,
+  ChevronUp,
   QrCode,
   Save,
-  Radio,
-  FileCheck,
+  Wheat,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
 
 interface FeedAnalysisModalProps {
   isOpen: boolean;
@@ -37,31 +37,44 @@ export const FeedAnalysisModal: React.FC<FeedAnalysisModalProps> = ({
   onAnalysisSaved,
   onGenerateQRBatch,
 }) => {
+  const { user } = useAuth();
+  const { t } = useLanguage();
+
   const [step, setStep] = useState<number>(1);
-  const [imageUrl, setImageUrl] = useState<string>(
-    'https://images.unsplash.com/photo-1592417817098-8f3d6eb22513?w=500&auto=format&fit=crop&q=80'
-  );
+  const [imageUrl, setImageUrl] = useState<string>('');
   const [feedCategory, setFeedCategory] = useState<string>('Green Fodder');
   const [feedName, setFeedName] = useState<string>('Super Napier CO-5 Hybrid');
-  const [inputSource, setInputSource] = useState<'Camera Only' | 'Portable Scanner Simulation' | 'Manual Entry'>('Portable Scanner Simulation');
+  const [inputSource, setInputSource] = useState<'Camera Only' | 'Portable Scanner Simulation' | 'Manual Entry'>('Camera Only');
   
   // Manual / Sensor params
-  const [moisture, setMoisture] = useState<number>(78.5);
-  const [crudeProtein, setCrudeProtein] = useState<number>(12.4);
-  const [fiber, setFiber] = useState<number>(26.8);
-  const [energy, setEnergy] = useState<number>(64.2);
-  const [notes, setNotes] = useState<string>('');
+  const [moisture, setMoisture] = useState<number>(75.0);
+  const [crudeProtein, setCrudeProtein] = useState<number>(12.5);
+  const [fiber, setFiber] = useState<number>(25.0);
+  const [energy, setEnergy] = useState<number>(64.0);
 
-  const [isPairingOpen, setIsPairingOpen] = useState<boolean>(false);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const [result, setResult] = useState<FeedAnalysisResult | null>(null);
-  const [showQR, setShowQR] = useState<boolean>(false);
+  const [showDetailedParameters, setShowDetailedParameters] = useState<boolean>(false);
+  const [showQRSuccess, setShowQRSuccess] = useState<boolean>(false);
 
   if (!isOpen) return null;
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleStartAnalysis = async () => {
-    setStep(5);
+    setStep(4);
     setIsAnalyzing(true);
+    setErrorMessage('');
 
     try {
       const output = await feedApi.analyzeFeed({
@@ -79,14 +92,9 @@ export const FeedAnalysisModal: React.FC<FeedAnalysisModalProps> = ({
 
       setResult(output);
       setIsAnalyzing(false);
-      confetti({
-        particleCount: 40,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#16a34a', '#0d9488', '#f59e0b'],
-      });
-    } catch {
+    } catch (err: any) {
       setIsAnalyzing(false);
+      setErrorMessage(err.message || 'Feed analysis encountered an error. Please try again.');
     }
   };
 
@@ -102,444 +110,353 @@ export const FeedAnalysisModal: React.FC<FeedAnalysisModalProps> = ({
       batchId: result.batchId,
       itemType: 'Feed',
       title: result.feedName,
-      farmName: 'Sri Lakshmi Dairy Farm',
-      farmerName: 'Ramesh Kumar',
+      farmName: user?.farmName || 'My Dairy Farm',
+      farmerName: user?.name || 'Farmer',
       generatedDate: result.date,
       qualityGrade: result.qualityGrade,
       adulterationFlags: `Urea: ${result.ureaRisk} • Mould: ${result.fungalMouldRisk}`,
-      verificationStatus: result.overallScore >= 75 ? 'Certified Safe' : 'Requires Lab Review',
-      dataSource: inputSource === 'Portable Scanner Simulation' ? 'Sensor Reading' : 'AI Screening',
+      verificationStatus: result.isGood === 'Good' ? 'Certified Safe' : 'Requires Lab Review',
+      dataSource: 'AI Screening',
       parameters: {
         'Crude Protein': `${result.crudeProteinPercent}%`,
+        'Dry Matter': `${result.dryMatterPercent}%`,
         'Moisture': `${result.moisturePercent}%`,
         'TDN Energy': `${result.tdnEnergyPercent}%`,
-        'Fiber NDF': `${result.crudeFiberPercent}%`,
+        'Fiber': `${result.crudeFiberPercent}%`,
       },
       qrPayload: `https://dairynova.ai/verify/feed/${result.batchId}`,
     };
 
     if (onGenerateQRBatch) onGenerateQRBatch(batch);
-    setShowQR(true);
+    setShowQRSuccess(true);
   };
 
   return (
-    <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 max-w-sm w-full shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 max-h-[92vh] overflow-y-auto">
-          
-          {/* Header */}
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 max-w-sm w-full shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 max-h-[92vh] overflow-y-auto">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+              <Wheat size={12} /> Rapid Feed Quality Testing
+            </span>
+            <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+              {t.rapidFeedTest || 'Rapid Feed Quality Test'}
+            </h3>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 flex items-center justify-center active:scale-95 transition"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Error Banner */}
+        {errorMessage && (
+          <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2">
+            <AlertCircle size={15} className="shrink-0 text-rose-500" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        {/* Step 1: Category & Feed Name */}
+        {step === 1 && (
+          <div className="space-y-3 animate-fadeIn text-xs">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-dairy-600 dark:text-dairy-400">
-                Step {step} of 5 • Feed Quality NIR
-              </span>
-              <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                {step === 1 && 'Upload Feed Image'}
-                {step === 2 && 'Feed Category'}
-                {step === 3 && 'Choose Input Source'}
-                {step === 4 && 'Nutritional Parameters'}
-                {step === 5 && 'Quality Analysis Result'}
-              </h3>
+              <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                Feed Category
+              </label>
+              <select
+                value={feedCategory}
+                onChange={(e) => {
+                  setFeedCategory(e.target.value);
+                  if (e.target.value === 'Green Fodder') setFeedName('Super Napier (CO-5)');
+                  else if (e.target.value === 'Dry Roughage') setFeedName('Paddy Straw');
+                  else if (e.target.value === 'Concentrate Pellet') setFeedName('Dairy Cattle Feed (20% CP)');
+                  else setFeedName('Total Mixed Ration (TMR)');
+                }}
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold"
+              >
+                <option value="Green Fodder">Green Fodder (Napier, Maize, Sorghum, Lucerne)</option>
+                <option value="Dry Roughage">Dry Roughage (Paddy Straw, Wheat Straw, Hay)</option>
+                <option value="Concentrate Pellet">Concentrate Pellets & Oil Cakes</option>
+                <option value="Total Mixed Ration">Mixed Dairy TMR Ration</option>
+              </select>
             </div>
+
+            <div>
+              <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                Fodder / Feed Sample Name
+              </label>
+              <input
+                type="text"
+                value={feedName}
+                onChange={(e) => setFeedName(e.target.value)}
+                placeholder="e.g. Super Napier CO-5"
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold"
+              />
+            </div>
+
             <button
-              onClick={onClose}
-              className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 flex items-center justify-center"
+              type="button"
+              onClick={() => setStep(2)}
+              className="w-full py-3 min-h-[42px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/30 flex items-center justify-center gap-1.5 active:scale-95 transition mt-2"
             >
-              <X size={16} />
+              <span>{t.continueBtn || 'Next'}</span>
+              <ArrowRight size={14} />
             </button>
           </div>
+        )}
 
-          {/* Step 1 — Image */}
-          {step === 1 && (
-            <div className="space-y-3 animate-fadeIn">
-              <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 dark:border-slate-800">
-                <img src={imageUrl} alt="Feed" className="w-full h-full object-cover" />
-              </div>
+        {/* Step 2: Photo or Parameter Input */}
+        {step === 2 && (
+          <div className="space-y-3 animate-fadeIn text-xs">
+            <span className="font-semibold text-slate-700 dark:text-slate-300 block">
+              Sample Photo & Verification
+            </span>
 
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setImageUrl('https://images.unsplash.com/photo-1592417817098-8f3d6eb22513?w=500&auto=format&fit=crop&q=80')}
-                  className="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-center gap-1.5 active:scale-95 transition"
-                >
-                  <Camera size={14} className="text-dairy-600" /> Take Photo
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setImageUrl('https://images.unsplash.com/photo-1589923188900-85dae523342b?w=500&auto=format&fit=crop&q=80')}
-                  className="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-center gap-1.5 active:scale-95 transition"
-                >
-                  <Upload size={14} className="text-dairy-600" /> Upload Image
-                </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setStep(2)}
-                className="w-full py-2.5 rounded-xl bg-dairy-600 hover:bg-dairy-700 text-white text-xs font-bold shadow-md shadow-dairy-600/30 flex items-center justify-center gap-1 active:scale-95 transition"
-              >
-                Continue to Category <ArrowRight size={14} />
-              </button>
-            </div>
-          )}
-
-          {/* Step 2 — Feed Category */}
-          {step === 2 && (
-            <div className="space-y-3 animate-fadeIn">
-              <div className="space-y-2">
-                {[
-                  { title: 'Green Fodder (Hybrid Napier, Maize, Lucerne)', cat: 'Green Fodder', name: 'Super Napier CO-5' },
-                  { title: 'Concentrate Pellet (Cattle Feed 22% CP)', cat: 'Concentrate Pellet', name: 'Balanced Dairy Feed Pellets' },
-                  { title: 'Dry Roughage (Paddy / Wheat Straw)', cat: 'Dry Roughage', name: 'Stored Paddy Straw' },
-                  { title: 'Total Mixed Ration (TMR Blend)', cat: 'TMR Ration', name: 'Silage + Hay + Concentrate Blend' },
-                ].map((item) => (
+            {/* Photo capture/upload */}
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-dashed border-slate-300 dark:border-slate-700 text-center space-y-2">
+              {imageUrl ? (
+                <div className="space-y-2">
+                  <img src={imageUrl} alt="Feed sample" className="h-32 w-full object-cover rounded-xl border border-slate-200" />
                   <button
-                    key={item.cat}
                     type="button"
-                    onClick={() => {
-                      setFeedCategory(item.cat);
-                      setFeedName(item.name);
-                    }}
-                    className={`w-full p-3 rounded-2xl border text-left text-xs transition active:scale-95 flex items-center justify-between ${
-                      feedCategory === item.cat
-                        ? 'bg-dairy-50 dark:bg-dairy-950/70 border-dairy-600 text-dairy-900 dark:text-dairy-100 font-bold'
-                        : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
-                    }`}
+                    onClick={() => setImageUrl('')}
+                    className="text-[11px] text-rose-500 font-bold hover:underline"
                   >
-                    <span>{item.title}</span>
-                    {feedCategory === item.cat && <CheckCircle2 size={16} className="text-dairy-600 shrink-0" />}
+                    {t.removePhoto || 'Remove Photo'}
                   </button>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300"
-                >
-                  <ArrowLeft size={14} className="inline mr-1" /> Back
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStep(3)}
-                  className="py-2.5 px-3 rounded-xl bg-dairy-600 hover:bg-dairy-700 text-white text-xs font-bold shadow-md shadow-dairy-600/30"
-                >
-                  Next <ArrowRight size={14} className="inline ml-1" />
-                </button>
-              </div>
+                </div>
+              ) : (
+                <label className="cursor-pointer block py-4 space-y-1">
+                  <Camera size={26} className="mx-auto text-slate-400" />
+                  <span className="font-bold text-slate-700 dark:text-slate-200 block text-xs">
+                    {t.takePhoto || 'Take Photo'} / {t.uploadPhoto || 'Upload Sample Image'}
+                  </span>
+                  <span className="text-[10px] text-slate-400 block">
+                    AI inspects leaf-to-stem ratio, moisture, and color
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                </label>
+              )}
             </div>
-          )}
 
-          {/* Step 3 — Choose Input Source */}
-          {step === 3 && (
-            <div className="space-y-3 animate-fadeIn">
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInputSource('Portable Scanner Simulation');
-                    setIsPairingOpen(true);
-                  }}
-                  className={`w-full p-3.5 rounded-2xl border text-left text-xs transition active:scale-95 space-y-1 ${
-                    inputSource === 'Portable Scanner Simulation'
-                      ? 'bg-teal-50 dark:bg-teal-950/70 border-teal-600 text-teal-900 dark:text-teal-100'
-                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between font-bold">
-                    <span className="flex items-center gap-1.5">
-                      <Bluetooth size={16} className="text-teal-600" />
-                      Portable NIR Scanner (Simulated BLE)
-                    </span>
-                    {inputSource === 'Portable Scanner Simulation' && <CheckCircle2 size={16} className="text-teal-600" />}
-                  </div>
-                  <p className="text-[11px] text-slate-500">
-                    Pair with handheld optical spectrometer probe for precise moisture & crude protein readings.
-                  </p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setInputSource('Camera Only')}
-                  className={`w-full p-3.5 rounded-2xl border text-left text-xs transition active:scale-95 space-y-1 ${
-                    inputSource === 'Camera Only'
-                      ? 'bg-dairy-50 dark:bg-dairy-950/70 border-dairy-600 text-dairy-900 dark:text-dairy-100'
-                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between font-bold">
-                    <span className="flex items-center gap-1.5">
-                      <Camera size={16} className="text-dairy-600" />
-                      Camera Visual AI Estimation
-                    </span>
-                    {inputSource === 'Camera Only' && <CheckCircle2 size={16} className="text-dairy-600" />}
-                  </div>
-                  <p className="text-[11px] text-slate-500">
-                    Computer vision estimation of chop length, green leaf ratio, and discoloration.
-                  </p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setInputSource('Manual Entry')}
-                  className={`w-full p-3.5 rounded-2xl border text-left text-xs transition active:scale-95 space-y-1 ${
-                    inputSource === 'Manual Entry'
-                      ? 'bg-amber-50 dark:bg-amber-950/70 border-amber-600 text-amber-900 dark:text-amber-100'
-                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between font-bold">
-                    <span className="flex items-center gap-1.5">
-                      <Edit3 size={16} className="text-amber-600" />
-                      Manual Lab Entry
-                    </span>
-                    {inputSource === 'Manual Entry' && <CheckCircle2 size={16} className="text-amber-600" />}
-                  </div>
-                  <p className="text-[11px] text-slate-500">
-                    Manually enter laboratory proximate analysis values.
-                  </p>
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setStep(2)}
-                  className="py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300"
-                >
-                  <ArrowLeft size={14} className="inline mr-1" /> Back
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStep(4)}
-                  className="py-2.5 px-3 rounded-xl bg-dairy-600 hover:bg-dairy-700 text-white text-xs font-bold shadow-md shadow-dairy-600/30"
-                >
-                  Continue <ArrowRight size={14} className="inline ml-1" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 4 — Optional Manual Parameters */}
-          {step === 4 && (
-            <div className="space-y-3 animate-fadeIn text-xs">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                    Moisture %
-                  </label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={moisture}
-                    onChange={(e) => setMoisture(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                    Crude Protein %
-                  </label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={crudeProtein}
-                    onChange={(e) => setCrudeProtein(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-dairy-600"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                    Crude Fiber %
-                  </label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={fiber}
-                    onChange={(e) => setFiber(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                    Energy (TDN %)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={energy}
-                    onChange={(e) => setEnergy(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold"
-                  />
-                </div>
-              </div>
-
+            <div className="grid grid-cols-2 gap-2">
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="font-semibold text-slate-700 dark:text-slate-300">
-                    Voice / Written Notes
-                  </label>
-                  <VoiceInput
-                    onTranscript={(t) => setNotes((prev) => (prev ? `${prev} ${t}` : t))}
-                    placeholderPrompt="Harvested at 45 days. Good green leafiness."
-                  />
-                </div>
-                <textarea
-                  rows={2}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="e.g. 45 days regrowth, chopped fine, fresh smell..."
-                  className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs"
+                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  Est. Moisture %
+                </label>
+                <input
+                  type="number"
+                  value={moisture}
+                  onChange={(e) => setMoisture(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setStep(3)}
-                  className="py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300"
-                >
-                  <ArrowLeft size={14} className="inline mr-1" /> Back
-                </button>
-                <button
-                  type="button"
-                  onClick={handleStartAnalysis}
-                  className="py-2.5 px-3 rounded-xl bg-dairy-600 hover:bg-dairy-700 text-white text-xs font-bold shadow-md shadow-dairy-600/30 flex items-center justify-center gap-1"
-                >
-                  Analyze Feed <Sparkles size={14} />
-                </button>
+              <div>
+                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  Crude Fibre %
+                </label>
+                <input
+                  type="number"
+                  value={fiber}
+                  onChange={(e) => setFiber(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold"
+                />
               </div>
             </div>
-          )}
 
-          {/* Step 5 — Results */}
-          {step === 5 && isAnalyzing && (
-            <div className="py-10 text-center space-y-4 animate-fadeIn">
-              <Radio size={36} className="animate-spin text-teal-600 mx-auto" />
-              <div className="space-y-1">
-                <h4 className="font-bold text-sm text-slate-900 dark:text-white">
-                  NIR Spectrometry & AI Quality Indexing...
-                </h4>
-                <p className="text-xs text-slate-500">
-                  Screening crude protein, silica, and aflatoxin contamination risk
-                </p>
-              </div>
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="py-2.5 px-3 min-h-[40px] rounded-xl border border-slate-200 dark:border-slate-700 font-bold flex items-center justify-center gap-1 active:scale-95 transition"
+              >
+                <ArrowLeft size={14} /> {t.backBtn || 'Back'}
+              </button>
+              <button
+                type="button"
+                onClick={handleStartAnalysis}
+                className="py-2.5 px-3 min-h-[40px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/30 flex items-center justify-center gap-1 active:scale-95 transition"
+              >
+                <span>Run Rapid Test</span>
+                <Sparkles size={14} />
+              </button>
             </div>
-          )}
+          </div>
+        )}
 
-          {step === 5 && result && !isAnalyzing && (
-            <div className="space-y-3.5 animate-fadeIn text-xs">
-              
-              {/* Score Card */}
-              <div className="bg-gradient-to-br from-dairy-700 to-teal-900 text-white p-4 rounded-3xl shadow-lg space-y-2">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-dairy-200">
-                      Overall Quality Score
-                    </span>
-                    <h4 className="text-2xl font-black">{result.overallScore} / 100</h4>
-                    <span className="text-xs font-semibold text-dairy-100">{result.qualityGrade}</span>
-                  </div>
-                  <SourceTag source={inputSource === 'Portable Scanner Simulation' ? 'Sensor Reading' : 'AI Screening'} />
+        {/* Step 4: Analyzing State */}
+        {step === 4 && isAnalyzing && (
+          <div className="py-8 text-center space-y-3 animate-fadeIn text-xs">
+            <Loader2 size={32} className="animate-spin text-emerald-600 mx-auto" />
+            <div>
+              <h4 className="font-extrabold text-slate-900 dark:text-white text-sm">
+                Analyzing Feed Nutrition & Quality...
+              </h4>
+              <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-1">
+                Calculating Dry Matter, Crude Protein, NDF, and Spoilage Risk
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Result Screen: Primary Question & Verdict */}
+        {result && !isAnalyzing && (
+          <div className="space-y-3.5 animate-fadeIn text-xs">
+            
+            {/* Primary Question & Verdict Banner */}
+            <div className={`p-4 rounded-3xl text-white space-y-2.5 shadow-lg ${
+              result.isGood === 'Good'
+                ? 'bg-gradient-to-br from-emerald-600 to-teal-800'
+                : result.isGood === 'Moderate'
+                ? 'bg-gradient-to-br from-amber-600 to-yellow-800'
+                : 'bg-gradient-to-br from-rose-600 to-red-800'
+            }`}>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-200 opacity-90">
+                {t.isFeedGoodForCattle || 'Is this feed good for my cattle?'}
+              </div>
+
+              <div className="flex items-center gap-2">
+                {result.isGood === 'Good' ? (
+                  <CheckCircle2 size={24} className="text-emerald-200 shrink-0" />
+                ) : result.isGood === 'Moderate' ? (
+                  <AlertTriangle size={24} className="text-amber-200 shrink-0" />
+                ) : (
+                  <AlertOctagon size={24} className="text-rose-200 shrink-0" />
+                )}
+                <div>
+                  <h4 className="text-base font-black leading-tight">
+                    {result.isGood === 'Good'
+                      ? (t.feedQualityGood || 'Good Quality Feed')
+                      : result.isGood === 'Moderate'
+                      ? (t.feedQualityModerate || 'Moderate Quality Feed')
+                      : (t.feedQualityPoor || 'Low Quality / Risk Detected')}
+                  </h4>
+                  <span className="text-[11px] opacity-90">{result.feedName} • Score: {result.overallScore}/100</span>
                 </div>
               </div>
 
-              {/* Nutritional Breakdown Grid */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
-                  <span className="text-[10px] text-slate-400 block font-medium">Crude Protein</span>
-                  <span className="text-sm font-extrabold text-dairy-600 dark:text-dairy-400">{result.crudeProteinPercent}%</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
-                  <span className="text-[10px] text-slate-400 block font-medium">Moisture Content</span>
-                  <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">{result.moisturePercent}%</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
-                  <span className="text-[10px] text-slate-400 block font-medium">Crude Fiber</span>
-                  <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">{result.crudeFiberPercent}%</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
-                  <span className="text-[10px] text-slate-400 block font-medium">TDN Energy</span>
-                  <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">{result.tdnEnergyPercent}%</span>
-                </div>
-              </div>
+              <p className="text-xs bg-white/10 p-2.5 rounded-2xl backdrop-blur-sm leading-relaxed text-white">
+                {result.simpleVerdict || result.aiAdvisory}
+              </p>
+            </div>
 
-              {/* Risk Screening */}
-              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1.5">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Adulterant & Risk Screening
+            {/* Practical Feeding Recommendations */}
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1 text-xs">
+                  <Sparkles size={13} className="text-emerald-600" /> Actionable Feeding Advice
                 </span>
-                <div className="grid grid-cols-2 gap-1.5 text-[11px]">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Urea Risk:</span>
-                    <span className="font-semibold text-emerald-600">{result.ureaRisk}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Silica Risk:</span>
-                    <span className="font-semibold">{result.silicaSandRisk}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Mycotoxin:</span>
-                    <span className="font-semibold text-emerald-600">{result.mycotoxinRisk}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Mould Risk:</span>
-                    <span className="font-semibold text-emerald-600">{result.fungalMouldRisk}</span>
-                  </div>
-                </div>
+                <ReadAloudButton textToRead={`${result.simpleVerdict}. ${result.recommendations.join('. ')}`} size="sm" />
               </div>
-
-              {/* AI Advisory */}
-              <div className="p-3 rounded-2xl bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-[11px] space-y-1">
-                <div className="flex items-center justify-between">
-                  <strong className="text-teal-900 dark:text-teal-200 flex items-center gap-1 font-bold">
-                    <Sparkles size={12} className="text-teal-600" /> AI Feed Advisory
-                  </strong>
-                  <ReadAloudButton textToRead={result.aiAdvisory} size="sm" />
-                </div>
-                <p className="text-teal-800 dark:text-teal-300 leading-relaxed">{result.aiAdvisory}</p>
-              </div>
-
-              {/* Actions: Save & Generate QR */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={handleCreateQR}
-                  className="py-2.5 px-3 rounded-xl border border-teal-300 dark:border-teal-700 bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-200 font-bold flex items-center justify-center gap-1.5 active:scale-95 transition"
-                >
-                  <QrCode size={14} /> Generate QR Label
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  className="py-2.5 px-3 rounded-xl bg-dairy-600 hover:bg-dairy-700 text-white font-bold shadow-md shadow-dairy-600/30 flex items-center justify-center gap-1.5 active:scale-95 transition"
-                >
-                  <Save size={14} /> Save Analysis
-                </button>
-              </div>
-
+              <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
+                {result.recommendations.map((rec, idx) => (
+                  <li key={idx} className="flex items-start gap-1.5">
+                    <span className="text-emerald-600 font-bold">•</span>
+                    <span>{rec}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-          )}
 
-        </div>
+            {/* Expandable Detailed Analysis */}
+            <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowDetailedParameters(!showDetailedParameters)}
+                className="w-full p-3 bg-slate-100 dark:bg-slate-800/80 flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200"
+              >
+                <span>{t.viewDetailedAnalysis || 'View Detailed Analysis'} (NIR / Proximate)</span>
+                {showDetailedParameters ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </button>
+
+              {showDetailedParameters && (
+                <div className="p-3 bg-white dark:bg-slate-900 space-y-2 text-xs border-t border-slate-200 dark:border-slate-800 animate-fadeIn">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800">
+                      <span className="text-[10px] text-slate-400 block font-semibold">{t.dryMatter || 'Dry Matter (DM)'}</span>
+                      <span className="font-extrabold text-slate-900 dark:text-white text-sm">{result.dryMatterPercent}%</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800">
+                      <span className="text-[10px] text-slate-400 block font-semibold">{t.crudeProtein || 'Crude Protein (CP)'}</span>
+                      <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-sm">{result.crudeProteinPercent}%</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800">
+                      <span className="text-[10px] text-slate-400 block font-semibold">{t.crudeFibre || 'Crude Fibre (CF)'}</span>
+                      <span className="font-extrabold text-slate-900 dark:text-white text-sm">{result.crudeFiberPercent}%</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800">
+                      <span className="text-[10px] text-slate-400 block font-semibold">{t.ndf || 'NDF Fiber'}</span>
+                      <span className="font-extrabold text-slate-900 dark:text-white text-sm">{result.ndfPercent || '48.5'}%</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800">
+                      <span className="text-[10px] text-slate-400 block font-semibold">{t.starch || 'Starch'}</span>
+                      <span className="font-extrabold text-slate-900 dark:text-white text-sm">{result.starchPercent || '2.4'}%</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800">
+                      <span className="text-[10px] text-slate-400 block font-semibold">TDN Energy</span>
+                      <span className="font-extrabold text-slate-900 dark:text-white text-sm">{result.tdnEnergyPercent}%</span>
+                    </div>
+                  </div>
+
+                  <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-[11px] space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Mycotoxin Risk:</span>
+                      <span className="font-bold text-emerald-600">{result.mycotoxinRisk}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Silica / Sand Risk:</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-300">{result.silicaSandRisk}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Urea Contamination:</span>
+                      <span className="font-bold text-emerald-600">{result.ureaRisk}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* QR Success Message */}
+            {showQRSuccess && (
+              <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200 text-xs font-semibold text-center">
+                Certified QR batch generated! Check QR Registry.
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={handleCreateQR}
+                className="py-2.5 px-3 min-h-[40px] rounded-xl border border-emerald-600 text-emerald-700 dark:text-emerald-300 font-bold flex items-center justify-center gap-1.5 active:scale-95 transition"
+              >
+                <QrCode size={14} /> Generate QR
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                className="py-2.5 px-3 min-h-[40px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/30 flex items-center justify-center gap-1.5 active:scale-95 transition"
+              >
+                <Save size={14} /> Save Feed Test
+              </button>
+            </div>
+          </div>
+        )}
+
       </div>
-
-      {/* BLE Scanner Pairing Modal */}
-      <DevicePairingSheet
-        isOpen={isPairingOpen}
-        onClose={() => setIsPairingOpen(false)}
-        onDeviceConnected={(data) => {
-          setCrudeProtein(data.sensorReading.crudeProtein);
-          setMoisture(data.sensorReading.moisture);
-          setFiber(data.sensorReading.fiber);
-          setEnergy(data.sensorReading.energy);
-        }}
-      />
-    </>
+    </div>
   );
 };

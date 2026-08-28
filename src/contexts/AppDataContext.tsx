@@ -22,6 +22,14 @@ import {
   MILK_QUALITY_SUMMARY,
   INITIAL_NOTIFICATIONS,
   INITIAL_QR_BATCHES,
+  DEMO_HERD_ANIMALS,
+  DEMO_HEALTH_ALERTS,
+  DEMO_VACCINATIONS,
+  DEMO_FEED_ANALYSES,
+  DEMO_SILAGE_ANALYSES,
+  DEMO_MILK_RECORDS,
+  DEMO_NOTIFICATIONS,
+  DEMO_QR_BATCHES,
   OFFICER_COOPERATIVE_FARMS,
   CONTAMINATION_ALERTS,
 } from '../mocks/mockData';
@@ -93,6 +101,9 @@ interface AppDataContextType {
   markAllNotificationsRead: () => void;
   resolveContaminationAlert: (id: string, note: string) => void;
   unreadNotificationsCount: number;
+  seedNewUserHerd: (initialAnimal?: Omit<Animal, 'id' | 'createdDate' | 'lastCheckDate'>) => void;
+  loadDemoHerd: () => void;
+  clearUserData: () => void;
 }
 
 const AppDataContext = createContext<AppDataContextType | undefined>(undefined);
@@ -112,7 +123,13 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [officerFarms, setOfficerFarms] = useState<OfficerFarm[]>(() => getStoredItem('officer_farms', OFFICER_COOPERATIVE_FARMS));
   const [contaminationAlerts, setContaminationAlerts] = useState<ContaminationAlert[]>(() => getStoredItem('contamination_alerts', CONTAMINATION_ALERTS));
 
-  const [currentScreen, setCurrentScreen] = useState<ScreenType>('splash');
+  const [currentScreen, setCurrentScreen] = useState<ScreenType>(() => {
+    const activeUser = getStoredItem<any>('active_user', null);
+    if (activeUser && activeUser.isOnboarded) {
+      return activeUser.role === 'officer' ? 'officer-dashboard' : 'home';
+    }
+    return 'splash';
+  });
   const [screenHistory, setScreenHistory] = useState<ScreenType[]>(['splash']);
   const [selectedAnimalId, setSelectedAnimalId] = useState<string | null>(null);
   const [selectedBreedId, setSelectedBreedId] = useState<string | null>(null);
@@ -140,6 +157,72 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } else {
       setCurrentScreen('home');
     }
+  };
+
+  // Seed fresh herd for a newly registered farmer
+  const seedNewUserHerd = (initialAnimal?: Omit<Animal, 'id' | 'createdDate' | 'lastCheckDate'>) => {
+    let newAnimals: Animal[] = [];
+    if (initialAnimal) {
+      const animal: Animal = {
+        ...initialAnimal,
+        id: `ani-${Date.now()}`,
+        createdDate: new Date().toISOString().split('T')[0],
+        lastCheckDate: new Date().toISOString().split('T')[0],
+      };
+      newAnimals = [animal];
+    }
+    setAnimals(newAnimals);
+    setStoredItem('animals', newAnimals);
+    setHealthAlerts([]);
+    setStoredItem('health_alerts', []);
+    setVaccinations([]);
+    setStoredItem('vaccinations', []);
+    setFeedAnalyses([]);
+    setStoredItem('feed_analyses', []);
+    setSilageAnalyses([]);
+    setStoredItem('silage_analyses', []);
+    setMilkRecords([]);
+    setStoredItem('milk_records', []);
+  };
+
+  // Load demo dataset for demo farmer testing
+  const loadDemoHerd = () => {
+    setAnimals(DEMO_HERD_ANIMALS);
+    setStoredItem('animals', DEMO_HERD_ANIMALS);
+    setHealthAlerts(DEMO_HEALTH_ALERTS);
+    setStoredItem('health_alerts', DEMO_HEALTH_ALERTS);
+    setVaccinations(DEMO_VACCINATIONS);
+    setStoredItem('vaccinations', DEMO_VACCINATIONS);
+    setFeedAnalyses(DEMO_FEED_ANALYSES);
+    setStoredItem('feed_analyses', DEMO_FEED_ANALYSES);
+    setSilageAnalyses(DEMO_SILAGE_ANALYSES);
+    setStoredItem('silage_analyses', DEMO_SILAGE_ANALYSES);
+    setMilkRecords(DEMO_MILK_RECORDS);
+    setStoredItem('milk_records', DEMO_MILK_RECORDS);
+    setNotifications(DEMO_NOTIFICATIONS);
+    setStoredItem('notifications', DEMO_NOTIFICATIONS);
+    setQrBatches(DEMO_QR_BATCHES);
+    setStoredItem('qr_batches', DEMO_QR_BATCHES);
+  };
+
+  // Clear user data on sign out
+  const clearUserData = () => {
+    setAnimals([]);
+    setStoredItem('animals', []);
+    setHealthAlerts([]);
+    setStoredItem('health_alerts', []);
+    setVaccinations([]);
+    setStoredItem('vaccinations', []);
+    setFeedAnalyses([]);
+    setStoredItem('feed_analyses', []);
+    setSilageAnalyses([]);
+    setStoredItem('silage_analyses', []);
+    setMilkRecords([]);
+    setStoredItem('milk_records', []);
+    setNotifications([]);
+    setStoredItem('notifications', []);
+    setQrBatches([]);
+    setStoredItem('qr_batches', []);
   };
 
   const addAnimal = (animalData: Omit<Animal, 'id' | 'createdDate' | 'lastCheckDate'>) => {
@@ -290,6 +373,9 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     markAllNotificationsRead,
     resolveContaminationAlert,
     unreadNotificationsCount,
+    seedNewUserHerd,
+    loadDemoHerd,
+    clearUserData,
   };
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;

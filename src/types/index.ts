@@ -1,4 +1,26 @@
-export type Language = 'en' | 'ta' | 'hi' | 'te' | 'kn' | 'ml' | 'mr' | 'bn';
+export type Language =
+  | 'en'
+  | 'ta'
+  | 'hi'
+  | 'te'
+  | 'kn'
+  | 'ml'
+  | 'bn'
+  | 'mr'
+  | 'gu'
+  | 'pa'
+  | 'or'
+  | 'as'
+  | 'ur'
+  | 'sa'
+  | 'ne'
+  | 'kok'
+  | 'ks'
+  | 'sd'
+  | 'mai'
+  | 'mni'
+  | 'tanglish'
+  | (string & {});
 
 export type UserRole = 'farmer' | 'officer';
 
@@ -27,6 +49,8 @@ export interface UserProfile {
   totalAnimals: number;
   memberSince: string;
   cooperativeId?: string;
+  isOnboarded?: boolean;
+  hasCattle?: boolean;
 }
 
 export interface Animal {
@@ -111,18 +135,24 @@ export interface FeedAnalysisResult {
   feedName: string;
   imageUrl: string;
   overallScore: number;
-  qualityGrade: 'Grade A+ (Premium)' | 'Grade A (Good)' | 'Grade B (Acceptable)' | 'Grade C (Low Quality)' | 'Reject (Unsafe)';
+  qualityGrade: 'Grade A+ (Premium)' | 'Grade A (Good)' | 'Grade B (Acceptable)' | 'Grade C (Low Quality)' | 'Reject (Unsafe)' | string;
+  isGood?: 'Good' | 'Moderate' | 'Poor';
+  simpleVerdict?: string;
   crudeProteinPercent: number;
   moisturePercent: number;
   dryMatterPercent: number;
   crudeFiberPercent: number;
+  ndfPercent?: number;
+  adfPercent?: number;
+  adlPercent?: number;
+  starchPercent?: number;
   tdnEnergyPercent: number;
   calciumPercent: number;
   phosphorusPercent: number;
-  ureaRisk: 'Safe / None' | 'Low' | 'Moderate' | 'High (Toxic Risk)';
-  silicaSandRisk: 'Safe (<2%)' | 'Moderate (2-4%)' | 'High (>4%)';
-  mycotoxinRisk: 'Undetected' | 'Low Risk' | 'Moderate Concern' | 'Severe Aflatoxin Warning';
-  fungalMouldRisk: 'Clean' | 'Mild Spores' | 'Active Mould Detected';
+  ureaRisk: 'Safe / None' | 'Low' | 'Moderate' | 'High (Toxic Risk)' | string;
+  silicaSandRisk: 'Safe (<2%)' | 'Moderate (2-4%)' | 'High (>4%)' | string;
+  mycotoxinRisk: 'Undetected' | 'Low Risk' | 'Moderate Concern' | 'Severe Aflatoxin Warning' | string;
+  fungalMouldRisk: 'Clean' | 'Mild Spores' | 'Active Mould Detected' | string;
   aiAdvisory: string;
   recommendations: string[];
   inputSource: 'Camera Only' | 'Portable Scanner Simulation' | 'Manual Entry';
@@ -136,14 +166,20 @@ export interface SilageAnalysisResult {
   date: string;
   silageType: string;
   imageUrl: string;
-  overallQuality: 'Excellent Lactic' | 'Good Fermentation' | 'Moderate / Secondary' | 'Spoiled / Butyric';
+  overallQuality: 'Excellent Lactic' | 'Good Fermentation' | 'Moderate / Secondary' | 'Spoiled / Butyric' | string;
+  isGood?: 'Good' | 'Moderate' | 'Poor';
+  simpleVerdict?: string;
   phValue: number;
   moisturePercent: number;
+  dryMatterPercent?: number;
   storageDurationDays: number;
   internalTemperatureC: number;
-  fermentationStatus: 'Optimal Lactic Acid' | 'Sub-optimal Acetic' | 'Clostridial / Butyric Spoilage';
-  spoilageRisk: 'Low' | 'Medium' | 'High Risk';
-  mouldRisk: 'Clean / Safe' | 'Surface Crust Only' | 'Deep Penetration Mould';
+  fermentationStatus: 'Optimal Lactic Acid' | 'Sub-optimal Acetic' | 'Clostridial / Butyric Spoilage' | string;
+  spoilageRisk: 'Low' | 'Medium' | 'High Risk' | string;
+  mouldRisk: 'Clean / Safe' | 'Surface Crust Only' | 'Deep Penetration Mould' | string;
+  fqiScore?: number;
+  confidence?: number;
+  modelAccuracy?: number;
   storageAdvice: string;
   recommendations: string[];
   inputSource: 'Manual Entry' | 'Portable Scanner Simulation' | 'Mock IoT Storage Monitoring';
@@ -269,4 +305,151 @@ export interface OfflineQueueItem {
   payload: any;
   queuedAt: string;
   status: 'pending' | 'syncing' | 'synced' | 'failed';
+}
+
+
+// ICAR-NIANP Scientific Nutrition & Ration Optimization Types
+export interface FeedItemRecommendation {
+  feed_id: string;
+  feed_name: string;
+  feed_category: string;
+  quantity_kg_per_day: number;
+  cost_per_kg_inr: number;
+  daily_cost_inr: number;
+  dm_supplied_kg: number;
+  cp_supplied_g: number;
+  tdn_supplied_kg: number;
+  calcium_supplied_g: number;
+  phosphorus_supplied_g: number;
+}
+
+export interface NutrientRequirementsSummary {
+  metabolic_body_weight_kg: number;
+  fat_corrected_milk_4pct_kg: number;
+  req_dmi_kg_per_day: number;
+  req_tdn_kg_per_day: number;
+  req_me_mj_per_day: number;
+  req_cp_g_per_day: number;
+  req_calcium_g_per_day: number;
+  req_phosphorus_g_per_day: number;
+}
+
+export interface NutrientBalanceItem {
+  required: number;
+  supplied: number;
+  unit: string;
+  difference: number;
+  percentage_fulfilled: number;
+  status: 'Balanced' | 'Surplus' | 'Deficit' | string;
+}
+
+export interface NutritionRecommendationRequest {
+  species?: 'Cattle' | 'Buffalo' | string;
+  breed?: string | null;
+  body_weight_kg?: number | null;
+  age_years?: number | null;
+  parity?: number | null;
+  lactation_stage?: string | null;
+  days_in_milk?: number | null;
+  daily_milk_yield_kg?: number | null;
+  milk_fat_percent?: number | null;
+  pregnancy_status?: boolean | null;
+  pregnancy_month?: number | null;
+  available_feeds?: string[] | null;
+  feed_prices?: Record<string, number> | null;
+}
+
+export interface NutritionRecommendationResponse {
+  success: boolean;
+  is_deterministic_optimized: boolean;
+  status: 'optimized' | 'missing_parameters' | 'infeasible' | string;
+  message: string;
+  animal_profile?: Record<string, any>;
+  missing_critical_parameters?: string[];
+  nutrient_requirements?: NutrientRequirementsSummary;
+  recommended_ration: FeedItemRecommendation[];
+  total_daily_cost_inr: number;
+  nutrient_supply?: Record<string, number>;
+  nutrient_balance?: Record<string, NutrientBalanceItem>;
+  warnings?: string[];
+}
+
+// Disease Prediction Schemas
+export interface DiseasePredictionResponse {
+  predicted_class: 'FMD' | 'IBK' | 'LSD' | 'Normal' | string;
+  confidence: number;
+  confidence_percentage: number;
+  is_disease_detected: boolean;
+  disease_name_full: string;
+  probabilities: Record<string, number>;
+  model_version: string;
+  device_used: string;
+  disclaimer: string;
+}
+
+// Breed Prediction Schemas
+export interface TopBreedPrediction {
+  breed: string;
+  confidence: number;
+  confidence_percentage: number;
+}
+
+export interface BreedPredictionResponse {
+  breed_status: 'identified' | 'uncertain' | string;
+  predicted_breed: string | null;
+  confidence: number;
+  confidence_percentage: number;
+  recommendation: string | null;
+  top_5_predictions: TopBreedPrediction[];
+  total_classes_supported: number;
+  model_architecture: string;
+  device_used: string;
+}
+
+// Milk Production Prediction Schemas
+export interface MilkProductionInput {
+  Lactation_Stage?: string;
+  Body_Weight_kg?: number;
+  Feed_Intake_kg_day?: number;
+  Rumination_Time_min_day?: number;
+  Temperature_C?: number;
+  Humidity_percent?: number;
+  Breed?: string;
+  Cattle_ID?: string;
+  Farm_ID?: string;
+  Parity?: number;
+  Days_in_Milk?: number;
+  Water_Intake_L_day?: number;
+  Activity_Level_steps_day?: number;
+  Heart_Rate_bpm?: number;
+  Respiratory_Rate_breaths_min?: number;
+  [key: string]: any;
+}
+
+export interface MilkProductionPredictionResponse {
+  predicted_milk_yield_litres: number;
+  target_unit: string;
+  model_r2_score: number;
+  features_received: number;
+}
+
+// Sensor Lab Contamination Screen Schemas
+export interface ContaminationScreenInput {
+  electrical_conductivity_ms_cm?: number | null;
+  freezing_point_c?: number | null;
+  milk_ph?: number | null;
+  turbidity_ntu?: number | null;
+  somatic_cell_count_raw?: number | null;
+  sensor_metadata?: Record<string, any> | null;
+}
+
+export interface ContaminationScreenResponse {
+  status: string;
+  is_sensor_data_valid: boolean;
+  water_adulteration_suspected: boolean;
+  subclinical_mastitis_risk: 'Low' | 'Medium' | 'High' | 'Normal' | string;
+  acidity_anomaly: boolean;
+  parameters_evaluated: string[];
+  lab_verification_required: boolean;
+  disclaimer: string;
 }

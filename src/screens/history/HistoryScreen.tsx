@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useAppData } from '../../contexts/AppDataContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { MobileHeader } from '../../components/common/MobileHeader';
 import { BottomNavigation } from '../../components/common/BottomNavigation';
-import { StatusBadge } from '../../components/common/StatusBadge';
 import { SourceTag } from '../../components/common/SourceTag';
 import { EmptyState } from '../../components/common/FeedbackStates';
 import { formatDate } from '../../utils/formatters';
@@ -14,12 +14,11 @@ import {
   Activity,
   Milk,
   Syringe,
-  Calendar,
-  Filter,
 } from 'lucide-react';
 
 export const HistoryScreen: React.FC = () => {
   const { healthAlerts, feedAnalyses, silageAnalyses, milkRecords, vaccinations, navigate } = useAppData();
+  const { t } = useLanguage();
 
   const [category, setCategory] = useState<'All' | 'Disease' | 'Feed' | 'Silage' | 'Milk' | 'Vaccination'>('All');
   const [search, setSearch] = useState<string>('');

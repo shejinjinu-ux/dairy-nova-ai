@@ -112,7 +112,15 @@ export const AnimalsScreen: React.FC = () => {
         </div>
 
         {/* Animals List */}
-        {filteredAnimals.length > 0 ? (
+        {animals.length === 0 ? (
+          <EmptyState
+            icon={Layers}
+            title="No Animals Registered Yet"
+            description="Start building your digital dairy herd by adding your first cow or buffalo."
+            actionLabel="Add First Cattle"
+            onAction={() => setIsAddAnimalOpen(true)}
+          />
+        ) : filteredAnimals.length > 0 ? (
           <div className="space-y-3">
             {filteredAnimals.map((animal) => (
               <AnimalCard

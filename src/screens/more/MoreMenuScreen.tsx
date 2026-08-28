@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { MobileHeader } from '../../components/common/MobileHeader';
 import { BottomNavigation } from '../../components/common/BottomNavigation';
+import { InstallAppModal } from '../../components/common/InstallAppModal';
 import {
   Wheat,
   Activity,
@@ -17,13 +18,15 @@ import {
   Settings,
   ShieldCheck,
   ChevronRight,
-  Sparkles,
+  Download,
+  Smartphone,
 } from 'lucide-react';
 
 export const MoreMenuScreen: React.FC = () => {
   const { navigate } = useAppData();
   const { user } = useAuth();
   const { t } = useLanguage();
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState<boolean>(false);
 
   const menuSections = [
     {
@@ -59,7 +62,26 @@ export const MoreMenuScreen: React.FC = () => {
 
       <main className="p-4 sm:p-5 space-y-4 pb-20 animate-fadeIn">
         
-        {/* Officer View Switcher (if farmer wants to demo officer view) */}
+        {/* Install Mobile App Prompt Card */}
+        <div
+          onClick={() => setIsInstallModalOpen(true)}
+          className="p-4 rounded-3xl bg-gradient-to-r from-dairy-700 via-teal-700 to-emerald-700 text-white shadow-lg shadow-dairy-700/20 border border-teal-500/30 flex items-center justify-between cursor-pointer active:scale-[0.98] transition hover:brightness-105"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-white/20 text-white flex items-center justify-center backdrop-blur-sm">
+              <Download size={20} />
+            </div>
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-teal-200">
+                PWA / Offline Ready
+              </span>
+              <h4 className="font-extrabold text-sm text-white">Install Dairy Nova on Phone</h4>
+            </div>
+          </div>
+          <ChevronRight size={18} className="text-teal-200" />
+        </div>
+
+        {/* Officer View Switcher */}
         <div
           onClick={() => navigate('officer-dashboard')}
           className="p-4 rounded-3xl bg-gradient-to-r from-slate-900 to-slate-800 text-white border border-slate-700 shadow-md flex items-center justify-between cursor-pointer active:scale-[0.98] transition"
@@ -118,6 +140,12 @@ export const MoreMenuScreen: React.FC = () => {
       </main>
 
       <BottomNavigation />
+
+      {/* Install App Modal */}
+      <InstallAppModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
+      />
     </div>
   );
 };

@@ -4,7 +4,6 @@ import { useAppData } from '../../contexts/AppDataContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { authApi } from '../../services/api/authApi';
 import { Phone, Lock, KeyRound, CheckCircle2, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
-import confetti from 'canvas-confetti';
 
 export const ForgotPasswordScreen: React.FC = () => {
   const { navigate } = useAppData();
@@ -69,16 +68,10 @@ export const ForgotPasswordScreen: React.FC = () => {
     setLoading(true);
     try {
       await authApi.resetPassword(newPassword);
-      confetti({
-        particleCount: 40,
-        spread: 60,
-        origin: { y: 0.6 },
-        colors: ['#16a34a', '#0d9488', '#38bdf8'],
-      });
       setIsSuccess(true);
       setTimeout(() => {
         navigate('login');
-      }, 1500);
+      }, 1200);
     } finally {
       setLoading(false);
     }

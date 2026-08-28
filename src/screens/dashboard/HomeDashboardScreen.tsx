@@ -24,7 +24,7 @@ import {
   Activity,
   ArrowRight,
   TrendingUp,
-  FileCheck,
+  Plus,
 } from 'lucide-react';
 
 export const HomeDashboardScreen: React.FC = () => {
@@ -32,7 +32,7 @@ export const HomeDashboardScreen: React.FC = () => {
     animals,
     healthAlerts,
     vaccinations,
-    milkQuality,
+    milkRecords,
     navigate,
     addAnimal,
     recordMilk,
@@ -62,12 +62,106 @@ export const HomeDashboardScreen: React.FC = () => {
 
   const activeAlerts = healthAlerts.filter((a) => a.status === 'active').slice(0, 2);
 
+  // Dynamic milk computation from actual recorded milk logs
+  const todayDateStr = new Date().toISOString().split('T')[0];
+  const todayRecordedYield = milkRecords
+    .filter((r) => r.date === todayDateStr)
+    .reduce((sum, r) => sum + r.quantityLiters, 0);
+
+  const totalYieldSum = milkRecords.reduce((sum, r) => sum + r.quantityLiters, 0);
+  const todayMilkDisplay = Number(todayRecordedYield.toFixed(1));
+
+  // Compute last 7 days milk data dynamically
+  const last7DaysMap: Record<string, number> = {};
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateKey = d.toISOString().split('T')[0];
+    last7DaysMap[dateKey] = 0;
+  }
+
+  milkRecords.forEach((rec) => {
+    if (last7DaysMap[rec.date] !== undefined) {
+      last7DaysMap[rec.date] += rec.quantityLiters;
+    }
+  });
+
+  const chartDays = Object.entries(last7DaysMap).map(([dateStr, yieldL]) => {
+    const dateObj = new Date(dateStr);
+    const label = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+    return { dateStr, label, yieldL: Number(yieldL.toFixed(1)) };
+  });
+
+  const maxChartYield = Math.max(...chartDays.map((d) => d.yieldL), 10);
+
   return (
     <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-950">
       <MobileHeader showGreeting={true} />
 
       <main className="p-4 sm:p-5 space-y-4 animate-fadeIn">
         
+        {/* PRIMARY CORE MODULES: Rapid Feed & Silage Quality Testing Hero Banner */}
+        <div className="space-y-2.5">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+              <Sparkles size={14} className="text-emerald-500" /> Rapid Quality Testing
+            </h3>
+            <span className="text-[10px] text-emerald-700 dark:text-emerald-300 font-extrabold bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-md">
+              Primary System
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {/* Feed Quality Hero Card */}
+            <div
+              onClick={() => setIsFeedAnalysisOpen(true)}
+              className="p-4 rounded-3xl bg-gradient-to-br from-emerald-800 via-teal-900 to-slate-950 text-white shadow-lg border border-emerald-500/40 cursor-pointer hover:border-emerald-400 transition active:scale-98 space-y-2 group"
+            >
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-400/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300 group-hover:scale-105 transition-transform">
+                  <Wheat size={20} />
+                </div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wide bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-400/30">
+                  NIR AI Testing
+                </span>
+              </div>
+              <div>
+                <h4 className="font-black text-sm text-white flex items-center justify-between">
+                  <span>{t.rapidFeedTest || 'Rapid Feed Quality Test'}</span>
+                  <ArrowRight size={14} className="text-emerald-300 group-hover:translate-x-1 transition-transform" />
+                </h4>
+                <p className="text-[11px] text-emerald-100/80 leading-relaxed mt-0.5">
+                  Screen crude protein, dry matter, fiber, and nutritional safety for cattle.
+                </p>
+              </div>
+            </div>
+
+            {/* Silage Quality Hero Card */}
+            <div
+              onClick={() => setIsSilageAnalysisOpen(true)}
+              className="p-4 rounded-3xl bg-gradient-to-br from-teal-800 via-slate-900 to-slate-950 text-white shadow-lg border border-teal-500/40 cursor-pointer hover:border-teal-400 transition active:scale-98 space-y-2 group"
+            >
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 rounded-2xl bg-teal-400/20 border border-teal-400/30 flex items-center justify-center text-teal-300 group-hover:scale-105 transition-transform">
+                  <Layers size={20} />
+                </div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wide bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded-full border border-teal-400/30">
+                  Fermentation AI
+                </span>
+              </div>
+              <div>
+                <h4 className="font-black text-sm text-white flex items-center justify-between">
+                  <span>{t.rapidSilageTest || 'Rapid Silage Quality Test'}</span>
+                  <ArrowRight size={14} className="text-teal-300 group-hover:translate-x-1 transition-transform" />
+                </h4>
+                <p className="text-[11px] text-teal-100/80 leading-relaxed mt-0.5">
+                  Test pH, fermentation quality index (FQI), temperature, and pit spoilage.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Dashboard Summary 4-KPI Grid */}
         <div className="grid grid-cols-2 gap-2.5">
           <MetricCard
@@ -80,12 +174,10 @@ export const HomeDashboardScreen: React.FC = () => {
           />
           <MetricCard
             label={t.todayMilk}
-            value={milkQuality.totalYieldTodayL}
+            value={todayMilkDisplay}
             unit="Liters"
             icon={Milk}
             colorScheme="teal"
-            trend="+2.8% vs last wk"
-            trendPositive={true}
             onClick={() => navigate('milk')}
           />
           <MetricCard
@@ -106,13 +198,34 @@ export const HomeDashboardScreen: React.FC = () => {
           />
         </div>
 
-        {/* Quick Actions Grid (7 items as requested in spec) */}
+        {/* Empty state prompt for brand new farmers with no cattle */}
+        {animals.length === 0 && (
+          <div className="p-4 rounded-3xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-slate-500/10 border border-emerald-300 dark:border-emerald-800 flex items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <h4 className="font-extrabold text-xs text-slate-900 dark:text-white">
+                No Cattle Registered Yet
+              </h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Register your cow or buffalo to get AI feed balancing and health screening.
+              </p>
+            </div>
+            <button
+              onClick={() => setIsAddAnimalOpen(true)}
+              className="py-2 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shrink-0 shadow-sm flex items-center gap-1.5 active:scale-95 transition"
+            >
+              <PlusCircle size={14} />
+              <span>Add Cattle</span>
+            </button>
+          </div>
+        )}
+
+        {/* Supporting Quick Actions Grid */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              {t.quickActions}
+              Supporting Features
             </h3>
-            <span className="text-[10px] text-teal-600 dark:text-teal-400 font-semibold">1-Tap Fast Launch</span>
+            <span className="text-[10px] text-teal-600 dark:text-teal-400 font-semibold">Fast Launch</span>
           </div>
 
           <div className="grid grid-cols-4 gap-2 text-center text-xs">
@@ -121,9 +234,9 @@ export const HomeDashboardScreen: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsAddAnimalOpen(true)}
-              className="p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center justify-center gap-1.5 active:scale-95 transition hover:border-dairy-500 group"
+              className="p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center justify-center gap-1.5 active:scale-95 transition hover:border-emerald-500 group"
             >
-              <div className="w-9 h-9 rounded-xl bg-dairy-100 dark:bg-dairy-950 text-dairy-600 dark:text-dairy-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
                 <PlusCircle size={18} />
               </div>
               <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 leading-tight">
@@ -145,41 +258,13 @@ export const HomeDashboardScreen: React.FC = () => {
               </span>
             </button>
 
-            {/* 3. Feed Check */}
-            <button
-              type="button"
-              onClick={() => setIsFeedAnalysisOpen(true)}
-              className="p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center justify-center gap-1.5 active:scale-95 transition hover:border-amber-500 group"
-            >
-              <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Wheat size={18} />
-              </div>
-              <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 leading-tight">
-                {t.feedCheck}
-              </span>
-            </button>
-
-            {/* 4. Silage Check */}
-            <button
-              type="button"
-              onClick={() => setIsSilageAnalysisOpen(true)}
-              className="p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center justify-center gap-1.5 active:scale-95 transition hover:border-teal-500 group"
-            >
-              <div className="w-9 h-9 rounded-xl bg-teal-100 dark:bg-teal-950 text-teal-600 dark:text-teal-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Activity size={18} />
-              </div>
-              <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 leading-tight">
-                {t.silageCheck}
-              </span>
-            </button>
-
-            {/* 5. Record Milk */}
+            {/* 3. Record Milk */}
             <button
               type="button"
               onClick={() => setIsRecordMilkOpen(true)}
-              className="p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center justify-center gap-1.5 active:scale-95 transition hover:border-dairy-500 group"
+              className="p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center justify-center gap-1.5 active:scale-95 transition hover:border-emerald-500 group"
             >
-              <div className="w-9 h-9 rounded-xl bg-dairy-100 dark:bg-dairy-950 text-dairy-600 dark:text-dairy-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
                 <Milk size={18} />
               </div>
               <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 leading-tight">
@@ -187,7 +272,7 @@ export const HomeDashboardScreen: React.FC = () => {
               </span>
             </button>
 
-            {/* 6. Vaccinations */}
+            {/* 4. Vaccinations */}
             <button
               type="button"
               onClick={() => navigate('vaccinations')}
@@ -201,24 +286,40 @@ export const HomeDashboardScreen: React.FC = () => {
               </span>
             </button>
 
-            {/* 7. Ask Dairy Nova AI */}
+            {/* 5. Breeds Catalog */}
+            <button
+              type="button"
+              onClick={() => navigate('breeds')}
+              className="p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm col-span-2 flex items-center justify-center gap-2 active:scale-95 transition hover:border-emerald-500 group"
+            >
+              <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 flex items-center justify-center">
+                <Activity size={16} />
+              </div>
+              <div className="text-left">
+                <strong className="block text-[11px] text-slate-800 dark:text-slate-200 font-bold">41 Indian Breeds</strong>
+                <span className="text-[9px] text-slate-400">Genetics & milk stats</span>
+              </div>
+            </button>
+
+            {/* 6. Ask Dairy Nova AI */}
             <button
               type="button"
               onClick={() => navigate('ai-chat')}
-              className="p-2.5 rounded-2xl bg-gradient-to-tr from-teal-50 to-dairy-50 dark:from-teal-950/60 dark:to-dairy-950/60 border border-teal-300 dark:border-teal-700 shadow-sm col-span-2 flex flex-col items-center justify-center gap-1 active:scale-95 transition group"
+              className="p-2.5 rounded-2xl bg-gradient-to-tr from-teal-50 to-emerald-50 dark:from-teal-950/60 dark:to-emerald-950/60 border border-teal-300 dark:border-teal-700 shadow-sm col-span-2 flex items-center justify-center gap-2 active:scale-95 transition group"
             >
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-teal-600 to-dairy-600 text-white flex items-center justify-center group-hover:scale-105 transition-transform shadow-md shadow-teal-600/30">
-                <Sparkles size={16} className="animate-pulse" />
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-teal-600 to-emerald-600 text-white flex items-center justify-center group-hover:scale-105 transition-transform shadow-md shadow-teal-600/30">
+                <Sparkles size={16} />
               </div>
-              <span className="text-[11px] font-extrabold text-teal-800 dark:text-teal-200">
-                {t.askAI}
-              </span>
+              <div className="text-left">
+                <strong className="block text-[11px] font-black text-teal-900 dark:text-teal-200">{t.askAI}</strong>
+                <span className="text-[9px] text-teal-700 dark:text-teal-300">Nutrition & Health AI</span>
+              </div>
             </button>
 
           </div>
         </div>
 
-        {/* Today's AI Advisory Card */}
+        {/* Dynamic AI Herd & Nutrition Advisory */}
         <AIAdvisoryCard onAskAIClick={() => navigate('ai-chat')} />
 
         {/* Recent Priority Alerts */}
@@ -230,7 +331,7 @@ export const HomeDashboardScreen: React.FC = () => {
               </h3>
               <button
                 onClick={() => navigate('health')}
-                className="text-xs font-bold text-dairy-600 dark:text-dairy-400 flex items-center gap-0.5 hover:underline"
+                className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 hover:underline"
               >
                 View All <ArrowRight size={12} />
               </button>
@@ -259,38 +360,42 @@ export const HomeDashboardScreen: React.FC = () => {
               </div>
               <div>
                 <h4 className="font-extrabold text-xs text-slate-900 dark:text-white">7-Day Milk Production Trend</h4>
-                <p className="text-[10px] text-slate-400">Predicted tomorrow: {milkQuality.predictedTomorrowYieldL} L</p>
+                <p className="text-[10px] text-slate-400">
+                  {totalYieldSum > 0 ? `Total Logged: ${totalYieldSum.toFixed(1)} L` : 'Log daily milk to see 7-day trend'}
+                </p>
               </div>
             </div>
             <button
               onClick={() => navigate('milk')}
-              className="text-[11px] font-bold text-dairy-600 dark:text-dairy-400 hover:underline"
+              className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
             >
               Details
             </button>
           </div>
 
-          {/* Clean Mobile-Friendly SVG Yield Bar Chart */}
+          {/* Dynamic SVG Yield Bar Chart */}
           <div className="flex items-end justify-between gap-1.5 h-20 pt-2 px-1">
-            {milkQuality.historicalTrend.map((item, idx) => {
-              const heightPercent = Math.max(20, Math.min(100, ((item.yield - 130) / (165 - 130)) * 100));
-              const isToday = idx === milkQuality.historicalTrend.length - 1;
+            {chartDays.map((item, idx) => {
+              const heightPercent = maxChartYield > 0 ? Math.max(15, (item.yieldL / maxChartYield) * 100) : 15;
+              const isToday = idx === chartDays.length - 1;
 
               return (
-                <div key={item.date} className="flex-1 flex flex-col items-center gap-1 group">
+                <div key={item.dateStr} className="flex-1 flex flex-col items-center gap-1 group">
                   <span className="text-[9px] font-bold text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {item.yield}
+                    {item.yieldL}
                   </span>
                   <div
                     className={`w-full rounded-t-lg transition-all duration-300 ${
-                      isToday
-                        ? 'bg-gradient-to-t from-dairy-600 to-teal-400 shadow-sm'
-                        : 'bg-slate-200 dark:bg-slate-800 group-hover:bg-teal-200'
+                      isToday && item.yieldL > 0
+                        ? 'bg-gradient-to-t from-emerald-600 to-teal-400 shadow-sm'
+                        : item.yieldL > 0
+                        ? 'bg-emerald-300 dark:bg-emerald-800'
+                        : 'bg-slate-200 dark:bg-slate-800'
                     }`}
                     style={{ height: `${heightPercent}%` }}
                   />
-                  <span className={`text-[9px] truncate max-w-[34px] ${isToday ? 'font-black text-dairy-600 dark:text-dairy-400' : 'text-slate-400'}`}>
-                    {item.date.split(' ')[0]}
+                  <span className={`text-[9px] truncate max-w-[34px] ${isToday ? 'font-black text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
+                    {item.label}
                   </span>
                 </div>
               );

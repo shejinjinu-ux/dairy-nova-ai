@@ -1,16 +1,70 @@
-import { delay } from './apiHelper';
+﻿import { apiFetch, delay } from './apiHelper';
 import { AI_CHAT_RESPONSES } from '../../mocks/mockResponses';
+
+export interface ChatApiResult {
+  response: string;
+  suggestedFollowUps: string[];
+  sessionId?: string;
+  language?: string;
+  detectedLanguage?: string;
+  intent?: string;
+}
 
 export const chatApi = {
   async sendMessage(
     question: string,
-    animalContext?: { id: string; tag: string; name: string }
-  ): Promise<{ response: string; suggestedFollowUps: string[] }> {
-    await delay(1000); // simulated thinking latency
+    options?: {
+      language?: string;
+      sessionId?: string;
+      userId?: string;
+      animalContext?: { id: string; tag: string; name: string };
+    }
+  ): Promise<ChatApiResult> {
+    const selectedLang = options?.language || 'en';
+    const sessionId = options?.sessionId;
+    const userId = options?.userId;
+    const animalContext = options?.animalContext;
 
+    // Enhance prompt with animal context if provided
+    let messageToSend = question;
+    if (animalContext) {
+      messageToSend = `[Animal Context: ${animalContext.name} (Tag: ${animalContext.tag})] ${question}`;
+    }
+
+    try {
+      // Call real FastAPI backend at POST /api/v1/chat
+      const result = await apiFetch<any>('/chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          message: messageToSend,
+          language: selectedLang,
+          session_id: sessionId || undefined,
+          user_id: userId || undefined,
+        }),
+      });
+
+      if (result && result.reply) {
+        return {
+          response: result.reply,
+          suggestedFollowUps: result.metadata?.suggested_questions || [
+            'Which vaccinations are due this week?',
+            'Recommend feed ration for my herd',
+            'Is my corn silage safe to feed?',
+          ],
+          sessionId: result.session_id,
+          language: result.language,
+          detectedLanguage: result.detected_language,
+          intent: result.intent,
+        };
+      }
+    } catch (err) {
+      console.warn('Backend chat API connection notice, switching to smart local response:', err);
+    }
+
+    // Graceful offline fallback
+    await delay(600);
     const q = question.toLowerCase();
 
-    // If context animal is provided
     if (animalContext && (q.includes('this animal') || q.includes('she') || q.includes('her') || q.includes(animalContext.tag.toLowerCase()))) {
       return {
         response: `Regarding **${animalContext.name} (${animalContext.tag})**:
@@ -39,14 +93,13 @@ export const chatApi = {
       };
     }
 
-    // General fallback dairy knowledge
     return {
       response: `Thank you for asking! In dairy cattle management, maintaining high-energy dry matter intake (60% quality green fodder, 30% dry roughage, and 10% balanced concentrate pellets) alongside 24/7 ad-libitum clean drinking water is vital for optimal milk production and rumen health.
 
 Is there a specific animal or topic you'd like me to look into?`,
       suggestedFollowUps: [
         'How is my overall herd health?',
-        'Show today’s milk collection summary',
+        "Show today's milk collection summary",
         'Analyze my feed quality',
       ],
     };

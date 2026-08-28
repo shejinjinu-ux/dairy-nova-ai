@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Animal, AnimalType, LactationStage, PregnancyStatus } from '../../types';
-import { BREEDS_DATA } from '../../mocks/mockData';
+import { ALL_INDIAN_COW_BREEDS, ALL_INDIAN_BUFFALO_BREEDS } from '../../mocks/mockData';
 import { X, ArrowRight, ArrowLeft, Check, Sparkles, Loader2 } from 'lucide-react';
-import confetti from 'canvas-confetti';
 
 interface AddAnimalModalProps {
   isOpen: boolean;
@@ -36,6 +35,8 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
 
   if (!isOpen) return null;
 
+  const currentBreedList = type === 'Buffalo' ? ALL_INDIAN_BUFFALO_BREEDS : ALL_INDIAN_COW_BREEDS;
+
   const handleNext = () => {
     if (step < 4) setStep(step + 1);
   };
@@ -46,16 +47,9 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
 
   const handleSave = async () => {
     setIsSaving(true);
-    // Simulate realistic network delay
     setTimeout(() => {
       setIsSaving(false);
       setIsSuccess(true);
-      confetti({
-        particleCount: 50,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#16a34a', '#0d9488', '#f59e0b'],
-      });
 
       const animalData: Omit<Animal, 'id' | 'createdDate' | 'lastCheckDate'> = {
         tagId,
@@ -71,13 +65,10 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
         calvingDate,
         dailyMilkYieldL,
         healthStatus: 'Healthy',
-        imageUrl:
-          type === 'Buffalo'
-            ? 'https://images.unsplash.com/photo-1546445317-29f4545e9d53?w=500&auto=format&fit=crop&q=80'
-            : 'https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=500&auto=format&fit=crop&q=80',
         temperatureC: 38.5,
         ruminationMinutesPerDay: 480,
         activityLevel: 'Normal',
+        imageUrl: '',
         notes,
       };
 
@@ -87,8 +78,8 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
         // Reset state
         setStep(1);
         setIsSuccess(false);
-      }, 1400);
-    }, 800);
+      }, 800);
+    }, 600);
   };
 
   return (
@@ -98,7 +89,7 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
         {/* Header with Progress Steps */}
         <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-dairy-600 dark:text-dairy-400">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
               Step {step} of 4
             </span>
             <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
@@ -122,7 +113,7 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
             <div
               key={s}
               className={`h-1.5 rounded-full transition-all ${
-                s <= step ? 'bg-dairy-600' : 'bg-slate-200 dark:bg-slate-800'
+                s <= step ? 'bg-emerald-600' : 'bg-slate-200 dark:bg-slate-800'
               }`}
             />
           ))}
@@ -140,7 +131,7 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
                 value={tagId}
                 onChange={(e) => setTagId(e.target.value)}
                 placeholder="e.g. TAG-115"
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-dairy-500"
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
               />
             </div>
 
@@ -153,7 +144,7 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Nandini, Ganga"
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-dairy-500"
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
               />
             </div>
 
@@ -168,12 +159,12 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
                     type="button"
                     onClick={() => {
                       setType(t);
-                      if (t === 'Buffalo') setBreed('Murrah Buffalo');
+                      if (t === 'Buffalo') setBreed('Murrah');
                       else setBreed('Gir');
                     }}
                     className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition active:scale-95 ${
                       type === t
-                        ? 'bg-dairy-600 text-white border-dairy-600 shadow-md shadow-dairy-600/30'
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/30'
                         : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
                     }`}
                   >
@@ -185,23 +176,18 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
 
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Breed *
+                Breed (41+ Indian Breeds) *
               </label>
               <select
                 value={breed}
                 onChange={(e) => setBreed(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-dairy-500"
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 max-h-48"
               >
-                {BREEDS_DATA.filter((b) => (type === 'Buffalo' ? b.animalType === 'Buffalo' : b.animalType === 'Cow')).map((b) => (
-                  <option key={b.id} value={b.name}>
-                    {b.name}
+                {currentBreedList.map((bName) => (
+                  <option key={bName} value={bName}>
+                    {bName}
                   </option>
                 ))}
-                {type === 'Cow' && <option value="Red Sindhi">Red Sindhi</option>}
-                {type === 'Cow' && <option value="Tharparkar">Tharparkar</option>}
-                {type === 'Cow' && <option value="Kankrej">Kankrej</option>}
-                {type === 'Buffalo' && <option value="Jaffarabadi Buffalo">Jaffarabadi Buffalo</option>}
-                {type === 'Buffalo' && <option value="Mehsana Buffalo">Mehsana Buffalo</option>}
               </select>
             </div>
           </div>
@@ -255,20 +241,24 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
 
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Lactation Stage *
+                Sex
               </label>
-              <select
-                value={lactationStage}
-                onChange={(e) => setLactationStage(e.target.value as LactationStage)}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white"
-              >
-                <option value="Early">Early Lactation (0 - 100 Days)</option>
-                <option value="Mid">Mid Lactation (100 - 200 Days)</option>
-                <option value="Late">Late Lactation (200+ Days)</option>
-                <option value="Dry">Dry Cow (Resting)</option>
-                <option value="Heifer">Heifer (Not yet calved)</option>
-                <option value="Calf">Young Calf</option>
-              </select>
+              <div className="grid grid-cols-2 gap-2">
+                {(['Female', 'Male'] as const).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setSex(s)}
+                    className={`py-2 px-3 rounded-xl border text-xs font-semibold ${
+                      sex === s
+                        ? 'bg-emerald-50 dark:bg-emerald-950 border-emerald-500 text-emerald-700 dark:text-emerald-300'
+                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    {s === 'Female' ? '♀ Female' : '♂ Male'}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -278,6 +268,22 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
           <div className="space-y-3 animate-fadeIn">
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                Lactation Stage
+              </label>
+              <select
+                value={lactationStage}
+                onChange={(e) => setLactationStage(e.target.value as LactationStage)}
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white"
+              >
+                <option value="Early">Early Lactation (1-100 days)</option>
+                <option value="Mid">Mid Lactation (100-200 days)</option>
+                <option value="Late">Late Lactation (200+ days)</option>
+                <option value="Dry">Dry Cow / Non-Milking</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                 Pregnancy Status
               </label>
               <select
@@ -285,140 +291,118 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
                 onChange={(e) => setPregnancyStatus(e.target.value as PregnancyStatus)}
                 className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white"
               >
-                <option value="Non-Pregnant">Non-Pregnant / In Heat Cycle</option>
-                <option value="Pregnant">Confirmed Pregnant</option>
-                <option value="Suspected">Suspected / Recently Inseminated</option>
-                <option value="Recent Calving">Recent Calving (&lt; 30 days)</option>
+                <option value="Non-Pregnant">Non-Pregnant</option>
+                <option value="Pregnant">Pregnant</option>
+                <option value="Inseminated">Recently Inseminated</option>
               </select>
             </div>
 
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Last Calving Date
-              </label>
-              <input
-                type="date"
-                value={calvingDate}
-                onChange={(e) => setCalvingDate(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Average Daily Milk Yield (Liters)
+                Daily Milk Yield (Liters/day)
               </label>
               <input
                 type="number"
                 step="0.5"
                 min="0"
-                max="45"
+                max="60"
                 value={dailyMilkYieldL}
                 onChange={(e) => setDailyMilkYieldL(Number(e.target.value))}
                 className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white"
               />
             </div>
+          </div>
+        )}
+
+        {/* Step 4 — Review & Save */}
+        {step === 4 && (
+          <div className="space-y-3 animate-fadeIn text-xs">
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Tag & Name:</span>
+                <strong className="text-slate-900 dark:text-white">
+                  {tagId} — {name || 'Unnamed'}
+                </strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Type & Breed:</span>
+                <strong className="text-slate-900 dark:text-white">
+                  {type} • {breed}
+                </strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Age & Weight:</span>
+                <strong className="text-slate-900 dark:text-white">
+                  {ageYears}y {ageMonths}m • {weightKg} kg
+                </strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Lactation:</span>
+                <strong className="text-emerald-600 dark:text-emerald-400">
+                  {lactationStage} ({dailyMilkYieldL} L/day)
+                </strong>
+              </div>
+            </div>
 
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Special Notes / Characteristics
+                Special Notes (Optional)
               </label>
-              <input
-                type="text"
+              <textarea
+                rows={2}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="e.g. Docile, High A2 milk producer"
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
+                placeholder="e.g. High genetic merit, calm temperament..."
+                className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs resize-none"
               />
             </div>
           </div>
         )}
 
-        {/* Step 4 — Review */}
-        {step === 4 && (
-          <div className="space-y-3 animate-fadeIn text-xs">
-            {isSuccess ? (
-              <div className="py-6 text-center space-y-2">
-                <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 rounded-full flex items-center justify-center mx-auto animate-bounce">
-                  <Check size={28} />
-                </div>
-                <h4 className="font-bold text-sm text-slate-900 dark:text-white">Animal Saved Successfully!</h4>
-                <p className="text-slate-500 text-xs">Profile created and synchronized to herd registry.</p>
-              </div>
-            ) : (
-              <div className="bg-slate-50 dark:bg-slate-950/60 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
-                <div className="flex justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
-                  <span className="text-slate-500">Tag ID / Name:</span>
-                  <span className="font-bold text-slate-900 dark:text-white">{tagId} ({name || 'Unnamed'})</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Type & Breed:</span>
-                  <span className="font-semibold">{type} • {breed}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Age & Weight:</span>
-                  <span className="font-semibold">{ageYears}y {ageMonths}m • {weightKg} kg</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Lactation Stage:</span>
-                  <span className="font-semibold">{lactationStage}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Pregnancy Status:</span>
-                  <span className="font-semibold">{pregnancyStatus}</span>
-                </div>
-                <div className="flex justify-between pt-1 border-t border-slate-200 dark:border-slate-800">
-                  <span className="text-slate-500 font-bold">Daily Milk Yield:</span>
-                  <span className="font-extrabold text-dairy-600 dark:text-dairy-400">{dailyMilkYieldL} Liters/day</span>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        {/* Navigation Buttons */}
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+          {step > 1 ? (
+            <button
+              type="button"
+              onClick={handleBack}
+              disabled={isSaving}
+              className="py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1 active:scale-95 transition"
+            >
+              <ArrowLeft size={14} /> Back
+            </button>
+          ) : (
+            <div />
+          )}
 
-        {/* Action Buttons */}
-        {!isSuccess && (
-          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-            {step > 1 ? (
-              <button
-                type="button"
-                onClick={handleBack}
-                disabled={isSaving}
-                className="py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 flex items-center justify-center gap-1 active:scale-95 transition"
-              >
-                <ArrowLeft size={14} /> Back
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={onClose}
-                className="py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 active:scale-95 transition"
-              >
-                Cancel
-              </button>
-            )}
-
-            {step < 4 ? (
-              <button
-                type="button"
-                onClick={handleNext}
-                className="py-2.5 px-3 rounded-xl bg-dairy-600 hover:bg-dairy-700 text-white text-xs font-bold shadow-md shadow-dairy-600/30 flex items-center justify-center gap-1 active:scale-95 transition"
-              >
-                Next <ArrowRight size={14} />
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={isSaving}
-                className="py-2.5 px-3 rounded-xl bg-dairy-600 hover:bg-dairy-700 text-white text-xs font-bold shadow-md shadow-dairy-600/30 flex items-center justify-center gap-1 active:scale-95 transition"
-              >
-                {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                {isSaving ? 'Saving...' : 'Save Animal'}
-              </button>
-            )}
-          </div>
-        )}
+          {step < 4 ? (
+            <button
+              type="button"
+              onClick={handleNext}
+              className="py-2.5 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/30 flex items-center gap-1 active:scale-95 transition"
+            >
+              Next <ArrowRight size={14} />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={isSaving || isSuccess}
+              className="py-2.5 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/30 flex items-center gap-1 active:scale-95 transition disabled:opacity-50"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" /> Saving...
+                </>
+              ) : isSuccess ? (
+                <>
+                  <Check size={14} /> Saved
+                </>
+              ) : (
+                'Save Cattle'
+              )}
+            </button>
+          )}
+        </div>
 
       </div>
     </div>

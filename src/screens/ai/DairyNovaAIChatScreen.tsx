@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { chatApi } from '../../services/api/chatApi';
 import { ChatMessage, Animal } from '../../types';
 import { AIThinkingState } from '../../components/ai/AIThinkingState';
@@ -21,7 +22,10 @@ import {
 
 export const DairyNovaAIChatScreen: React.FC = () => {
   const { goBack, chatAnimalContext } = useAppData();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
+  const { user } = useAuth();
+
+  const [sessionId, setSessionId] = useState<string>(() => `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -70,31 +74,37 @@ export const DairyNovaAIChatScreen: React.FC = () => {
     setIsThinking(true);
 
     try {
-      const { response, suggestedFollowUps } = await chatApi.sendMessage(
-        text,
-        activeAnimalContext
+      const result = await chatApi.sendMessage(text, {
+        language,
+        sessionId,
+        userId: user?.id,
+        animalContext: activeAnimalContext
           ? {
               id: activeAnimalContext.id,
               tag: activeAnimalContext.tagId,
               name: activeAnimalContext.name,
             }
-          : undefined
-      );
+          : undefined,
+      });
+
+      if (result.sessionId) {
+        setSessionId(result.sessionId);
+      }
 
       const aiMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
         sender: 'ai',
-        text: response,
+        text: result.response,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        suggestedFollowUps,
+        suggestedFollowUps: result.suggestedFollowUps,
       };
 
       setMessages((prev) => [...prev, aiMsg]);
-    } catch {
+    } catch (err: any) {
       const errorMsg: ChatMessage = {
         id: `ai-err-${Date.now()}`,
         sender: 'ai',
-        text: 'I encountered a brief connection glitch while processing your request. Please try again.',
+        text: err?.message || 'Connecting to Dairy Nova AI… If the AI service is waking up, please wait a moment and try again.',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -234,7 +244,6 @@ export const DairyNovaAIChatScreen: React.FC = () => {
             onTranscript={(transcript) =>
               setInputText((prev) => (prev ? `${prev} ${transcript}` : transcript))
             }
-            placeholderPrompt="How is my herd milk production today?"
           />
 
           <div className="flex-1 relative">

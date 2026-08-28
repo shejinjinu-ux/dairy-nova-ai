@@ -1,38 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { AnimatedLogo } from '../../components/common/AnimatedLogo';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { Sparkles, ArrowRight, UserPlus, LogIn, ShieldCheck, UserCheck } from 'lucide-react';
 
 export const SplashScreen: React.FC = () => {
-  const { navigate } = useAppData();
-  const { isAuthenticated, role } = useAuth();
-  const [progress, setProgress] = useState<number>(0);
+  const { navigate, loadDemoHerd } = useAppData();
+  const { isAuthenticated, role, loginFarmer, loginOfficer } = useAuth();
+  const { t } = useLanguage();
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
-        return prev + 25;
-      });
-    }, 250);
+  const handleDemoFarmer = async () => {
+    loadDemoHerd();
+    await loginFarmer('9845023456');
+    navigate('home');
+  };
 
-    const timer = setTimeout(() => {
-      if (isAuthenticated) {
-        navigate(role === 'officer' ? 'officer-dashboard' : 'home');
-      } else {
-        navigate('language-select');
-      }
-    }, 1600);
-
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timer);
-    };
-  }, [isAuthenticated, role, navigate]);
+  const handleDemoOfficer = async () => {
+    await loginOfficer();
+    navigate('officer-dashboard');
+  };
 
   return (
     <div className="min-h-full flex-1 flex flex-col items-center justify-between p-6 sm:p-8 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 text-white relative overflow-hidden">
@@ -42,15 +29,15 @@ export const SplashScreen: React.FC = () => {
       <div className="absolute bottom-1/3 -right-20 w-64 h-64 bg-teal-500/20 rounded-full blur-3xl pointer-events-none" />
 
       {/* Top Tagline Pill */}
-      <div className="pt-6 animate-fadeIn">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-teal-300 text-xs font-semibold backdrop-blur-md border border-white/10">
-          <Sparkles size={12} className="text-teal-400" />
-          Next-Gen AI Dairy Farming Assistant
+      <div className="pt-4 animate-fadeIn">
+        <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/10 text-teal-300 text-xs font-semibold backdrop-blur-md border border-white/10 shadow-sm">
+          <Sparkles size={12} className="text-teal-400 animate-pulse" />
+          Smart AI Rapid Feed & Silage Testing System
         </span>
       </div>
 
       {/* Center Emblem & Branding */}
-      <div className="flex flex-col items-center text-center space-y-5 animate-fadeIn">
+      <div className="flex flex-col items-center text-center space-y-4 animate-fadeIn my-auto">
         <AnimatedLogo size="xl" showText={false} />
 
         <div className="space-y-2">
@@ -63,35 +50,58 @@ export const SplashScreen: React.FC = () => {
             </span>
           </div>
 
-          <p className="text-sm font-semibold text-emerald-400 max-w-xs leading-relaxed">
-            Smart Dairy. Healthy Animals. Better Decisions.
-          </p>
+          <h2 className="text-sm font-bold text-emerald-400 max-w-xs leading-relaxed">
+            Smart AI-Enabled Rapid Feed and Silage Quality Testing System for Dairy Farmers
+          </h2>
 
-          <p className="text-xs text-slate-400 max-w-xs leading-relaxed pt-1">
-            Predictive health screening, precision feed NIR analysis, milk yield forecasting & tamper-proof QR traceability in your pocket.
+          <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
+            Rapid NIR Fodder Nutrition • Silage Fermentation & Spoilage AI
           </p>
         </div>
       </div>
 
-      {/* Bottom Loading Progress */}
-      <div className="w-full max-w-xs space-y-4 pb-4 animate-fadeIn">
-        <div className="space-y-1.5 text-center">
-          <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
-            <div
-              className="bg-gradient-to-r from-dairy-500 to-teal-400 h-full rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <span className="text-[11px] text-slate-400 font-medium">Initializing smart herd assistant...</span>
-        </div>
-
+      {/* Two Primary Options: NEW USER / EXISTING USER */}
+      <div className="w-full max-w-xs space-y-3 pb-2 animate-fadeIn">
+        {/* Option 1: New User — Sign Up */}
         <button
-          onClick={() => navigate('language-select')}
-          className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-dairy-600 to-teal-600 hover:from-dairy-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-dairy-600/30 flex items-center justify-center gap-2 active:scale-95 transition-all"
+          type="button"
+          onClick={() => navigate('register')}
+          className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-dairy-600 to-teal-600 hover:from-dairy-500 hover:to-teal-500 text-white font-black text-xs shadow-lg shadow-dairy-600/30 flex items-center justify-center gap-2 active:scale-95 transition-all"
         >
-          <span>Get Started</span>
-          <ArrowRight size={14} />
+          <UserPlus size={16} />
+          <span>{t.newUserSignUp || 'NEW USER — Sign Up'}</span>
+          <ArrowRight size={15} />
         </button>
+
+        {/* Option 2: Existing User — Login */}
+        <button
+          type="button"
+          onClick={() => navigate('login')}
+          className="w-full py-3 px-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 text-white font-bold text-xs backdrop-blur-md flex items-center justify-center gap-2 active:scale-95 transition-all"
+        >
+          <LogIn size={15} className="text-teal-400" />
+          <span>{t.existingUserLogin || 'EXISTING USER — Login'}</span>
+        </button>
+
+        {/* Quick Instant Demo Logins */}
+        <div className="pt-2 flex items-center justify-center gap-3 text-[11px] text-slate-400">
+          <button
+            type="button"
+            onClick={handleDemoFarmer}
+            className="hover:text-teal-300 underline font-semibold flex items-center gap-1"
+          >
+            <UserCheck size={12} />
+            Demo Farmer
+          </button>
+          <span>•</span>
+          <button
+            type="button"
+            onClick={handleDemoOfficer}
+            className="hover:text-teal-300 underline font-semibold"
+          >
+            Officer Demo
+          </button>
+        </div>
       </div>
 
     </div>

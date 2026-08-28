@@ -4,7 +4,6 @@ import { generateQRMatrix } from '../../utils/qrHelper';
 import { SourceTag } from './SourceTag';
 import { StatusBadge } from './StatusBadge';
 import { Share2, Download, Check, ShieldCheck, QrCode } from 'lucide-react';
-import confetti from 'canvas-confetti';
 
 interface QRCodeCardProps {
   batch: QRBatch;
@@ -38,12 +37,6 @@ export const QRCodeCard: React.FC<QRCodeCardProps> = ({ batch, className = '' })
   };
 
   const handleDownload = () => {
-    confetti({
-      particleCount: 40,
-      spread: 60,
-      origin: { y: 0.8 },
-      colors: ['#16a34a', '#0d9488', '#38bdf8'],
-    });
     setDownloaded(true);
     setTimeout(() => setDownloaded(false), 2500);
   };
