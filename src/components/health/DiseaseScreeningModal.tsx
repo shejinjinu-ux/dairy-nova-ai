@@ -21,6 +21,8 @@ import {
   Loader2,
   AlertCircle,
   ShieldCheck,
+  RefreshCw,
+  PhoneCall,
 } from 'lucide-react';
 
 interface DiseaseScreeningModalProps {
@@ -55,6 +57,19 @@ export const DiseaseScreeningModal: React.FC<DiseaseScreeningModalProps> = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        setErrorMessage('Image file is too large. Please select a photo under 10 MB.');
+        return;
+      }
+
+      // Validate image type
+      if (!file.type.startsWith('image/')) {
+        setErrorMessage('Unsupported file format. Please upload a JPEG, PNG, or WebP photo.');
+        return;
+      }
+
       setSelectedFile(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
@@ -64,7 +79,7 @@ export const DiseaseScreeningModal: React.FC<DiseaseScreeningModalProps> = ({
 
   const handleStartAnalysis = async () => {
     if (!selectedFile && !previewUrl && !symptomsText) {
-      setErrorMessage('Please take or upload a photo of the affected area, or describe symptoms.');
+      setErrorMessage('Please capture or select a photo of the cattle, or describe symptoms.');
       return;
     }
 
@@ -87,7 +102,10 @@ export const DiseaseScreeningModal: React.FC<DiseaseScreeningModalProps> = ({
     } catch (err: any) {
       setIsAnalyzing(false);
       setStep(2);
-      setErrorMessage(err.message || 'Disease screening encountered an error. Please try uploading a clearer image.');
+      setErrorMessage(
+        err.message ||
+          'Unable to analyze this image right now. AI disease model is temporarily unavailable on the server.'
+      );
     }
   };
 
@@ -117,7 +135,7 @@ export const DiseaseScreeningModal: React.FC<DiseaseScreeningModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 max-w-sm w-full shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 max-h-[92vh] overflow-y-auto">
         
         {/* Header */}
@@ -128,10 +146,10 @@ export const DiseaseScreeningModal: React.FC<DiseaseScreeningModalProps> = ({
             </div>
             <div>
               <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                {t.diseaseCheck || 'Health & Disease AI'}
+                🩺 AI HEALTH & DISEASE SCREENING
               </h3>
               <span className="text-[10px] text-teal-600 dark:text-teal-400 font-semibold block">
-                Visual Symptom & Lesion Screening
+                Visual Lesion & Clinical Symptom Engine
               </span>
             </div>
           </div>
@@ -144,11 +162,26 @@ export const DiseaseScreeningModal: React.FC<DiseaseScreeningModalProps> = ({
           </button>
         </div>
 
-        {/* Error Banner */}
+        {/* Error Banner with Specific Information */}
         {errorMessage && (
-          <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2 animate-shake">
-            <AlertCircle size={16} className="shrink-0 text-rose-500" />
-            <span>{errorMessage}</span>
+          <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs space-y-1.5 animate-shake">
+            <div className="flex items-start gap-2 font-semibold">
+              <AlertCircle size={16} className="shrink-0 text-rose-500 mt-0.5" />
+              <span>{errorMessage}</span>
+            </div>
+
+            {/* Preliminary Safe Advisory when Model is Offline/Fails */}
+            <div className="mt-2 pt-2 border-t border-rose-200 dark:border-rose-800/60 text-[11px] space-y-1 text-slate-700 dark:text-slate-300">
+              <strong className="block text-slate-900 dark:text-white font-bold flex items-center gap-1">
+                <ShieldCheck size={13} className="text-emerald-500" /> Immediate Biosecurity Steps:
+              </strong>
+              <ul className="list-disc pl-4 space-y-0.5 text-[10px] text-slate-600 dark:text-slate-400">
+                <li>Isolate the cattle in a clean, shaded, well-ventilated stall</li>
+                <li>Provide clean ad-libitum drinking water and soft green fodder</li>
+                <li>Avoid moving animals between herds to prevent potential contagion</li>
+                <li>Contact your local government veterinary dispensary for clinical diagnosis</li>
+              </ul>
+            </div>
           </div>
         )}
 
@@ -157,7 +190,7 @@ export const DiseaseScreeningModal: React.FC<DiseaseScreeningModalProps> = ({
           <div className="space-y-3.5 animate-fadeIn text-xs">
             <div className="text-center space-y-1">
               <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                Capture Cattle Clinical Photo
+                {t.captureClinicalPhoto || 'Capture Cattle Clinical Photo'}
               </h4>
               <p className="text-slate-500 dark:text-slate-400 text-[11px]">
                 Take a clear photo of skin nodules, muzzle, eyes, or udder for AI lesion analysis.
@@ -168,21 +201,39 @@ export const DiseaseScreeningModal: React.FC<DiseaseScreeningModalProps> = ({
             <div className="p-4 rounded-3xl bg-slate-50 dark:bg-slate-800/80 border-2 border-dashed border-slate-300 dark:border-slate-700 text-center space-y-3">
               {previewUrl ? (
                 <div className="space-y-2">
-                  <img
-                    src={previewUrl}
-                    alt="Clinical screening preview"
-                    className="h-44 w-full object-cover rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedFile(null);
-                      setPreviewUrl('');
-                    }}
-                    className="text-xs text-rose-500 font-bold hover:underline"
-                  >
-                    {t.removePhoto || 'Retake / Remove Photo'}
-                  </button>
+                  <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <img
+                      src={previewUrl}
+                      alt="Clinical screening preview"
+                      className="h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent flex items-end p-2.5">
+                      <span className="text-white text-[11px] font-medium truncate">
+                        {selectedFile ? selectedFile.name : 'Target Cattle Image'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-center gap-3 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="text-xs text-teal-600 dark:text-teal-400 font-bold hover:underline"
+                    >
+                      Change Photo
+                    </button>
+                    <span className="text-slate-300">•</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setPreviewUrl('');
+                      }}
+                      className="text-xs text-rose-500 font-bold hover:underline"
+                    >
+                      {t.removePhoto || 'Remove Photo'}
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="py-6 space-y-3">
@@ -231,13 +282,13 @@ export const DiseaseScreeningModal: React.FC<DiseaseScreeningModalProps> = ({
           </div>
         )}
 
-        {/* Step 2: Symptoms & Notes */}
+        {/* Step 2: Describe Symptoms */}
         {step === 2 && (
-          <div className="space-y-3 animate-fadeIn text-xs">
+          <div className="space-y-3.5 animate-fadeIn text-xs">
             <div className="flex items-center justify-between">
-              <label className="font-bold text-slate-700 dark:text-slate-300">
-                Additional Observable Symptoms (Optional)
-              </label>
+              <span className="font-extrabold text-slate-900 dark:text-white">
+                Observed Symptoms (Optional)
+              </span>
               <VoiceInput onTranscript={(text: string) => setSymptomsText((prev) => `${prev} ${text}`.trim())} />
             </div>
 
@@ -245,9 +296,26 @@ export const DiseaseScreeningModal: React.FC<DiseaseScreeningModalProps> = ({
               rows={3}
               value={symptomsText}
               onChange={(e) => setSymptomsText(e.target.value)}
-              placeholder="e.g. Fever > 39.5°C, reduced milk yield, watery eye discharge, limping..."
-              className="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white resize-none"
+              placeholder="e.g. High fever, reduced milk yield, watery eye discharge, skin nodules..."
+              className="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
+
+            {/* Selected Image Thumbnail */}
+            {previewUrl && (
+              <div className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+                <img
+                  src={previewUrl}
+                  alt="Selected thumbnail"
+                  className="w-10 h-10 object-cover rounded-lg shrink-0"
+                />
+                <div className="overflow-hidden">
+                  <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 block truncate">
+                    {selectedFile ? selectedFile.name : 'Target Cattle Photo'}
+                  </span>
+                  <span className="text-[10px] text-emerald-600 font-semibold">Image Ready</span>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-2 pt-2">
               <button
@@ -262,29 +330,29 @@ export const DiseaseScreeningModal: React.FC<DiseaseScreeningModalProps> = ({
                 onClick={handleStartAnalysis}
                 className="py-2.5 px-3 min-h-[40px] rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold shadow-md shadow-teal-600/30 flex items-center justify-center gap-1 active:scale-95 transition"
               >
-                <span>Run AI Screening</span>
-                <Sparkles size={14} />
+                <span>{errorMessage ? 'Retry AI Screening' : 'Run AI Screening'}</span>
+                {errorMessage ? <RefreshCw size={14} /> : <Sparkles size={14} />}
               </button>
             </div>
           </div>
         )}
 
-        {/* Step 3: Analyzing Spinner */}
+        {/* Step 3: Analyzing State */}
         {step === 3 && isAnalyzing && (
           <div className="py-10 text-center space-y-3 animate-fadeIn text-xs">
             <Loader2 size={36} className="animate-spin text-teal-600 mx-auto" />
             <div>
               <h4 className="font-extrabold text-slate-900 dark:text-white text-sm">
-                Running Neural Disease Screening...
+                Analyzing Cattle Image...
               </h4>
               <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-1">
-                Checking for Lumpy Skin, FMD, Keratoconjunctivitis, and Mastitis lesions
+                Running EfficientNet deep learning lesion analysis for cattle disease screening...
               </p>
             </div>
           </div>
         )}
 
-        {/* Step 4: Screening Result */}
+        {/* Step 4: Real Screening Result */}
         {step === 4 && result && (
           <div className="space-y-3 animate-fadeIn text-xs">
             
@@ -301,24 +369,40 @@ export const DiseaseScreeningModal: React.FC<DiseaseScreeningModalProps> = ({
               <div className="flex items-start justify-between">
                 <div>
                   <span className="text-[10px] font-extrabold uppercase tracking-wider text-teal-200">
-                    Preliminary AI Screening Result
+                    Prediction
                   </span>
                   <h4 className="text-lg font-black">{result.possibleConcern}</h4>
                 </div>
-                <span className="px-2.5 py-1 rounded-full bg-white/20 text-xs font-black backdrop-blur-sm">
-                  {result.confidenceScore}% Match
-                </span>
+                {result.confidenceScore > 0 && (
+                  <span className="px-2.5 py-1 rounded-full bg-white/20 text-xs font-black backdrop-blur-sm">
+                    {result.confidenceScore}% Confidence
+                  </span>
+                )}
               </div>
               <p className="text-xs text-white/95 leading-relaxed bg-white/10 p-2.5 rounded-2xl">
                 {result.preliminaryGuidance}
               </p>
             </div>
 
-            {/* Isolation & Veterinary Advice */}
+            {/* Observed Information & Symptoms */}
+            {result.symptomsDetected && result.symptomsDetected.length > 0 && (
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-1.5">
+                <span className="font-bold text-slate-800 dark:text-slate-200 block text-xs">
+                  Observed Clinical Indicators:
+                </span>
+                <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-slate-600 dark:text-slate-300">
+                  {result.symptomsDetected.map((sym, idx) => (
+                    <li key={idx}>{sym}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Recommended Next Action & Veterinary Advice */}
             <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 space-y-1.5">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1 text-xs">
-                  <ShieldAlert size={14} className="text-amber-600" /> Isolation & Veterinary Advice
+                  <ShieldAlert size={14} className="text-amber-600" /> Recommended Next Action:
                 </span>
                 <ReadAloudButton textToRead={`${result.preliminaryGuidance}. ${result.veterinaryAdvice}`} size="sm" />
               </div>
@@ -330,9 +414,9 @@ export const DiseaseScreeningModal: React.FC<DiseaseScreeningModalProps> = ({
             {/* MANDATORY DISCLAIMER */}
             <div className="p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-[10px] text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 space-y-0.5">
               <strong className="block font-bold text-slate-700 dark:text-slate-300">
-                Medical & Veterinary Disclaimer:
+                Medical Disclaimer:
               </strong>
-              <p>{result.disclaimer || t.diseaseDisclaimerNotice || 'This is an AI screening result, not a confirmed veterinary diagnosis. Always consult a certified veterinarian for prescription medicine and treatment.'}</p>
+              <p>This is an AI screening result, not a veterinary diagnosis. Always consult a qualified veterinarian.</p>
             </div>
 
             {/* Save Success */}

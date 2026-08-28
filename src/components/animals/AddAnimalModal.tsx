@@ -32,10 +32,14 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
   const [calvingDate, setCalvingDate] = useState<string>('2026-06-15');
   const [dailyMilkYieldL, setDailyMilkYieldL] = useState<number>(14.5);
   const [notes, setNotes] = useState<string>('');
+  const [breedSearch, setBreedSearch] = useState<string>('');
 
   if (!isOpen) return null;
 
-  const currentBreedList = type === 'Buffalo' ? ALL_INDIAN_BUFFALO_BREEDS : ALL_INDIAN_COW_BREEDS;
+  const rawBreedList = type === 'Buffalo' ? ALL_INDIAN_BUFFALO_BREEDS : ALL_INDIAN_COW_BREEDS;
+  const currentBreedList = breedSearch.trim()
+    ? rawBreedList.filter((b) => b.toLowerCase().includes(breedSearch.toLowerCase()))
+    : rawBreedList;
 
   const handleNext = () => {
     if (step < 4) setStep(step + 1);
@@ -175,9 +179,19 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Breed (41+ Indian Breeds) *
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Breed (41+ Indian Breeds) *
+                </label>
+                <span className="text-[10px] text-slate-400">Searchable</span>
+              </div>
+              <input
+                type="text"
+                value={breedSearch}
+                onChange={(e) => setBreedSearch(e.target.value)}
+                placeholder="Type to filter breeds (e.g. Gir, Murrah)..."
+                className="w-full px-3 py-1.5 mb-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
+              />
               <select
                 value={breed}
                 onChange={(e) => setBreed(e.target.value)}

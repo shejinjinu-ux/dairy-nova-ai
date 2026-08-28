@@ -155,6 +155,50 @@ export const ProfileScreen: React.FC = () => {
 
           {isEditing ? (
             <div className="space-y-3 animate-fadeIn">
+              {/* Profile Image Picker */}
+              <div>
+                <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1">
+                  Profile Picture
+                </label>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <User size={20} className="text-slate-400" />
+                    )}
+                  </div>
+                  <label className="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-xs text-slate-700 dark:text-slate-300 cursor-pointer flex items-center gap-1.5 active:scale-95 transition">
+                    <Camera size={14} className="text-emerald-600" />
+                    <span>Choose Photo</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setAvatarUrl(reader.result as string);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                  {avatarUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setAvatarUrl('')}
+                      className="text-xs text-rose-500 hover:underline"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              </div>
+
               <div>
                 <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1">
                   Full Name

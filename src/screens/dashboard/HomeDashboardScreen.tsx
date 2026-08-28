@@ -5,401 +5,451 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { MobileHeader } from '../../components/common/MobileHeader';
 import { BottomNavigation } from '../../components/common/BottomNavigation';
 import { MetricCard } from '../../components/common/MetricCard';
-import { AIAdvisoryCard } from '../../components/ai/AIAdvisoryCard';
-import { HealthAlertCard } from '../../components/health/HealthAlertCard';
-import { DiseaseScreeningModal } from '../../components/health/DiseaseScreeningModal';
-import { AddAnimalModal } from '../../components/animals/AddAnimalModal';
-import { RecordMilkModal } from '../../components/milk/RecordMilkModal';
 import { FeedAnalysisModal } from '../../components/feed/FeedAnalysisModal';
 import { SilageAnalysisModal } from '../../components/silage/SilageAnalysisModal';
+import { TestReportModal } from '../../components/feed/TestReportModal';
+import { AddAnimalModal } from '../../components/animals/AddAnimalModal';
+import { RecordMilkModal } from '../../components/milk/RecordMilkModal';
+import { DiseaseScreeningModal } from '../../components/health/DiseaseScreeningModal';
+import { formatDate } from '../../utils/formatters';
 import {
+  Wheat,
   Layers,
+  Sparkles,
+  Camera,
+  Keyboard,
+  History,
+  Radio,
+  ArrowRight,
+  CheckCircle2,
+  AlertTriangle,
+  FileText,
   Milk,
   Syringe,
-  AlertTriangle,
-  PlusCircle,
   Stethoscope,
-  Sparkles,
-  Wheat,
   Activity,
-  ArrowRight,
+  PlusCircle,
   TrendingUp,
-  Plus,
+  Dna,
+  Bot,
 } from 'lucide-react';
 
 export const HomeDashboardScreen: React.FC = () => {
   const {
     animals,
-    healthAlerts,
-    vaccinations,
+    feedAnalyses,
+    silageAnalyses,
     milkRecords,
+    vaccinations,
+    healthAlerts,
     navigate,
-    addAnimal,
-    recordMilk,
-    addHealthAlert,
-    resolveHealthAlert,
     addFeedAnalysis,
     addSilageAnalysis,
     addQRBatch,
+    addAnimal,
+    recordMilk,
+    addHealthAlert,
   } = useAppData();
   const { user } = useAuth();
   const { t } = useLanguage();
 
   // Modals state
-  const [isAddAnimalOpen, setIsAddAnimalOpen] = useState<boolean>(false);
-  const [isDiseaseScreeningOpen, setIsDiseaseScreeningOpen] = useState<boolean>(false);
-  const [isRecordMilkOpen, setIsRecordMilkOpen] = useState<boolean>(false);
   const [isFeedAnalysisOpen, setIsFeedAnalysisOpen] = useState<boolean>(false);
   const [isSilageAnalysisOpen, setIsSilageAnalysisOpen] = useState<boolean>(false);
+  const [isAddAnimalOpen, setIsAddAnimalOpen] = useState<boolean>(false);
+  const [isRecordMilkOpen, setIsRecordMilkOpen] = useState<boolean>(false);
+  const [isDiseaseScreeningOpen, setIsDiseaseScreeningOpen] = useState<boolean>(false);
 
-  const attentionAnimalsCount = animals.filter(
-    (a) => a.healthStatus === 'Needs Attention' || a.healthStatus === 'Critical Alert'
-  ).length;
+  // Selected test for report view
+  const [selectedReportTest, setSelectedReportTest] = useState<{
+    type: 'Feed' | 'Silage';
+    data: any;
+  } | null>(null);
 
-  const upcomingVaccinesCount = vaccinations.filter(
-    (v) => v.status === 'Upcoming' || v.status === 'Due' || v.status === 'Overdue'
-  ).length;
+  // Combine latest test from feed or silage
+  const allTests = [
+    ...feedAnalyses.map((f) => ({ ...f, testKind: 'Feed' as const })),
+    ...silageAnalyses.map((s) => ({ ...s, testKind: 'Silage' as const })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  const activeAlerts = healthAlerts.filter((a) => a.status === 'active').slice(0, 2);
-
-  // Dynamic milk computation from actual recorded milk logs
-  const todayDateStr = new Date().toISOString().split('T')[0];
-  const todayRecordedYield = milkRecords
-    .filter((r) => r.date === todayDateStr)
-    .reduce((sum, r) => sum + r.quantityLiters, 0);
-
-  const totalYieldSum = milkRecords.reduce((sum, r) => sum + r.quantityLiters, 0);
-  const todayMilkDisplay = Number(todayRecordedYield.toFixed(1));
-
-  // Compute last 7 days milk data dynamically
-  const last7DaysMap: Record<string, number> = {};
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const dateKey = d.toISOString().split('T')[0];
-    last7DaysMap[dateKey] = 0;
-  }
-
-  milkRecords.forEach((rec) => {
-    if (last7DaysMap[rec.date] !== undefined) {
-      last7DaysMap[rec.date] += rec.quantityLiters;
-    }
-  });
-
-  const chartDays = Object.entries(last7DaysMap).map(([dateStr, yieldL]) => {
-    const dateObj = new Date(dateStr);
-    const label = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
-    return { dateStr, label, yieldL: Number(yieldL.toFixed(1)) };
-  });
-
-  const maxChartYield = Math.max(...chartDays.map((d) => d.yieldL), 10);
+  const latestTest = allTests.length > 0 ? allTests[0] : null;
 
   return (
     <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-950">
       <MobileHeader showGreeting={true} />
 
-      <main className="p-4 sm:p-5 space-y-4 animate-fadeIn">
+      <main className="p-4 sm:p-5 space-y-4 pb-20 animate-fadeIn">
         
-        {/* PRIMARY CORE MODULES: Rapid Feed & Silage Quality Testing Hero Banner */}
-        <div className="space-y-2.5">
+        {/* ========================================================================= */}
+        {/* 1. APP BRANDING HEADER */}
+        {/* ========================================================================= */}
+        <div className="space-y-0.5 pt-1">
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+              DAIRY NOVA AI
+            </h1>
+            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-500 text-slate-950 shadow-sm">
+              RAPID TESTING
+            </span>
+          </div>
+          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+            {t.rapidTestSubtitle || 'Smart AI-Enabled Rapid Feed & Silage Quality Testing'}
+          </p>
+        </div>
+
+        {/* ========================================================================= */}
+        {/* 2. TWO SEPARATE LARGE PRIMARY CARDS: RAPID FEED & RAPID SILAGE */}
+        {/* ========================================================================= */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          
+          {/* Card 1: 🌾 RAPID FEED QUALITY TEST */}
+          <div className="relative overflow-hidden rounded-3xl p-5 bg-gradient-to-br from-emerald-700 via-emerald-800 to-slate-900 text-white shadow-lg shadow-emerald-950/30 border border-emerald-500/40 flex flex-col justify-between space-y-3 group hover:border-emerald-400 transition">
+            <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-400/20 rounded-full blur-2xl pointer-events-none" />
+            
+            <div className="relative z-10 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/30 border border-emerald-400/30 flex items-center justify-center text-2xl shadow-inner">
+                  🌾
+                </div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider bg-emerald-400 text-slate-950 px-2.5 py-0.5 rounded-full">
+                  NIR Proximate AI
+                </span>
+              </div>
+
+              <div>
+                <h3 className="font-black text-base sm:text-lg text-white leading-tight">
+                  {t.rapidFeedTest || 'RAPID FEED QUALITY TEST'}
+                </h3>
+                <p className="text-xs text-emerald-100/90 leading-relaxed mt-1">
+                  Test protein, dry matter, crude fiber & moisture safety before feeding.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsFeedAnalysisOpen(true)}
+              className="relative z-10 w-full py-3 px-4 rounded-2xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black text-xs shadow-md shadow-emerald-950/20 flex items-center justify-center gap-2 active:scale-95 transition"
+            >
+              <span>{t.testFeedCTA || 'TEST FEED'}</span>
+              <ArrowRight size={15} className="stroke-[2.5px]" />
+            </button>
+          </div>
+
+          {/* Card 2: 🌽 RAPID SILAGE QUALITY TEST */}
+          <div className="relative overflow-hidden rounded-3xl p-5 bg-gradient-to-br from-teal-700 via-teal-800 to-slate-900 text-white shadow-lg shadow-teal-950/30 border border-teal-500/40 flex flex-col justify-between space-y-3 group hover:border-teal-400 transition">
+            <div className="absolute -top-10 -right-10 w-32 h-32 bg-teal-400/20 rounded-full blur-2xl pointer-events-none" />
+
+            <div className="relative z-10 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="w-12 h-12 rounded-2xl bg-teal-500/30 border border-teal-400/30 flex items-center justify-center text-2xl shadow-inner">
+                  🌽
+                </div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider bg-teal-400 text-slate-950 px-2.5 py-0.5 rounded-full">
+                  FAO Fermentation FQI
+                </span>
+              </div>
+
+              <div>
+                <h3 className="font-black text-base sm:text-lg text-white leading-tight">
+                  {t.rapidSilageTest || 'RAPID SILAGE QUALITY TEST'}
+                </h3>
+                <p className="text-xs text-teal-100/90 leading-relaxed mt-1">
+                  Check pH acidity, core temperature, spoilage risk & FQI fermentation index.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsSilageAnalysisOpen(true)}
+              className="relative z-10 w-full py-3 px-4 rounded-2xl bg-teal-400 hover:bg-teal-300 text-slate-950 font-black text-xs shadow-md shadow-teal-950/20 flex items-center justify-center gap-2 active:scale-95 transition"
+            >
+              <span>{t.testSilageCTA || 'TEST SILAGE'}</span>
+              <ArrowRight size={15} className="stroke-[2.5px]" />
+            </button>
+          </div>
+
+        </div>
+
+        {/* ========================================================================= */}
+        {/* 3. QUICK ACTIONS BAR */}
+        {/* ========================================================================= */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {/* Action 1: Scan Sample */}
+          <button
+            type="button"
+            onClick={() => navigate('rapid-test')}
+            className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-2.5 active:scale-95 transition hover:border-emerald-500 group text-left"
+          >
+            <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Camera size={16} />
+            </div>
+            <div className="overflow-hidden">
+              <span className="text-[11px] font-bold text-slate-900 dark:text-white block truncate">
+                {t.scanSample || '📷 Scan Sample'}
+              </span>
+              <span className="text-[9px] text-slate-400 block truncate">Photo log</span>
+            </div>
+          </button>
+
+          {/* Action 2: Enter Test Data */}
+          <button
+            type="button"
+            onClick={() => navigate('rapid-test')}
+            className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-2.5 active:scale-95 transition hover:border-teal-500 group text-left"
+          >
+            <div className="w-8 h-8 rounded-xl bg-teal-100 dark:bg-teal-950 text-teal-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Keyboard size={16} />
+            </div>
+            <div className="overflow-hidden">
+              <span className="text-[11px] font-bold text-slate-900 dark:text-white block truncate">
+                {t.enterTestData || '📊 Enter Data'}
+              </span>
+              <span className="text-[9px] text-slate-400 block truncate">Manual entry</span>
+            </div>
+          </button>
+
+          {/* Action 3: Test History */}
+          <button
+            type="button"
+            onClick={() => navigate('history')}
+            className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-2.5 active:scale-95 transition hover:border-amber-500 group text-left"
+          >
+            <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <History size={16} />
+            </div>
+            <div className="overflow-hidden">
+              <span className="text-[11px] font-bold text-slate-900 dark:text-white block truncate">
+                {t.testHistory || '📋 Test History'}
+              </span>
+              <span className="text-[9px] text-slate-400 block truncate">{allTests.length} tests</span>
+            </div>
+          </button>
+
+          {/* Action 4: Feed Recommendations */}
+          <button
+            type="button"
+            onClick={() => navigate('feed')}
+            className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-2.5 active:scale-95 transition hover:border-blue-500 group text-left"
+          >
+            <div className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Wheat size={16} />
+            </div>
+            <div className="overflow-hidden">
+              <span className="text-[11px] font-bold text-slate-900 dark:text-white block truncate">
+                {t.feedRecommendations || '🌾 Feed Advice'}
+              </span>
+              <span className="text-[9px] text-slate-400 block truncate">ICAR Rations</span>
+            </div>
+          </button>
+        </div>
+
+        {/* ========================================================================= */}
+        {/* 4. RECENT TESTS SECTION */}
+        {/* ========================================================================= */}
+        <div className="space-y-2.5 pt-1">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
-              <Sparkles size={14} className="text-emerald-500" /> Rapid Quality Testing
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <Activity size={13} className="text-emerald-600" />
+              {t.recentTests || 'Recent Quality Tests'}
             </h3>
-            <span className="text-[10px] text-emerald-700 dark:text-emerald-300 font-extrabold bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-md">
-              Primary System
+            <button
+              type="button"
+              onClick={() => navigate('history')}
+              className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+            >
+              {t.viewAll || 'View all'} ({allTests.length})
+            </button>
+          </div>
+
+          {latestTest ? (
+            <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-lg ${
+                    latestTest.testKind === 'Feed' ? 'bg-amber-100 text-amber-700' : 'bg-teal-100 text-teal-700'
+                  }`}>
+                    {latestTest.testKind === 'Feed' ? '🌾' : '🌽'}
+                  </div>
+                  <div>
+                    <h4 className="font-extrabold text-xs text-slate-900 dark:text-white">
+                      {'feedName' in latestTest ? latestTest.feedName : latestTest.silageType}
+                    </h4>
+                    <span className="text-[10px] text-slate-400">
+                      {latestTest.batchId} • {formatDate(latestTest.date)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
+                      {'overallScore' in latestTest ? latestTest.overallScore : latestTest.fqiScore}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-bold">/ 100</span>
+                  </div>
+                  <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    latestTest.isGood === 'Good'
+                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                      : latestTest.isGood === 'Moderate'
+                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                      : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                  }`}>
+                    {latestTest.isGood === 'Good' ? '🟢 GOOD' : latestTest.isGood === 'Moderate' ? '🟡 CAUTION' : '🔴 HIGH RISK'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Rationale snippet */}
+              <p className="text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-2xl leading-relaxed">
+                {latestTest.simpleVerdict || ('aiAdvisory' in latestTest ? latestTest.aiAdvisory : latestTest.storageAdvice)}
+              </p>
+
+              {/* Certificate button */}
+              <button
+                type="button"
+                onClick={() => setSelectedReportTest({ type: latestTest.testKind, data: latestTest })}
+                className="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition"
+              >
+                <FileText size={14} className="text-emerald-600" />
+                <span>{t.printShareReport || 'Print / Share Quality Report'}</span>
+              </button>
+            </div>
+          ) : (
+            <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-center space-y-2">
+              <span className="text-2xl block">🔬</span>
+              <h4 className="font-extrabold text-xs text-slate-900 dark:text-white">
+                No Quality Tests Recorded Yet
+              </h4>
+              <p className="text-[11px] text-slate-400 max-w-xs mx-auto">
+                Tap TEST FEED or TEST SILAGE above to run your first rapid quality analysis.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* ========================================================================= */}
+        {/* 5. HONEST SENSOR INTEGRATION CARD (NO FAKE SENSORS) */}
+        {/* ========================================================================= */}
+        <div className="p-4 rounded-3xl bg-slate-100 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center">
+                <Radio size={15} />
+              </div>
+              <span className="font-extrabold text-slate-800 dark:text-slate-200">
+                📡 SENSOR INTEGRATION
+              </span>
+            </div>
+            <span className="text-[10px] font-bold text-slate-500 bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+              Not Connected
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {/* Feed Quality Hero Card */}
-            <div
-              onClick={() => setIsFeedAnalysisOpen(true)}
-              className="p-4 rounded-3xl bg-gradient-to-br from-emerald-800 via-teal-900 to-slate-950 text-white shadow-lg border border-emerald-500/40 cursor-pointer hover:border-emerald-400 transition active:scale-98 space-y-2 group"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-400/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300 group-hover:scale-105 transition-transform">
-                  <Wheat size={20} />
-                </div>
-                <span className="text-[10px] font-extrabold uppercase tracking-wide bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-400/30">
-                  NIR AI Testing
-                </span>
-              </div>
-              <div>
-                <h4 className="font-black text-sm text-white flex items-center justify-between">
-                  <span>{t.rapidFeedTest || 'Rapid Feed Quality Test'}</span>
-                  <ArrowRight size={14} className="text-emerald-300 group-hover:translate-x-1 transition-transform" />
-                </h4>
-                <p className="text-[11px] text-emerald-100/80 leading-relaxed mt-0.5">
-                  Screen crude protein, dry matter, fiber, and nutritional safety for cattle.
-                </p>
-              </div>
-            </div>
-
-            {/* Silage Quality Hero Card */}
-            <div
-              onClick={() => setIsSilageAnalysisOpen(true)}
-              className="p-4 rounded-3xl bg-gradient-to-br from-teal-800 via-slate-900 to-slate-950 text-white shadow-lg border border-teal-500/40 cursor-pointer hover:border-teal-400 transition active:scale-98 space-y-2 group"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-2xl bg-teal-400/20 border border-teal-400/30 flex items-center justify-center text-teal-300 group-hover:scale-105 transition-transform">
-                  <Layers size={20} />
-                </div>
-                <span className="text-[10px] font-extrabold uppercase tracking-wide bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded-full border border-teal-400/30">
-                  Fermentation AI
-                </span>
-              </div>
-              <div>
-                <h4 className="font-black text-sm text-white flex items-center justify-between">
-                  <span>{t.rapidSilageTest || 'Rapid Silage Quality Test'}</span>
-                  <ArrowRight size={14} className="text-teal-300 group-hover:translate-x-1 transition-transform" />
-                </h4>
-                <p className="text-[11px] text-teal-100/80 leading-relaxed mt-0.5">
-                  Test pH, fermentation quality index (FQI), temperature, and pit spoilage.
-                </p>
-              </div>
-            </div>
-          </div>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+            Hardware sensor probe integration is future-ready. Use Camera or Manual entry for instant rapid testing.
+          </p>
         </div>
 
-        {/* Dashboard Summary 4-KPI Grid */}
-        <div className="grid grid-cols-2 gap-2.5">
-          <MetricCard
-            label={t.totalAnimals}
-            value={animals.length}
-            unit="Cattle"
-            icon={Layers}
-            colorScheme="emerald"
-            onClick={() => navigate('animals')}
-          />
-          <MetricCard
-            label={t.todayMilk}
-            value={todayMilkDisplay}
-            unit="Liters"
-            icon={Milk}
-            colorScheme="teal"
-            onClick={() => navigate('milk')}
-          />
-          <MetricCard
-            label={t.upcomingVaccinations}
-            value={upcomingVaccinesCount}
-            unit="Due"
-            icon={Syringe}
-            colorScheme="amber"
-            onClick={() => navigate('vaccinations')}
-          />
-          <MetricCard
-            label={t.attentionNeeded}
-            value={attentionAnimalsCount}
-            unit="Animals"
-            icon={AlertTriangle}
-            colorScheme={attentionAnimalsCount > 0 ? 'rose' : 'emerald'}
-            onClick={() => navigate('health')}
-          />
-        </div>
+        {/* ========================================================================= */}
+        {/* 6. SUPPORTING DAIRY TOOLS GRID */}
+        {/* ========================================================================= */}
+        <div className="space-y-2.5 pt-1">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Supporting Dairy Tools
+          </h3>
 
-        {/* Empty state prompt for brand new farmers with no cattle */}
-        {animals.length === 0 && (
-          <div className="p-4 rounded-3xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-slate-500/10 border border-emerald-300 dark:border-emerald-800 flex items-center justify-between gap-3">
-            <div className="space-y-0.5">
-              <h4 className="font-extrabold text-xs text-slate-900 dark:text-white">
-                No Cattle Registered Yet
-              </h4>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Register your cow or buffalo to get AI feed balancing and health screening.
-              </p>
-            </div>
-            <button
-              onClick={() => setIsAddAnimalOpen(true)}
-              className="py-2 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shrink-0 shadow-sm flex items-center gap-1.5 active:scale-95 transition"
-            >
-              <PlusCircle size={14} />
-              <span>Add Cattle</span>
-            </button>
-          </div>
-        )}
-
-        {/* Supporting Quick Actions Grid */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Supporting Features
-            </h3>
-            <span className="text-[10px] text-teal-600 dark:text-teal-400 font-semibold">Fast Launch</span>
-          </div>
-
-          <div className="grid grid-cols-4 gap-2 text-center text-xs">
-            
-            {/* 1. Add Animal */}
+          <div className="grid grid-cols-3 gap-2">
+            {/* Tool 1: Animals */}
             <button
               type="button"
-              onClick={() => setIsAddAnimalOpen(true)}
-              className="p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center justify-center gap-1.5 active:scale-95 transition hover:border-emerald-500 group"
+              onClick={() => navigate('animals')}
+              className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center text-center gap-1.5 active:scale-95 transition hover:border-emerald-500"
             >
-              <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <PlusCircle size={18} />
+              <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center text-lg">
+                🐄
               </div>
-              <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 leading-tight">
-                {t.addAnimal}
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                {t.navAnimals || 'My Cattle'}
               </span>
+              <span className="text-[10px] text-slate-400 font-semibold">{animals.length} Cows</span>
             </button>
 
-            {/* 2. Disease Check */}
+            {/* Tool 2: Milk Yield */}
+            <button
+              type="button"
+              onClick={() => navigate('milk')}
+              className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center text-center gap-1.5 active:scale-95 transition hover:border-emerald-500"
+            >
+              <div className="w-9 h-9 rounded-2xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 flex items-center justify-center text-lg">
+                🥛
+              </div>
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                {t.navMilk || 'Milk Logs'}
+              </span>
+              <span className="text-[10px] text-slate-400 font-semibold">{milkRecords.length} Shifts</span>
+            </button>
+
+            {/* Tool 3: Health */}
             <button
               type="button"
               onClick={() => setIsDiseaseScreeningOpen(true)}
-              className="p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center justify-center gap-1.5 active:scale-95 transition hover:border-teal-500 group"
+              className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center text-center gap-1.5 active:scale-95 transition hover:border-emerald-500"
             >
-              <div className="w-9 h-9 rounded-xl bg-teal-100 dark:bg-teal-950 text-teal-600 dark:text-teal-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Stethoscope size={18} />
+              <div className="w-9 h-9 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 flex items-center justify-center text-lg">
+                🩺
               </div>
-              <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 leading-tight">
-                {t.diseaseCheck}
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                {t.navHealth || 'Health AI'}
               </span>
+              <span className="text-[10px] text-slate-400 font-semibold">{healthAlerts.length} Alerts</span>
             </button>
 
-            {/* 3. Record Milk */}
-            <button
-              type="button"
-              onClick={() => setIsRecordMilkOpen(true)}
-              className="p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center justify-center gap-1.5 active:scale-95 transition hover:border-emerald-500 group"
-            >
-              <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Milk size={18} />
-              </div>
-              <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 leading-tight">
-                {t.recordMilk}
-              </span>
-            </button>
-
-            {/* 4. Vaccinations */}
-            <button
-              type="button"
-              onClick={() => navigate('vaccinations')}
-              className="p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center justify-center gap-1.5 active:scale-95 transition hover:border-amber-500 group"
-            >
-              <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Syringe size={18} />
-              </div>
-              <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 leading-tight">
-                {t.vaccinations}
-              </span>
-            </button>
-
-            {/* 5. Breeds Catalog */}
+            {/* Tool 4: Breed */}
             <button
               type="button"
               onClick={() => navigate('breeds')}
-              className="p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm col-span-2 flex items-center justify-center gap-2 active:scale-95 transition hover:border-emerald-500 group"
+              className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center text-center gap-1.5 active:scale-95 transition hover:border-emerald-500"
             >
-              <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 flex items-center justify-center">
-                <Activity size={16} />
+              <div className="w-9 h-9 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 flex items-center justify-center text-lg">
+                🧬
               </div>
-              <div className="text-left">
-                <strong className="block text-[11px] text-slate-800 dark:text-slate-200 font-bold">41 Indian Breeds</strong>
-                <span className="text-[9px] text-slate-400">Genetics & milk stats</span>
-              </div>
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                {t.breedCatalog || 'Breeds'}
+              </span>
+              <span className="text-[10px] text-slate-400 font-semibold">41 Breeds</span>
             </button>
 
-            {/* 6. Ask Dairy Nova AI */}
+            {/* Tool 5: Vaccination */}
+            <button
+              type="button"
+              onClick={() => navigate('vaccinations')}
+              className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center text-center gap-1.5 active:scale-95 transition hover:border-emerald-500"
+            >
+              <div className="w-9 h-9 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center text-lg">
+                💉
+              </div>
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                {t.vaccinations || 'Vaccines'}
+              </span>
+              <span className="text-[10px] text-slate-400 font-semibold">{vaccinations.length} Due</span>
+            </button>
+
+            {/* Tool 6: AI Chat */}
             <button
               type="button"
               onClick={() => navigate('ai-chat')}
-              className="p-2.5 rounded-2xl bg-gradient-to-tr from-teal-50 to-emerald-50 dark:from-teal-950/60 dark:to-emerald-950/60 border border-teal-300 dark:border-teal-700 shadow-sm col-span-2 flex items-center justify-center gap-2 active:scale-95 transition group"
+              className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center text-center gap-1.5 active:scale-95 transition hover:border-emerald-500"
             >
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-teal-600 to-emerald-600 text-white flex items-center justify-center group-hover:scale-105 transition-transform shadow-md shadow-teal-600/30">
-                <Sparkles size={16} />
+              <div className="w-9 h-9 rounded-2xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 flex items-center justify-center text-lg">
+                🤖
               </div>
-              <div className="text-left">
-                <strong className="block text-[11px] font-black text-teal-900 dark:text-teal-200">{t.askAI}</strong>
-                <span className="text-[9px] text-teal-700 dark:text-teal-300">Nutrition & Health AI</span>
-              </div>
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                {t.askAI || 'AI Assistant'}
+              </span>
+              <span className="text-[10px] text-emerald-600 font-semibold">24/7 Live</span>
             </button>
-
-          </div>
-        </div>
-
-        {/* Dynamic AI Herd & Nutrition Advisory */}
-        <AIAdvisoryCard onAskAIClick={() => navigate('ai-chat')} />
-
-        {/* Recent Priority Alerts */}
-        {activeAlerts.length > 0 && (
-          <div className="space-y-2.5">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                {t.recentAlerts} ({healthAlerts.length})
-              </h3>
-              <button
-                onClick={() => navigate('health')}
-                className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 hover:underline"
-              >
-                View All <ArrowRight size={12} />
-              </button>
-            </div>
-
-            <div className="space-y-2.5">
-              {activeAlerts.map((alert) => (
-                <HealthAlertCard
-                  key={alert.id}
-                  alert={alert}
-                  onResolve={resolveHealthAlert}
-                  onAskAI={() => navigate('ai-chat')}
-                  onScreening={() => setIsDiseaseScreeningOpen(true)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* 7-Day Production Mini-Trend Card */}
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-card-soft space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-teal-100 dark:bg-teal-950 text-teal-600 flex items-center justify-center">
-                <TrendingUp size={15} />
-              </div>
-              <div>
-                <h4 className="font-extrabold text-xs text-slate-900 dark:text-white">7-Day Milk Production Trend</h4>
-                <p className="text-[10px] text-slate-400">
-                  {totalYieldSum > 0 ? `Total Logged: ${totalYieldSum.toFixed(1)} L` : 'Log daily milk to see 7-day trend'}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => navigate('milk')}
-              className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
-            >
-              Details
-            </button>
-          </div>
-
-          {/* Dynamic SVG Yield Bar Chart */}
-          <div className="flex items-end justify-between gap-1.5 h-20 pt-2 px-1">
-            {chartDays.map((item, idx) => {
-              const heightPercent = maxChartYield > 0 ? Math.max(15, (item.yieldL / maxChartYield) * 100) : 15;
-              const isToday = idx === chartDays.length - 1;
-
-              return (
-                <div key={item.dateStr} className="flex-1 flex flex-col items-center gap-1 group">
-                  <span className="text-[9px] font-bold text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {item.yieldL}
-                  </span>
-                  <div
-                    className={`w-full rounded-t-lg transition-all duration-300 ${
-                      isToday && item.yieldL > 0
-                        ? 'bg-gradient-to-t from-emerald-600 to-teal-400 shadow-sm'
-                        : item.yieldL > 0
-                        ? 'bg-emerald-300 dark:bg-emerald-800'
-                        : 'bg-slate-200 dark:bg-slate-800'
-                    }`}
-                    style={{ height: `${heightPercent}%` }}
-                  />
-                  <span className={`text-[9px] truncate max-w-[34px] ${isToday ? 'font-black text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
-                    {item.label}
-                  </span>
-                </div>
-              );
-            })}
           </div>
         </div>
 
@@ -407,27 +457,7 @@ export const HomeDashboardScreen: React.FC = () => {
 
       <BottomNavigation />
 
-      {/* Modals */}
-      <AddAnimalModal
-        isOpen={isAddAnimalOpen}
-        onClose={() => setIsAddAnimalOpen(false)}
-        onAnimalAdded={addAnimal}
-      />
-
-      <DiseaseScreeningModal
-        isOpen={isDiseaseScreeningOpen}
-        onClose={() => setIsDiseaseScreeningOpen(false)}
-        onResultSaved={addHealthAlert}
-        onOpenAIChat={() => navigate('ai-chat')}
-      />
-
-      <RecordMilkModal
-        animals={animals}
-        isOpen={isRecordMilkOpen}
-        onClose={() => setIsRecordMilkOpen(false)}
-        onMilkRecorded={recordMilk}
-      />
-
+      {/* Rapid Feed Analysis Modal */}
       <FeedAnalysisModal
         isOpen={isFeedAnalysisOpen}
         onClose={() => setIsFeedAnalysisOpen(false)}
@@ -435,12 +465,46 @@ export const HomeDashboardScreen: React.FC = () => {
         onGenerateQRBatch={addQRBatch}
       />
 
+      {/* Rapid Silage Analysis Modal */}
       <SilageAnalysisModal
         isOpen={isSilageAnalysisOpen}
         onClose={() => setIsSilageAnalysisOpen(false)}
         onAnalysisSaved={addSilageAnalysis}
         onGenerateQRBatch={addQRBatch}
       />
+
+      {/* Disease Screening Modal */}
+      <DiseaseScreeningModal
+        isOpen={isDiseaseScreeningOpen}
+        onClose={() => setIsDiseaseScreeningOpen(false)}
+        onResultSaved={addHealthAlert}
+        onOpenAIChat={() => navigate('ai-chat')}
+      />
+
+      {/* Add Animal Modal */}
+      <AddAnimalModal
+        isOpen={isAddAnimalOpen}
+        onClose={() => setIsAddAnimalOpen(false)}
+        onAnimalAdded={addAnimal}
+      />
+
+      {/* Record Milk Modal */}
+      <RecordMilkModal
+        animals={animals}
+        isOpen={isRecordMilkOpen}
+        onClose={() => setIsRecordMilkOpen(false)}
+        onMilkRecorded={recordMilk}
+      />
+
+      {/* Printable Test Report Certificate Modal */}
+      {selectedReportTest && (
+        <TestReportModal
+          isOpen={true}
+          onClose={() => setSelectedReportTest(null)}
+          testType={selectedReportTest.type}
+          result={selectedReportTest.data}
+        />
+      )}
 
     </div>
   );

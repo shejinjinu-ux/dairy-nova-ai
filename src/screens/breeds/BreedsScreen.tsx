@@ -146,13 +146,27 @@ export const BreedsScreen: React.FC = () => {
             )}
 
             {/* Image Preview & Upload */}
-            <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 dark:border-slate-800">
-              <img src={previewUrl} alt="Cattle Breed Target" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent flex items-end p-2.5">
-                <span className="text-white text-[11px] font-medium truncate">
-                  {selectedFile ? selectedFile.name : 'Target Cattle Image'}
-                </span>
-              </div>
+            <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center">
+              {previewUrl ? (
+                <>
+                  <img src={previewUrl} alt="Cattle Breed Target" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent flex items-end p-2.5">
+                    <span className="text-white text-[11px] font-medium truncate">
+                      {selectedFile ? selectedFile.name : 'Target Cattle Image'}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center p-4 space-y-1 text-slate-400">
+                  <Camera size={24} className="mx-auto text-teal-600" />
+                  <span className="text-xs font-semibold block text-slate-600 dark:text-slate-300">
+                    No photo selected yet
+                  </span>
+                  <span className="text-[10px] text-slate-400 block">
+                    Upload a side-profile photo of the cattle for breed classification
+                  </span>
+                </div>
+              )}
             </div>
 
             <input

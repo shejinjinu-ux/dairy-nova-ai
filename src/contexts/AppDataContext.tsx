@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   Animal,
   HealthAlert,
@@ -7,27 +7,19 @@ import {
   SilageAnalysisResult,
   MilkRecord,
   MilkQualitySummary,
-  NotificationItem,
   QRBatch,
+  NotificationItem,
   OfficerFarm,
   ContaminationAlert,
 } from '../types';
 import {
-  INITIAL_ANIMALS,
-  INITIAL_HEALTH_ALERTS,
-  INITIAL_VACCINATIONS,
-  INITIAL_FEED_ANALYSES,
-  INITIAL_SILAGE_ANALYSES,
-  INITIAL_MILK_RECORDS,
-  MILK_QUALITY_SUMMARY,
-  INITIAL_NOTIFICATIONS,
-  INITIAL_QR_BATCHES,
   DEMO_HERD_ANIMALS,
   DEMO_HEALTH_ALERTS,
   DEMO_VACCINATIONS,
   DEMO_FEED_ANALYSES,
   DEMO_SILAGE_ANALYSES,
   DEMO_MILK_RECORDS,
+  MILK_QUALITY_SUMMARY,
   DEMO_NOTIFICATIONS,
   DEMO_QR_BATCHES,
   OFFICER_COOPERATIVE_FARMS,
@@ -43,6 +35,7 @@ export type ScreenType =
   | 'register'
   | 'forgot-password'
   | 'home'
+  | 'rapid-test'
   | 'animals'
   | 'animal-details'
   | 'add-animal'
@@ -111,16 +104,60 @@ const AppDataContext = createContext<AppDataContextType | undefined>(undefined);
 export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isOffline, addToQueue } = useOffline();
 
-  const [animals, setAnimals] = useState<Animal[]>(() => getStoredItem('animals', INITIAL_ANIMALS));
-  const [healthAlerts, setHealthAlerts] = useState<HealthAlert[]>(() => getStoredItem('health_alerts', INITIAL_HEALTH_ALERTS));
-  const [vaccinations, setVaccinations] = useState<VaccinationRecord[]>(() => getStoredItem('vaccinations', INITIAL_VACCINATIONS));
-  const [feedAnalyses, setFeedAnalyses] = useState<FeedAnalysisResult[]>(() => getStoredItem('feed_analyses', INITIAL_FEED_ANALYSES));
-  const [silageAnalyses, setSilageAnalyses] = useState<SilageAnalysisResult[]>(() => getStoredItem('silage_analyses', INITIAL_SILAGE_ANALYSES));
-  const [milkRecords, setMilkRecords] = useState<MilkRecord[]>(() => getStoredItem('milk_records', INITIAL_MILK_RECORDS));
+  // Helper to scope storage by current active user
+  const getUserKey = (prefix: string) => {
+    const user = getStoredItem<any>('active_user', null);
+    if (!user || !user.id) return prefix;
+    return `${prefix}_${user.id}`;
+  };
+
+  const getInitialAnimals = (): Animal[] => {
+    const user = getStoredItem<any>('active_user', null);
+    if (!user) return [];
+    if (user.id === 'farmer-demo') {
+      return getStoredItem('animals_demo', DEMO_HERD_ANIMALS);
+    }
+    return getStoredItem(`animals_${user.id}`, getStoredItem('animals', []));
+  };
+
+  const [animals, setAnimals] = useState<Animal[]>(getInitialAnimals);
+  const [healthAlerts, setHealthAlerts] = useState<HealthAlert[]>(() => {
+    const user = getStoredItem<any>('active_user', null);
+    if (user?.id === 'farmer-demo') return getStoredItem('health_alerts_demo', DEMO_HEALTH_ALERTS);
+    return user ? getStoredItem(`health_alerts_${user.id}`, []) : [];
+  });
+  const [vaccinations, setVaccinations] = useState<VaccinationRecord[]>(() => {
+    const user = getStoredItem<any>('active_user', null);
+    if (user?.id === 'farmer-demo') return getStoredItem('vaccinations_demo', DEMO_VACCINATIONS);
+    return user ? getStoredItem(`vaccinations_${user.id}`, []) : [];
+  });
+  const [feedAnalyses, setFeedAnalyses] = useState<FeedAnalysisResult[]>(() => {
+    const user = getStoredItem<any>('active_user', null);
+    if (user?.id === 'farmer-demo') return getStoredItem('feed_analyses_demo', DEMO_FEED_ANALYSES);
+    return user ? getStoredItem(`feed_analyses_${user.id}`, getStoredItem('feed_analyses', [])) : [];
+  });
+  const [silageAnalyses, setSilageAnalyses] = useState<SilageAnalysisResult[]>(() => {
+    const user = getStoredItem<any>('active_user', null);
+    if (user?.id === 'farmer-demo') return getStoredItem('silage_analyses_demo', DEMO_SILAGE_ANALYSES);
+    return user ? getStoredItem(`silage_analyses_${user.id}`, getStoredItem('silage_analyses', [])) : [];
+  });
+  const [milkRecords, setMilkRecords] = useState<MilkRecord[]>(() => {
+    const user = getStoredItem<any>('active_user', null);
+    if (user?.id === 'farmer-demo') return getStoredItem('milk_records_demo', DEMO_MILK_RECORDS);
+    return user ? getStoredItem(`milk_records_${user.id}`, []) : [];
+  });
   const [milkQuality] = useState<MilkQualitySummary>(() => getStoredItem('milk_quality', MILK_QUALITY_SUMMARY));
-  const [notifications, setNotifications] = useState<NotificationItem[]>(() => getStoredItem('notifications', INITIAL_NOTIFICATIONS));
-  const [qrBatches, setQrBatches] = useState<QRBatch[]>(() => getStoredItem('qr_batches', INITIAL_QR_BATCHES));
-  const [officerFarms, setOfficerFarms] = useState<OfficerFarm[]>(() => getStoredItem('officer_farms', OFFICER_COOPERATIVE_FARMS));
+  const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
+    const user = getStoredItem<any>('active_user', null);
+    if (user?.id === 'farmer-demo') return getStoredItem('notifications_demo', DEMO_NOTIFICATIONS);
+    return user ? getStoredItem(`notifications_${user.id}`, []) : [];
+  });
+  const [qrBatches, setQrBatches] = useState<QRBatch[]>(() => {
+    const user = getStoredItem<any>('active_user', null);
+    if (user?.id === 'farmer-demo') return getStoredItem('qr_batches_demo', DEMO_QR_BATCHES);
+    return user ? getStoredItem(`qr_batches_${user.id}`, []) : [];
+  });
+  const [officerFarms] = useState<OfficerFarm[]>(() => getStoredItem('officer_farms', OFFICER_COOPERATIVE_FARMS));
   const [contaminationAlerts, setContaminationAlerts] = useState<ContaminationAlert[]>(() => getStoredItem('contamination_alerts', CONTAMINATION_ALERTS));
 
   const [currentScreen, setCurrentScreen] = useState<ScreenType>(() => {
@@ -172,57 +209,51 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       newAnimals = [animal];
     }
     setAnimals(newAnimals);
+    setStoredItem(getUserKey('animals'), newAnimals);
     setStoredItem('animals', newAnimals);
+
     setHealthAlerts([]);
-    setStoredItem('health_alerts', []);
+    setStoredItem(getUserKey('health_alerts'), []);
     setVaccinations([]);
-    setStoredItem('vaccinations', []);
+    setStoredItem(getUserKey('vaccinations'), []);
     setFeedAnalyses([]);
-    setStoredItem('feed_analyses', []);
+    setStoredItem(getUserKey('feed_analyses'), []);
     setSilageAnalyses([]);
-    setStoredItem('silage_analyses', []);
+    setStoredItem(getUserKey('silage_analyses'), []);
     setMilkRecords([]);
-    setStoredItem('milk_records', []);
+    setStoredItem(getUserKey('milk_records'), []);
   };
 
   // Load demo dataset for demo farmer testing
   const loadDemoHerd = () => {
     setAnimals(DEMO_HERD_ANIMALS);
-    setStoredItem('animals', DEMO_HERD_ANIMALS);
+    setStoredItem('animals_demo', DEMO_HERD_ANIMALS);
     setHealthAlerts(DEMO_HEALTH_ALERTS);
-    setStoredItem('health_alerts', DEMO_HEALTH_ALERTS);
+    setStoredItem('health_alerts_demo', DEMO_HEALTH_ALERTS);
     setVaccinations(DEMO_VACCINATIONS);
-    setStoredItem('vaccinations', DEMO_VACCINATIONS);
+    setStoredItem('vaccinations_demo', DEMO_VACCINATIONS);
     setFeedAnalyses(DEMO_FEED_ANALYSES);
-    setStoredItem('feed_analyses', DEMO_FEED_ANALYSES);
+    setStoredItem('feed_analyses_demo', DEMO_FEED_ANALYSES);
     setSilageAnalyses(DEMO_SILAGE_ANALYSES);
-    setStoredItem('silage_analyses', DEMO_SILAGE_ANALYSES);
+    setStoredItem('silage_analyses_demo', DEMO_SILAGE_ANALYSES);
     setMilkRecords(DEMO_MILK_RECORDS);
-    setStoredItem('milk_records', DEMO_MILK_RECORDS);
+    setStoredItem('milk_records_demo', DEMO_MILK_RECORDS);
     setNotifications(DEMO_NOTIFICATIONS);
-    setStoredItem('notifications', DEMO_NOTIFICATIONS);
+    setStoredItem('notifications_demo', DEMO_NOTIFICATIONS);
     setQrBatches(DEMO_QR_BATCHES);
-    setStoredItem('qr_batches', DEMO_QR_BATCHES);
+    setStoredItem('qr_batches_demo', DEMO_QR_BATCHES);
   };
 
   // Clear user data on sign out
   const clearUserData = () => {
     setAnimals([]);
-    setStoredItem('animals', []);
     setHealthAlerts([]);
-    setStoredItem('health_alerts', []);
     setVaccinations([]);
-    setStoredItem('vaccinations', []);
     setFeedAnalyses([]);
-    setStoredItem('feed_analyses', []);
     setSilageAnalyses([]);
-    setStoredItem('silage_analyses', []);
     setMilkRecords([]);
-    setStoredItem('milk_records', []);
     setNotifications([]);
-    setStoredItem('notifications', []);
     setQrBatches([]);
-    setStoredItem('qr_batches', []);
   };
 
   const addAnimal = (animalData: Omit<Animal, 'id' | 'createdDate' | 'lastCheckDate'>) => {
@@ -234,6 +265,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
     const updated = [newAnimal, ...animals];
     setAnimals(updated);
+    setStoredItem(getUserKey('animals'), updated);
     setStoredItem('animals', updated);
 
     if (isOffline) {
@@ -244,6 +276,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const updateAnimal = (id: string, updates: Partial<Animal>) => {
     const updated = animals.map((a) => (a.id === id ? { ...a, ...updates, lastCheckDate: new Date().toISOString().split('T')[0] } : a));
     setAnimals(updated);
+    setStoredItem(getUserKey('animals'), updated);
     setStoredItem('animals', updated);
 
     if (isOffline) {
@@ -254,6 +287,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const deleteAnimal = (id: string) => {
     const updated = animals.filter((a) => a.id !== id);
     setAnimals(updated);
+    setStoredItem(getUserKey('animals'), updated);
     setStoredItem('animals', updated);
   };
 
@@ -265,7 +299,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
     const updated = [newRecord, ...milkRecords];
     setMilkRecords(updated);
-    setStoredItem('milk_records', updated);
+    setStoredItem(getUserKey('milk_records'), updated);
 
     if (isOffline) {
       addToQueue('milk_record', newRecord);
@@ -285,7 +319,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         : v
     );
     setVaccinations(updated);
-    setStoredItem('vaccinations', updated);
+    setStoredItem(getUserKey('vaccinations'), updated);
 
     if (isOffline) {
       addToQueue('vaccination_mark', { id, vetName, notes });
@@ -300,37 +334,39 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
     const updated = [newAlert, ...healthAlerts];
     setHealthAlerts(updated);
-    setStoredItem('health_alerts', updated);
+    setStoredItem(getUserKey('health_alerts'), updated);
   };
 
   const resolveHealthAlert = (id: string) => {
     const updated = healthAlerts.map((a) => (a.id === id ? { ...a, status: 'resolved' as const } : a));
     setHealthAlerts(updated);
-    setStoredItem('health_alerts', updated);
+    setStoredItem(getUserKey('health_alerts'), updated);
   };
 
   const addFeedAnalysis = (result: FeedAnalysisResult) => {
     const updated = [result, ...feedAnalyses];
     setFeedAnalyses(updated);
+    setStoredItem(getUserKey('feed_analyses'), updated);
     setStoredItem('feed_analyses', updated);
   };
 
   const addSilageAnalysis = (result: SilageAnalysisResult) => {
     const updated = [result, ...silageAnalyses];
     setSilageAnalyses(updated);
+    setStoredItem(getUserKey('silage_analyses'), updated);
     setStoredItem('silage_analyses', updated);
   };
 
   const addQRBatch = (batch: QRBatch) => {
     const updated = [batch, ...qrBatches];
     setQrBatches(updated);
-    setStoredItem('qr_batches', updated);
+    setStoredItem(getUserKey('qr_batches'), updated);
   };
 
   const markAllNotificationsRead = () => {
     const updated = notifications.map((n) => ({ ...n, isRead: true }));
     setNotifications(updated);
-    setStoredItem('notifications', updated);
+    setStoredItem(getUserKey('notifications'), updated);
   };
 
   const resolveContaminationAlert = (id: string, note: string) => {

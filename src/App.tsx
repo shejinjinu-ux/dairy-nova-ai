@@ -13,6 +13,7 @@ import { LoginScreen } from './screens/auth/LoginScreen';
 import { RegisterScreen } from './screens/auth/RegisterScreen';
 import { ForgotPasswordScreen } from './screens/auth/ForgotPasswordScreen';
 import { HomeDashboardScreen } from './screens/dashboard/HomeDashboardScreen';
+import { RapidTestScreen } from './screens/feed/RapidTestScreen';
 import { AnimalsScreen } from './screens/animals/AnimalsScreen';
 import { AnimalDetailsScreen } from './screens/animals/AnimalDetailsScreen';
 import { BreedsScreen } from './screens/breeds/BreedsScreen';
@@ -50,6 +51,8 @@ const ScreenRouter: React.FC = () => {
       return <ForgotPasswordScreen />;
     case 'home':
       return <HomeDashboardScreen />;
+    case 'rapid-test':
+      return <RapidTestScreen />;
     case 'animals':
       return <AnimalsScreen />;
     case 'animal-details':

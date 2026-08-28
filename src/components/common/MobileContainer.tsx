@@ -31,26 +31,20 @@ export const MobileContainer: React.FC<MobileContainerProps> = ({ children }) =>
       {/* Mobile Frame Container */}
       <div className="w-full max-w-md min-h-screen sm:min-h-[844px] sm:max-h-[920px] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 sm:rounded-[36px] sm:shadow-2xl sm:shadow-black/60 overflow-hidden flex flex-col relative border-0 sm:border sm:border-slate-800/80">
         
-        {/* Android Status Bar */}
+        {/* Mobile Status Bar */}
         <div className="bg-slate-950 text-slate-300 px-5 pt-2.5 pb-1 flex items-center justify-between text-xs font-medium shrink-0 z-50 select-none">
           <span className="font-semibold tracking-wider text-[11px] text-slate-200">{currentTime}</span>
           
           <div className="flex items-center gap-2 text-slate-400">
             {isOffline ? (
-              <span className="flex items-center gap-1 text-[10px] text-amber-400 bg-amber-950/80 px-1.5 py-0.5 rounded">
-                <WifiOff size={11} /> Offline
+              <span className="flex items-center gap-1 text-[10px] text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded-full font-bold">
+                <WifiOff size={11} /> Offline Mode
               </span>
             ) : (
-              <span className="flex items-center gap-1 text-[10px] text-emerald-400">
-                <Wifi size={12} />
+              <span className="flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full font-bold">
+                <Wifi size={11} /> Online
               </span>
             )}
-            <Signal size={12} />
-            <span className="text-[10px] font-mono">5G</span>
-            <div className="flex items-center gap-0.5 text-slate-200">
-              <span className="text-[10px]">96%</span>
-              <BatteryMedium size={14} className="text-emerald-400" />
-            </div>
           </div>
         </div>
 

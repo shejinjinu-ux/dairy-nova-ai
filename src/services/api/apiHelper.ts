@@ -10,23 +10,27 @@ export const delay = (ms: number = 300): Promise<void> => {
 };
 
 /**
- * Format server or network errors into farmer-friendly messages
+ * Format server or network errors into informative, farmer-friendly messages
  */
 export function formatFarmerErrorMessage(error: any, status?: number): string {
   if (!navigator.onLine) {
-    return 'You are currently offline. Actions will be saved locally and synced when connection returns.';
+    return 'Internet connection unavailable. You are currently offline. Local actions will sync when connected.';
+  }
+
+  if (status === 429) {
+    return 'Too many requests. Please wait a moment before trying again.';
   }
 
   if (error?.name === 'AbortError' || error?.message?.includes('aborted') || error?.message?.includes('timeout')) {
-    return 'AI service is waking up or taking longer than expected. Please wait a moment and try again.';
+    return 'AI service is waking up or request timed out. Please wait a moment and try again.';
   }
 
   if (status === 400 || status === 422) {
     const rawDetail = error?.detail || error?.message || '';
     if (typeof rawDetail === 'string' && rawDetail.length > 0 && !rawDetail.includes('Traceback')) {
-      return `Please check input details: ${rawDetail}`;
+      return `Some test information is missing or invalid: ${rawDetail}`;
     }
-    return 'Invalid input details provided. Please verify the entered information and try again.';
+    return 'Some test information is missing or invalid. Please check the values and retry.';
   }
 
   if (status === 401 || status === 403) {
@@ -34,15 +38,28 @@ export function formatFarmerErrorMessage(error: any, status?: number): string {
   }
 
   if (status === 404) {
-    return 'Requested dairy record or AI model resource was not found.';
+    return 'Requested dairy record or AI model resource was not found on the server.';
+  }
+
+  if (error?.error_type === 'ModelInferenceError' || error?.message?.includes('Inference failed') || error?.message?.includes('ModelInferenceError')) {
+    const detailMsg = error?.details?.error || error?.message || '';
+    return `AI model is currently unavailable on the server (${detailMsg || 'Model Inference Error'}). Please consult a certified veterinarian.`;
+  }
+
+  if (status === 502 || status === 503 || status === 504) {
+    return 'The AI backend server is currently starting up or experiencing high load. Please try again in 30 seconds.';
   }
 
   if (status && status >= 500) {
-    return 'The AI service encountered a temporary hiccup. Please try again in a few moments.';
+    const backendMsg = error?.message || error?.detail;
+    if (backendMsg && typeof backendMsg === 'string' && !backendMsg.includes('Traceback') && backendMsg.length < 150) {
+      return `AI analysis is temporarily unavailable (${backendMsg}). Please try again.`;
+    }
+    return 'AI analysis is temporarily unavailable on the server. Please try again in a few moments.';
   }
 
   if (error instanceof TypeError && error.message.includes('fetch')) {
-    return 'Connecting to Dairy Nova AI… If this is the first request, the AI service may take a moment to wake up.';
+    return 'Connecting to Dairy Nova AI server… The service may take a moment to wake up.';
   }
 
   return error?.message || 'Unable to connect to the AI service. Please check your connection and try again.';
@@ -52,7 +69,7 @@ export function formatFarmerErrorMessage(error: any, status?: number): string {
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {},
-  timeoutMs: number = 30000
+  timeoutMs: number = 40000
 ): Promise<T> {
   const url = path.startsWith('http') ? path : `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
   
@@ -98,30 +115,30 @@ export async function apiFetch<T>(
     clearTimeout(timeoutId);
     if (!error.status) {
       const friendlyMsg = formatFarmerErrorMessage(error);
-      const customErr = new Error(friendlyMsg);
-      (customErr as any).original = error;
-      throw customErr;
+      const err = new Error(friendlyMsg);
+      (err as any).original = error;
+      throw err;
     }
     throw error;
   }
 }
 
-// LocalStorage helpers with automatic JSON serialization
-export const getStoredItem = <T>(key: string, defaultValue: T): T => {
+// Local Storage Wrappers
+export function getStoredItem<T>(key: string, defaultValue: T): T {
   try {
-    const item = localStorage.getItem(`dairynova_${key}`);
-    return item ? JSON.parse(item) : defaultValue;
-  } catch (error) {
-    console.warn(`Error reading localStorage key dairynova_${key}:`, error);
+    const raw = localStorage.getItem(`dairynova_${key}`);
+    if (!raw) return defaultValue;
+    return JSON.parse(raw) as T;
+  } catch (e) {
+    console.warn(`Error reading localStorage for key "dairynova_${key}":`, e);
     return defaultValue;
   }
-};
+}
 
-export const setStoredItem = <T>(key: string, value: T): void => {
+export function setStoredItem<T>(key: string, value: T): void {
   try {
     localStorage.setItem(`dairynova_${key}`, JSON.stringify(value));
-  } catch (error) {
-    console.warn(`Error saving to localStorage key dairynova_${key}:`, error);
+  } catch (e) {
+    console.warn(`Error saving to localStorage for key "dairynova_${key}":`, e);
   }
-};
-
+}

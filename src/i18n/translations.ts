@@ -147,6 +147,60 @@ export interface TranslationDictionary {
   diseaseDisclaimerNotice?: string;
   noCattleRegisteredYet?: string;
   connectingToAi?: string;
+  navTest?: string;
+  navHistory?: string;
+  navAdvice?: string;
+  rapidFeedAndSilageTesting?: string;
+  rapidTestSubtitle?: string;
+  testFeedSilageCTA?: string;
+  scanSample?: string;
+  enterTestData?: string;
+  testHistory?: string;
+  feedRecommendations?: string;
+  otherDairyTools?: string;
+  chooseYourSample?: string;
+  dryFeed?: string;
+  silageSample?: string;
+  greenFodder?: string;
+  mixedFeed?: string;
+  howDoYouWantToTest?: string;
+  photoSampleScan?: string;
+  sensorData?: string;
+  manualEntry?: string;
+  sensorIntegrationTitle?: string;
+  sensorIntegrationDesc?: string;
+  sensorStatusNotConnected?: string;
+  qualityScore?: string;
+  canIFeedThis?: string;
+  goodToUse?: string;
+  useWithCaution?: string;
+  doNotFeedDirectly?: string;
+  whyThisResult?: string;
+  recommendedAction?: string;
+  riskAnalysis?: string;
+  mouldRisk?: string;
+  spoilageRisk?: string;
+  qualityRisk?: string;
+  listenToAdvice?: string;
+  downloadShareReport?: string;
+  recentTest?: string;
+  latestFeedSilageTest?: string;
+  viewResult?: string;
+  safe?: string;
+  caution?: string;
+  unsafe?: string;
+  noTestsYet?: string;
+  noTestsYetDesc?: string;
+  feedQualityResult?: string;
+  silageQualityResult?: string;
+  photoSampleCaptured?: string;
+  photoSampleCapturedDesc?: string;
+  testFeedCTA?: string;
+  testSilageCTA?: string;
+  captureClinicalPhoto?: string;
+  recentTests?: string;
+  viewAll?: string;
+  printShareReport?: string;
   aiTimeout?: string;
   aiBusyRateLimit?: string;
   chooseFromGallery?: string;
@@ -307,9 +361,59 @@ export const TRANSLATIONS: Record<string, TranslationDictionary> = {
     "noCattleRegisteredYet": "No cattle registered yet. Add your cattle to get AI herd health & nutrition advisories.",
     "connectingToAi": "Connecting to Dairy Nova AI. Please wait a moment.",
     "aiTimeout": "AI service is taking longer than expected. Please try again.",
-    "aiBusyRateLimit": "AI service is busy. Please try again in a moment.",
     "chooseFromGallery": "Choose from Gallery",
     "removePhoto": "Remove Photo",
+    "navTest": "Test",
+    "navHistory": "History",
+    "navAdvice": "Advice",
+    "rapidFeedAndSilageTesting": "RAPID FEED & SILAGE QUALITY TEST",
+    "rapidTestSubtitle": "Check quality • Detect risks • Get instant AI advice",
+    "testFeedSilageCTA": "TEST FEED / SILAGE",
+    "scanSample": "Scan Sample",
+    "enterTestData": "Enter Test Data",
+    "testHistory": "Test History",
+    "feedRecommendations": "Feed Recommendations",
+    "otherDairyTools": "Other Dairy Tools",
+    "chooseYourSample": "Choose your sample",
+    "dryFeed": "Dry Feed",
+    "silageSample": "Silage",
+    "greenFodder": "Green Fodder",
+    "mixedFeed": "Mixed Feed",
+    "howDoYouWantToTest": "How do you want to test?",
+    "photoSampleScan": "Photo / Sample Scan",
+    "sensorData": "Sensor Data",
+    "manualEntry": "Manual Entry",
+    "sensorIntegrationTitle": "Sensor Integration",
+    "sensorIntegrationDesc": "Connect supported feed/silage sensors for automated readings.",
+    "sensorStatusNotConnected": "Not connected",
+    "qualityScore": "Quality Score",
+    "canIFeedThis": "Can I feed this?",
+    "goodToUse": "GOOD TO USE",
+    "useWithCaution": "USE WITH CAUTION",
+    "doNotFeedDirectly": "DO NOT FEED DIRECTLY",
+    "whyThisResult": "Why this result?",
+    "recommendedAction": "Recommended Action",
+    "riskAnalysis": "Risk Analysis",
+    "mouldRisk": "Mould Risk",
+    "spoilageRisk": "Spoilage Risk",
+    "qualityRisk": "Quality Risk",
+    "listenToAdvice": "Listen to Advice",
+    "downloadShareReport": "Download / Share Report",
+    "recentTest": "Recent Quality Test",
+    "latestFeedSilageTest": "Latest Feed / Silage Test",
+    "viewResult": "View Result",
+    "safe": "SAFE",
+    "caution": "CAUTION",
+    "unsafe": "UNSAFE",
+    "noTestsYet": "No tests yet",
+    "noTestsYetDesc": "Your completed feed and silage tests will appear here.",
+    "feedQualityResult": "Feed Quality Result",
+    "silageQualityResult": "SILAGE QUALITY RESULT",
+    "photoSampleCaptured": "Photo sample captured",
+    "photoSampleCapturedDesc": "Sample photo documented for this batch.",
+    "testFeedCTA": "TEST FEED",
+    "testSilageCTA": "TEST SILAGE",
+    "captureClinicalPhoto": "Capture Cattle Clinical Photo",
   },
   "ta": {
     "appName": "டெயரி நோவா AI",
@@ -427,10 +531,89 @@ export const TRANSLATIONS: Record<string, TranslationDictionary> = {
     "markAllRead": "அனைத்தையும் படித்ததாக குறிக்கவும்",
     "vaccinationSchedule": "தடுப்பூசி அட்டவணை",
     "routineImmunization": "வழக்கமான தடுப்பூசிகள்",
-    "markVaccinated": "தடுப்பூசி போடப்பட்டது என குறிக்க",
-    "officerPortal": "கால்நடை மருத்துவ அதிகாரி தளம்",
-    "bulkMilkQuality": "மொத்த பால் சேகரிப்பு தரம்",
-    "contaminationAlerts": "கலப்பட எச்சரிக்கைகள்"
+    "rapidFeedTest": "தீவன விரைவு தர பரிசோதனை",
+    "rapidSilageTest": "சைலேஜ் விரைவு தர பரிசோதனை",
+    "isFeedGoodForCattle": "இந்த தீவனம் மாடுகளுக்கு நல்லதா?",
+    "isSilageGood": "சைலேஜ் தரம் நல்லதா?",
+    "feedQualityGood": "நல்ல தரமான தீவனம்",
+    "feedQualityModerate": "மிதமான தர தீவனம்",
+    "feedQualityPoor": "குறைந்த தரம் / ஆபத்து கண்டறியப்பட்டது",
+    "viewDetailedAnalysis": "முழு விவர பகுப்பாய்வு",
+    "dryMatter": "உலர் பொருள் (DM)",
+    "crudeProtein": "புரத சத்து (CP)",
+    "crudeFibre": "நார்ச்சத்து (CF)",
+    "ndf": "NDF நார்ச்சத்து",
+    "adf": "ADF நார்ச்சத்து",
+    "adl": "ADL லிக்னின்",
+    "starch": "ஸ்டார்ச்",
+    "noFeedRecordsYet": "தீவன சோதனைகள் எதுவும் இல்லை.",
+    "noSilageRecordsYet": "சைலேஜ் சோதனைகள் எதுவும் இல்லை.",
+    "testFeedQuality": "தீவனத்தை சோதிக்க",
+    "testSilageQuality": "சைலேஜை சோதிக்க",
+    "noMilkRecordsYet": "பால் பதிவுகள் எதுவும் இல்லை.",
+    "addTodaysCollection": "இன்றைய பாலை பதிவு செய்க",
+    "useCurrentLocation": "இருப்பிடத்தை கண்டறிக (GPS)",
+    "detectingLocation": "இருப்பிடம் கண்டறியப்படுகிறது...",
+    "locationPermissionDenied": "இருப்பிட அனுமதி மறுக்கப்பட்டது.",
+    "state": "மாநிலம்",
+    "district": "மாவட்டம்",
+    "villageTown": "கிராமம் / நகரம்",
+    "diseaseDisclaimerNotice": "இது AI முதற்கட்ட பரிசோதனை மட்டுமே. தீவிர சிகிச்சைக்கு மருத்துவரை அணுகவும்.",
+    "noCattleRegisteredYet": "மாடுகள் எதுவும் பதிவு செய்யப்படவில்லை.",
+    "connectingToAi": "AI உடன் இணைகிறது...",
+    "aiTimeout": "AI சேவை சிறிது நேரம் எடுக்கிறது. மீண்டும் முயற்சிக்கவும்.",
+    "chooseFromGallery": "கேலரியில் இருந்து தேர்வு செய்க",
+    "removePhoto": "புகைப்படத்தை நீக்குக",
+    "navTest": "பரிசோதனை",
+    "navHistory": "வரலாறு",
+    "navAdvice": "ஆலோசனை",
+    "rapidFeedAndSilageTesting": "விரைவு தீவனம் & சைலேஜ் தர பரிசோதனை",
+    "rapidTestSubtitle": "தரம் அறிதல் • ஆபத்து கண்டறிதல் • உடனடி AI ஆலோசனை",
+    "testFeedSilageCTA": "தீவனம் / சைலேஜ் பரிசோதி",
+    "scanSample": "மாதிரி ஸ்கேன்",
+    "enterTestData": "தரவு உள்ளீடு",
+    "testHistory": "பரிசோதனை வரலாறு",
+    "feedRecommendations": "தீவன பரிந்துரைகள்",
+    "otherDairyTools": "பிற பால் பண்ணை கருவிகள்",
+    "chooseYourSample": "உங்கள் தீவன மாதிரியைத் தேர்ந்தெடுக்கவும்",
+    "dryFeed": "உலர் தீவனம் (வைக்கோல்)",
+    "silageSample": "சைலேஜ் (மக்காச்சோள ஊறுகாய்)",
+    "greenFodder": "பசுந்தீவனம் (நேப்பியர்/கோ-5)",
+    "mixedFeed": "கலப்பு தீவனம் (TMR/அடர்தீவனம்)",
+    "howDoYouWantToTest": "எப்படி பரிசோதிக்க விரும்புகிறீர்கள்?",
+    "photoSampleScan": "புகைப்படம் / மாதிரி ஸ்கேன்",
+    "sensorData": "சென்சார் தரவு",
+    "manualEntry": "நேரடி உள்ளீடு",
+    "sensorIntegrationTitle": "சென்சார் இணைப்பு",
+    "sensorIntegrationDesc": "தானியங்கி அளவீடுகளுக்கு ஆதரிக்கப்படும் சென்சார்களை இணைக்கவும்.",
+    "sensorStatusNotConnected": "இணைக்கப்படவில்லை (விரைவில்)",
+    "qualityScore": "தர மதிப்பீடு",
+    "goodToUse": "பயன்படுத்த ஏற்றது (நன்று)",
+    "useWithCaution": "எச்சரிக்கையுடன் பயன்படுத்தவும்",
+    "doNotFeedDirectly": "நேரடியாக கொடுக்க வேண்டாம்",
+    "whyThisResult": "இந்த முடிவின் காரணம் என்ன?",
+    "recommendedAction": "பரிந்துரைக்கப்படும் நடவடிக்கை",
+    "riskAnalysis": "ஆபத்து பகுப்பாய்வு",
+    "mouldRisk": "பூஞ்சை ஆபத்து",
+    "spoilageRisk": "கெட்டுப்போகும் ஆபத்து",
+    "qualityRisk": "தர குறைவு ஆபத்து",
+    "listenToAdvice": "ஆலோசனையைக் கேளுங்கள்",
+    "downloadShareReport": "அறிக்கையைப் பதிவிறக்கு / பகிர்",
+    "recentTest": "சமீபத்திய பரிசோதனை",
+    "latestFeedSilageTest": "கடைசி தீவனம் / சைலேஜ் பரிசோதனை",
+    "viewResult": "முடிவை காண்க",
+    "safe": "பாதுகாப்பானது",
+    "caution": "எச்சரிக்கை",
+    "unsafe": "ஆபத்தானது",
+    "noTestsYet": "இன்னும் பரிசோதனைகள் இல்லை",
+    "noTestsYetDesc": "நீங்கள் செய்யும் தீவனம் மற்றும் சைலேஜ் பரிசோதனைகள் இங்கே தோன்றும்.",
+    "feedQualityResult": "தீவன தர முடிவு",
+    "silageQualityResult": "சைலேஜ் தர முடிவு",
+    "photoSampleCaptured": "மாதிரி புகைப்படம் எடுக்கப்பட்டது",
+    "photoSampleCapturedDesc": "இந்த தொகுதிக்கு மாதிரி படம் ஆவணப்படுத்தப்பட்டுள்ளது.",
+    "testFeedCTA": "தீவனம் சோதிக்க",
+    "testSilageCTA": "சைலேஜ் சோதிக்க",
+    "captureClinicalPhoto": "பசுக் கிளினிக்கல் புகைப்படம் எடுக்கவும்",
   },
   "hi": {
     "appName": "डेयरी नोवा AI",
@@ -551,7 +734,55 @@ export const TRANSLATIONS: Record<string, TranslationDictionary> = {
     "markVaccinated": "टीकाकरण पूर्ण चिह्नित करें",
     "officerPortal": "पशु चिकित्सा अधिकारी पोर्टल",
     "bulkMilkQuality": "थोक दूध गुणवत्ता",
-    "contaminationAlerts": "मिलावट चेतावनी"
+    "contaminationAlerts": "मिलावट चेतावनी",
+    "navTest": "जांच",
+    "navHistory": "इतिहास",
+    "navAdvice": "सलाह",
+    "rapidFeedAndSilageTesting": "त्वरित चारा एवं साइलेज गुणवत्ता जांच",
+    "rapidTestSubtitle": "गुणवत्ता जांचें • जोखिम पहचानें • तुरंत AI सलाह पाएं",
+    "testFeedSilageCTA": "चारा / साइलेज जांचें",
+    "scanSample": "सैंपल स्कैन",
+    "enterTestData": "डेटा दर्ज करें",
+    "testHistory": "जांच इतिहास",
+    "feedRecommendations": "चारा सिफारिशें",
+    "otherDairyTools": "अन्य डेयरी उपकरण",
+    "chooseYourSample": "अपना सैंपल चुनें",
+    "dryFeed": "सूखा चारा (भूसा / पुआल)",
+    "silageSample": "साइलेज (मक्का अचार)",
+    "greenFodder": "हरा चारा (नेपियर / बरसीम)",
+    "mixedFeed": "मिश्रित चारा (TMR / दाना)",
+    "howDoYouWantToTest": "आप कैसे जांचना चाहते हैं?",
+    "photoSampleScan": "फोटो / सैंपल स्कैन",
+    "sensorData": "सेंसर डेटा",
+    "manualEntry": "सीधे दर्ज करें",
+    "sensorIntegrationTitle": "सेंसर एकीकरण",
+    "sensorIntegrationDesc": "स्वचालित रीडिंग के लिए समर्थित सेंसर कनेक्ट करें।",
+    "sensorStatusNotConnected": "कनेक्ट नहीं है (शीघ्र उपलब्ध)",
+    "qualityScore": "गुणवत्ता स्कोर",
+    "canIFeedThis": "क्या यह पशुओं को खिला सकते हैं?",
+    "goodToUse": "उपयोग के लिए उत्तम (सुरक्षित)",
+    "useWithCaution": "सावधानी से उपयोग करें",
+    "doNotFeedDirectly": "सीधे न खिलाएं (जोखिम)",
+    "whyThisResult": "यह परिणाम क्यों आया?",
+    "recommendedAction": "सलाह दी गई कार्रवाई",
+    "riskAnalysis": "जोखिम विश्लेषण",
+    "mouldRisk": "फफूंद जोखिम",
+    "spoilageRisk": "खराब होने का जोखिम",
+    "qualityRisk": "गुणवत्ता जोखिम",
+    "listenToAdvice": "सलाह सुनें",
+    "downloadShareReport": "रिपोर्ट डाउनलोड / शेयर करें",
+    "recentTest": "हाल की जांच",
+    "latestFeedSilageTest": "नवीनतम चारा / साइलेज जांच",
+    "viewResult": "परिणाम देखें",
+    "safe": "सुरक्षित",
+    "caution": "सावधानी",
+    "unsafe": "असुरक्षित",
+    "noTestsYet": "कोई जांच नहीं",
+    "noTestsYetDesc": "आपकी चारा और साइलेज जांच यहां दिखाई देगी।",
+    "feedQualityResult": "चारा गुणवत्ता परिणाम",
+    "silageQualityResult": "साइलेज गुणवत्ता परिणाम",
+    "photoSampleCaptured": "सैंपल फोटो ली गई",
+    "photoSampleCapturedDesc": "इस बैच के लिए सैंपल फोटो दर्ज कर ली गई है।",
   },
   "te": {
     "appName": "డైరీ నోవా AI",
