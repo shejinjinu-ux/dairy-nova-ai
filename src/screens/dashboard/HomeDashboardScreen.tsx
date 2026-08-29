@@ -4,7 +4,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { MobileHeader } from '../../components/common/MobileHeader';
 import { BottomNavigation } from '../../components/common/BottomNavigation';
-import { MetricCard } from '../../components/common/MetricCard';
 import { FeedAnalysisModal } from '../../components/feed/FeedAnalysisModal';
 import { SilageAnalysisModal } from '../../components/silage/SilageAnalysisModal';
 import { TestReportModal } from '../../components/feed/TestReportModal';
@@ -16,22 +15,12 @@ import {
   Wheat,
   Layers,
   Sparkles,
-  Camera,
-  Keyboard,
-  History,
-  Radio,
   ArrowRight,
   CheckCircle2,
   AlertTriangle,
   FileText,
-  Milk,
-  Syringe,
-  Stethoscope,
   Activity,
-  PlusCircle,
-  TrendingUp,
-  Dna,
-  Bot,
+  Plus,
 } from 'lucide-react';
 
 export const HomeDashboardScreen: React.FC = () => {
@@ -78,7 +67,7 @@ export const HomeDashboardScreen: React.FC = () => {
     <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-950">
       <MobileHeader showGreeting={true} />
 
-      <main className="p-4 sm:p-5 space-y-4 pb-20 animate-fadeIn">
+      <main className="p-4 sm:p-5 space-y-4 pb-24 animate-fadeIn max-w-lg mx-auto w-full">
         
         {/* ========================================================================= */}
         {/* 1. APP BRANDING HEADER */}
@@ -98,7 +87,7 @@ export const HomeDashboardScreen: React.FC = () => {
         </div>
 
         {/* ========================================================================= */}
-        {/* 2. TWO SEPARATE LARGE PRIMARY CARDS: RAPID FEED & RAPID SILAGE */}
+        {/* 2. TWO PRIMARY HERO MODULES: RAPID FEED & RAPID SILAGE QUALITY TESTS */}
         {/* ========================================================================= */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           
@@ -112,7 +101,7 @@ export const HomeDashboardScreen: React.FC = () => {
                   🌾
                 </div>
                 <span className="text-[10px] font-extrabold uppercase tracking-wider bg-emerald-400 text-slate-950 px-2.5 py-0.5 rounded-full">
-                  NIR Proximate AI
+                  Image & Proximate
                 </span>
               </div>
 
@@ -121,7 +110,7 @@ export const HomeDashboardScreen: React.FC = () => {
                   {t.rapidFeedTest || 'RAPID FEED QUALITY TEST'}
                 </h3>
                 <p className="text-xs text-emerald-100/90 leading-relaxed mt-1">
-                  Test protein, dry matter, crude fiber & moisture safety before feeding.
+                  Mould visual screening & ICAR nutritional reference analysis.
                 </p>
               </div>
             </div>
@@ -155,7 +144,7 @@ export const HomeDashboardScreen: React.FC = () => {
                   {t.rapidSilageTest || 'RAPID SILAGE QUALITY TEST'}
                 </h3>
                 <p className="text-xs text-teal-100/90 leading-relaxed mt-1">
-                  Check pH acidity, core temperature, spoilage risk & FQI fermentation index.
+                  Visual mould check, pH acidity, fermentation classification & FQI score.
                 </p>
               </div>
             </div>
@@ -173,80 +162,7 @@ export const HomeDashboardScreen: React.FC = () => {
         </div>
 
         {/* ========================================================================= */}
-        {/* 3. QUICK ACTIONS BAR */}
-        {/* ========================================================================= */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {/* Action 1: Scan Sample */}
-          <button
-            type="button"
-            onClick={() => navigate('rapid-test')}
-            className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-2.5 active:scale-95 transition hover:border-emerald-500 group text-left"
-          >
-            <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <Camera size={16} />
-            </div>
-            <div className="overflow-hidden">
-              <span className="text-[11px] font-bold text-slate-900 dark:text-white block truncate">
-                {t.scanSample || '📷 Scan Sample'}
-              </span>
-              <span className="text-[9px] text-slate-400 block truncate">Photo log</span>
-            </div>
-          </button>
-
-          {/* Action 2: Enter Test Data */}
-          <button
-            type="button"
-            onClick={() => navigate('rapid-test')}
-            className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-2.5 active:scale-95 transition hover:border-teal-500 group text-left"
-          >
-            <div className="w-8 h-8 rounded-xl bg-teal-100 dark:bg-teal-950 text-teal-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <Keyboard size={16} />
-            </div>
-            <div className="overflow-hidden">
-              <span className="text-[11px] font-bold text-slate-900 dark:text-white block truncate">
-                {t.enterTestData || '📊 Enter Data'}
-              </span>
-              <span className="text-[9px] text-slate-400 block truncate">Manual entry</span>
-            </div>
-          </button>
-
-          {/* Action 3: Test History */}
-          <button
-            type="button"
-            onClick={() => navigate('history')}
-            className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-2.5 active:scale-95 transition hover:border-amber-500 group text-left"
-          >
-            <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <History size={16} />
-            </div>
-            <div className="overflow-hidden">
-              <span className="text-[11px] font-bold text-slate-900 dark:text-white block truncate">
-                {t.testHistory || '📋 Test History'}
-              </span>
-              <span className="text-[9px] text-slate-400 block truncate">{allTests.length} tests</span>
-            </div>
-          </button>
-
-          {/* Action 4: Feed Recommendations */}
-          <button
-            type="button"
-            onClick={() => navigate('feed')}
-            className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-2.5 active:scale-95 transition hover:border-blue-500 group text-left"
-          >
-            <div className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <Wheat size={16} />
-            </div>
-            <div className="overflow-hidden">
-              <span className="text-[11px] font-bold text-slate-900 dark:text-white block truncate">
-                {t.feedRecommendations || '🌾 Feed Advice'}
-              </span>
-              <span className="text-[9px] text-slate-400 block truncate">ICAR Rations</span>
-            </div>
-          </button>
-        </div>
-
-        {/* ========================================================================= */}
-        {/* 4. RECENT TESTS SECTION */}
+        {/* 3. RECENT QUALITY TESTS SECTION */}
         {/* ========================================================================= */}
         <div className="space-y-2.5 pt-1">
           <div className="flex items-center justify-between">
@@ -283,7 +199,7 @@ export const HomeDashboardScreen: React.FC = () => {
                 </div>
 
                 <div className="text-right">
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 justify-end">
                     <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
                       {'overallScore' in latestTest ? latestTest.overallScore : latestTest.fqiScore}
                     </span>
@@ -330,34 +246,11 @@ export const HomeDashboardScreen: React.FC = () => {
         </div>
 
         {/* ========================================================================= */}
-        {/* 5. HONEST SENSOR INTEGRATION CARD (NO FAKE SENSORS) */}
-        {/* ========================================================================= */}
-        <div className="p-4 rounded-3xl bg-slate-100 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center">
-                <Radio size={15} />
-              </div>
-              <span className="font-extrabold text-slate-800 dark:text-slate-200">
-                📡 SENSOR INTEGRATION
-              </span>
-            </div>
-            <span className="text-[10px] font-bold text-slate-500 bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-md">
-              Not Connected
-            </span>
-          </div>
-
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-            Hardware sensor probe integration is future-ready. Use Camera or Manual entry for instant rapid testing.
-          </p>
-        </div>
-
-        {/* ========================================================================= */}
-        {/* 6. SUPPORTING DAIRY TOOLS GRID */}
+        {/* 4. CORE SUPPORTING DAIRY TOOLS GRID */}
         {/* ========================================================================= */}
         <div className="space-y-2.5 pt-1">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            Supporting Dairy Tools
+            Herd Management & AI Tools
           </h3>
 
           <div className="grid grid-cols-3 gap-2">
@@ -367,7 +260,7 @@ export const HomeDashboardScreen: React.FC = () => {
               onClick={() => navigate('animals')}
               className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center text-center gap-1.5 active:scale-95 transition hover:border-emerald-500"
             >
-              <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center text-lg">
+              <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center text-lg shadow-inner">
                 🐄
               </div>
               <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
@@ -382,22 +275,22 @@ export const HomeDashboardScreen: React.FC = () => {
               onClick={() => navigate('milk')}
               className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center text-center gap-1.5 active:scale-95 transition hover:border-emerald-500"
             >
-              <div className="w-9 h-9 rounded-2xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 flex items-center justify-center text-lg">
+              <div className="w-9 h-9 rounded-2xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 flex items-center justify-center text-lg shadow-inner">
                 🥛
               </div>
               <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                 {t.navMilk || 'Milk Logs'}
               </span>
-              <span className="text-[10px] text-slate-400 font-semibold">{milkRecords.length} Shifts</span>
+              <span className="text-[10px] text-slate-400 font-semibold">{milkRecords.length} Records</span>
             </button>
 
-            {/* Tool 3: Health */}
+            {/* Tool 3: Health AI */}
             <button
               type="button"
               onClick={() => setIsDiseaseScreeningOpen(true)}
               className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center text-center gap-1.5 active:scale-95 transition hover:border-emerald-500"
             >
-              <div className="w-9 h-9 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 flex items-center justify-center text-lg">
+              <div className="w-9 h-9 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 flex items-center justify-center text-lg shadow-inner">
                 🩺
               </div>
               <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
@@ -406,13 +299,28 @@ export const HomeDashboardScreen: React.FC = () => {
               <span className="text-[10px] text-slate-400 font-semibold">{healthAlerts.length} Alerts</span>
             </button>
 
-            {/* Tool 4: Breed */}
+            {/* Tool 4: Vaccination */}
+            <button
+              type="button"
+              onClick={() => navigate('vaccinations')}
+              className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center text-center gap-1.5 active:scale-95 transition hover:border-emerald-500"
+            >
+              <div className="w-9 h-9 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center text-lg shadow-inner">
+                💉
+              </div>
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                {t.vaccinations || 'Vaccines'}
+              </span>
+              <span className="text-[10px] text-slate-400 font-semibold">{vaccinations.length} Sched</span>
+            </button>
+
+            {/* Tool 5: Breed Catalog */}
             <button
               type="button"
               onClick={() => navigate('breeds')}
               className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center text-center gap-1.5 active:scale-95 transition hover:border-emerald-500"
             >
-              <div className="w-9 h-9 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 flex items-center justify-center text-lg">
+              <div className="w-9 h-9 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 flex items-center justify-center text-lg shadow-inner">
                 🧬
               </div>
               <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
@@ -421,32 +329,17 @@ export const HomeDashboardScreen: React.FC = () => {
               <span className="text-[10px] text-slate-400 font-semibold">41 Breeds</span>
             </button>
 
-            {/* Tool 5: Vaccination */}
-            <button
-              type="button"
-              onClick={() => navigate('vaccinations')}
-              className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center text-center gap-1.5 active:scale-95 transition hover:border-emerald-500"
-            >
-              <div className="w-9 h-9 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center text-lg">
-                💉
-              </div>
-              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                {t.vaccinations || 'Vaccines'}
-              </span>
-              <span className="text-[10px] text-slate-400 font-semibold">{vaccinations.length} Due</span>
-            </button>
-
-            {/* Tool 6: AI Chat */}
+            {/* Tool 6: AI Chat Assistant */}
             <button
               type="button"
               onClick={() => navigate('ai-chat')}
               className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center text-center gap-1.5 active:scale-95 transition hover:border-emerald-500"
             >
-              <div className="w-9 h-9 rounded-2xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 flex items-center justify-center text-lg">
+              <div className="w-9 h-9 rounded-2xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 flex items-center justify-center text-lg shadow-inner">
                 🤖
               </div>
               <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                {t.askAI || 'AI Assistant'}
+                {t.askAI || 'AI Chat'}
               </span>
               <span className="text-[10px] text-emerald-600 font-semibold">24/7 Live</span>
             </button>

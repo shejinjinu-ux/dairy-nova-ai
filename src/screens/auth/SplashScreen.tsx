@@ -1,25 +1,12 @@
 import React from 'react';
 import { AnimatedLogo } from '../../components/common/AnimatedLogo';
 import { useAppData } from '../../contexts/AppDataContext';
-import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Sparkles, ArrowRight, UserPlus, LogIn, ShieldCheck, UserCheck } from 'lucide-react';
+import { Sparkles, ArrowRight, UserPlus, LogIn } from 'lucide-react';
 
 export const SplashScreen: React.FC = () => {
-  const { navigate, loadDemoHerd } = useAppData();
-  const { isAuthenticated, role, loginFarmer, loginOfficer } = useAuth();
+  const { navigate } = useAppData();
   const { t } = useLanguage();
-
-  const handleDemoFarmer = async () => {
-    loadDemoHerd();
-    await loginFarmer('9845023456');
-    navigate('home');
-  };
-
-  const handleDemoOfficer = async () => {
-    await loginOfficer();
-    navigate('officer-dashboard');
-  };
 
   return (
     <div className="min-h-full flex-1 flex flex-col items-center justify-between p-6 sm:p-8 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 text-white relative overflow-hidden">
@@ -61,7 +48,7 @@ export const SplashScreen: React.FC = () => {
       </div>
 
       {/* Two Primary Options: NEW USER / EXISTING USER */}
-      <div className="w-full max-w-xs space-y-3 pb-2 animate-fadeIn">
+      <div className="w-full max-w-xs space-y-3 pb-4 animate-fadeIn">
         {/* Option 1: New User — Sign Up */}
         <button
           type="button"
@@ -82,26 +69,6 @@ export const SplashScreen: React.FC = () => {
           <LogIn size={15} className="text-teal-400" />
           <span>{t.existingUserLogin || 'EXISTING USER — Login'}</span>
         </button>
-
-        {/* Quick Instant Demo Logins */}
-        <div className="pt-2 flex items-center justify-center gap-3 text-[11px] text-slate-400">
-          <button
-            type="button"
-            onClick={handleDemoFarmer}
-            className="hover:text-teal-300 underline font-semibold flex items-center gap-1"
-          >
-            <UserCheck size={12} />
-            Demo Farmer
-          </button>
-          <span>•</span>
-          <button
-            type="button"
-            onClick={handleDemoOfficer}
-            className="hover:text-teal-300 underline font-semibold"
-          >
-            Officer Demo
-          </button>
-        </div>
       </div>
 
     </div>

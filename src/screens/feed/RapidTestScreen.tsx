@@ -26,7 +26,7 @@ export const RapidTestScreen: React.FC = () => {
 
   const [step, setStep] = useState<number>(1);
   const [selectedSampleType, setSelectedSampleType] = useState<string>('Green Fodder');
-  const [selectedMethod, setSelectedMethod] = useState<'Camera Only' | 'Portable Scanner Simulation' | 'Manual Entry'>('Manual Entry');
+  const [selectedMethod, setSelectedMethod] = useState<'Camera Only' | 'Manual Entry'>('Manual Entry');
   
   // Modals for test execution
   const [isFeedModalOpen, setIsFeedModalOpen] = useState<boolean>(false);
@@ -68,7 +68,7 @@ export const RapidTestScreen: React.FC = () => {
     {
       id: 'Camera Only' as const,
       title: t.photoSampleScan || '📷 Photo / Sample Scan',
-      subtitle: 'Capture sample image for optical visual documentation and batch seal',
+      subtitle: 'Capture sample image for visual mould & spoilage screening',
       icon: Camera,
       tag: 'Fast & Easy',
     },
@@ -78,14 +78,6 @@ export const RapidTestScreen: React.FC = () => {
       subtitle: 'Enter known moisture, crude protein, fiber, or silage pH values',
       icon: Keyboard,
       tag: 'ICAR / FAO Calibrated',
-    },
-    {
-      id: 'Portable Scanner Simulation' as const,
-      title: t.sensorData || '📡 Sensor Data (IoT Probes)',
-      subtitle: 'Connect supported portable NIR spectrometers & pH sensors',
-      icon: Radio,
-      tag: 'Future-Ready',
-      isSensor: true,
     },
   ];
 
@@ -265,22 +257,6 @@ export const RapidTestScreen: React.FC = () => {
                         {isSelected && <CheckCircle2 size={13} />}
                       </div>
                     </div>
-
-                    {/* Sensor Data Notice */}
-                    {method.isSensor && isSelected && (
-                      <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-800 dark:text-amber-300 space-y-1">
-                        <strong className="block font-bold flex items-center gap-1">
-                          <Radio size={13} className="text-amber-600 animate-pulse" />
-                          {t.sensorIntegrationTitle || 'Sensor Integration'}
-                        </strong>
-                        <p className="text-[10px]">
-                          {t.sensorIntegrationDesc || 'Connect supported feed/silage sensors for automated readings.'}
-                        </p>
-                        <span className="inline-block text-[9px] font-bold bg-amber-200/80 dark:bg-amber-900 px-2 py-0.5 rounded-md">
-                          Status: {t.sensorStatusNotConnected || 'Not connected (Future-ready)'}
-                        </span>
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -320,7 +296,7 @@ export const RapidTestScreen: React.FC = () => {
         onAnalysisSaved={addFeedAnalysis}
         onGenerateQRBatch={addQRBatch}
         initialFeedType={selectedSampleType}
-        initialInputMethod={selectedMethod}
+        initialInputMethod={selectedMethod === 'Camera Only' ? 'Portable Scanner Simulation' : 'Manual Entry'}
       />
 
       <SilageAnalysisModal
@@ -329,7 +305,7 @@ export const RapidTestScreen: React.FC = () => {
         onAnalysisSaved={addSilageAnalysis}
         onGenerateQRBatch={addQRBatch}
         initialSilageType={selectedSampleType === 'Silage' ? 'Whole Corn (Maize) Silage' : 'Corn Silage'}
-        initialInputMethod={selectedMethod === 'Portable Scanner Simulation' ? 'Portable Scanner Simulation' : 'Manual Entry'}
+        initialInputMethod="Manual Entry"
       />
     </div>
   );

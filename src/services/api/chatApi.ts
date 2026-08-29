@@ -29,42 +29,46 @@ export const chatApi = {
     const isOffline = !navigator.onLine;
 
     // Enhance prompt with animal context if provided
-    let messageToSend = question;
-    if (animalContext) {
-      messageToSend = `[Animal Context: ${animalContext.name} (Tag: ${animalContext.tag})] ${question}`;
-    }
+    const animalId = animalContext?.id;
 
     if (!isOffline) {
       try {
-        const response = await fetch('/api/chat', {
+        // Call real FastAPI backend at POST /api/v1/chat
+        const result = await apiFetch<{
+          success: boolean;
+          reply: string;
+          language?: string;
+          detected_language?: string;
+          intent?: string;
+          module?: string;
+          session_id?: string;
+          metadata?: {
+            suggested_questions?: string[];
+            intent_confidence?: number;
+          };
+        }>('/chat', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
           body: JSON.stringify({
-            message: messageToSend,
-            history: options?.history,
+            message: question,
             language: selectedLang,
             session_id: sessionId || undefined,
-            animalContext,
+            user_id: userId || undefined,
+            selected_animal_id: animalId || undefined,
           }),
         });
 
-        if (response.ok) {
-          const result = await response.json();
-          if (result && result.reply) {
-            return {
-              response: result.reply,
-              suggestedFollowUps: result.suggested_questions || [
-                'How do I test my feed quality?',
-                'Is my corn silage safe for cattle?',
-                'Recommend daily ration for my lactating cow',
-              ],
-              sessionId: result.session_id,
-              language: result.language,
-              isOffline: false,
-            };
-          }
+        if (result && result.reply) {
+          return {
+            response: result.reply,
+            suggestedFollowUps: result.metadata?.suggested_questions || [
+              'How do I test my feed quality?',
+              'Is my corn silage safe for cattle?',
+              'Recommend daily ration for my lactating cow',
+            ],
+            sessionId: result.session_id,
+            language: result.language,
+            isOffline: false,
+          };
         }
       } catch (err) {
         console.warn('Live API request failed, checking fallback:', err);

@@ -6,6 +6,7 @@ import { getStoredItem, setStoredItem } from '../services/api/apiHelper';
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
+  hasCompletedLanguageOnboarding: boolean;
   t: TranslationDictionary;
   languageOptions: typeof LANGUAGE_OPTIONS;
 }
@@ -17,9 +18,15 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return getStoredItem<Language>('language_pref', 'en');
   });
 
+  const [hasCompletedLanguageOnboarding, setHasCompletedLanguageOnboarding] = useState<boolean>(() => {
+    return getStoredItem<boolean>('has_language_pref', false);
+  });
+
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     setStoredItem('language_pref', lang);
+    setStoredItem('has_language_pref', true);
+    setHasCompletedLanguageOnboarding(true);
   };
 
   useEffect(() => {
@@ -29,6 +36,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const value: LanguageContextType = {
     language,
     setLanguage,
+    hasCompletedLanguageOnboarding,
     t: { ...TRANSLATIONS.en, ...(TRANSLATIONS[language] || {}) },
     languageOptions: LANGUAGE_OPTIONS,
   };

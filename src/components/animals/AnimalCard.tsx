@@ -1,25 +1,27 @@
 import React from 'react';
 import { Animal } from '../../types';
 import { StatusBadge } from '../common/StatusBadge';
-import { Milk, Sparkles, ChevronRight, Activity, Thermometer } from 'lucide-react';
+import { Milk, Sparkles, ChevronRight, Activity, Thermometer, Trash2 } from 'lucide-react';
 
 interface AnimalCardProps {
   animal: Animal;
   onClick: () => void;
   onAskAI?: (animal: Animal) => void;
+  onDelete?: (animal: Animal) => void;
 }
 
 export const AnimalCard: React.FC<AnimalCardProps> = ({
   animal,
   onClick,
   onAskAI,
+  onDelete,
 }) => {
   return (
     <div
       onClick={onClick}
       className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-card-soft hover:shadow-card-hover transition-all duration-200 cursor-pointer active:scale-[0.98] group relative overflow-hidden"
     >
-      {/* Top row: Avatar, Tag ID, Name, Status */}
+      {/* Top row: Avatar, Tag ID, Name, Status, Delete */}
       <div className="flex items-start gap-3.5">
         {/* Animal Avatar */}
         <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 ring-2 ring-slate-100 dark:ring-slate-800 bg-slate-100 relative">
@@ -40,7 +42,23 @@ export const AnimalCard: React.FC<AnimalCardProps> = ({
             <span className="font-mono text-xs font-extrabold text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/80 px-2 py-0.5 rounded-md">
               {animal.tagId}
             </span>
-            <StatusBadge status={animal.healthStatus} size="sm" />
+            <div className="flex items-center gap-1.5">
+              <StatusBadge status={animal.healthStatus} size="sm" />
+              {onDelete && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(animal);
+                  }}
+                  className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition active:scale-95"
+                  title={`Delete ${animal.name}`}
+                  aria-label={`Delete ${animal.name}`}
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
           </div>
 
           <h3 className="font-extrabold text-base text-slate-900 dark:text-white truncate">

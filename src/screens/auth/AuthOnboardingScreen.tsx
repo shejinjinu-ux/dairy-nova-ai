@@ -41,7 +41,6 @@ export const AuthOnboardingScreen: React.FC<AuthOnboardingScreenProps> = ({
   // Form States
   const [mobile, setMobile] = useState<string>('');
   const [otp, setOtp] = useState<string>('');
-  const [demoOtpHint, setDemoOtpHint] = useState<string>('');
   const [countdown, setCountdown] = useState<number>(0);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
@@ -113,10 +112,7 @@ export const AuthOnboardingScreen: React.FC<AuthOnboardingScreenProps> = ({
     }
 
     try {
-      const res = await sendOtp(cleanDigits);
-      if (res.demoOtp) {
-        setDemoOtpHint(res.demoOtp);
-      }
+      await sendOtp(cleanDigits);
       setCountdown(45);
       setStep(2);
     } catch (err: any) {
@@ -157,10 +153,7 @@ export const AuthOnboardingScreen: React.FC<AuthOnboardingScreenProps> = ({
     setErrorMessage('');
     try {
       const cleanDigits = mobile.replace(/[^0-9]/g, '').slice(-10);
-      const res = await sendOtp(cleanDigits);
-      if (res.demoOtp) {
-        setDemoOtpHint(res.demoOtp);
-      }
+      await sendOtp(cleanDigits);
       setCountdown(45);
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to resend OTP.');
@@ -178,8 +171,9 @@ export const AuthOnboardingScreen: React.FC<AuthOnboardingScreenProps> = ({
     setStep(4);
   };
 
-  // Step 4: Save Cattle & Continue to Language
-  const handleSaveCattle = (skip: boolean = false) => {
+  // Step 4: Save Cattle & Finish Onboarding
+  const handleSaveCattle = async (skip: boolean = false) => {
+    let cattleData: Omit<Animal, 'id' | 'createdDate' | 'lastCheckDate'> | null = null;
     if (!skip) {
       const finalBreed = breed === 'Other' ? (customBreed.trim() || 'Other Breed') : breed;
       const parsedWeight =
@@ -191,7 +185,7 @@ export const AuthOnboardingScreen: React.FC<AuthOnboardingScreenProps> = ({
           ? Number(dailyYield)
           : undefined;
 
-      const cattleData: Omit<Animal, 'id' | 'createdDate' | 'lastCheckDate'> = {
+      cattleData = {
         tagId: cattleTag.trim() || `TAG-${Date.now().toString().slice(-4)}`,
         name: cattleName.trim() || `${finalBreed} #${cattleTag.trim() || '101'}`,
         type: species,
@@ -213,16 +207,9 @@ export const AuthOnboardingScreen: React.FC<AuthOnboardingScreenProps> = ({
     } else {
       setPendingCattle(null);
     }
-    setStep(5);
-  };
-
-  // Step 5: Select Language & Finish Onboarding
-  const handleFinishOnboarding = async () => {
-    const chosenLang = selectedLanguage as Language;
-    setLanguage(chosenLang);
 
     // Seed the user's herd with their entered cattle (or leave empty if skipped)
-    seedNewUserHerd(pendingCattle || undefined);
+    seedNewUserHerd(cattleData || undefined);
 
     const fullLocationStr = villageTown.trim()
       ? `${villageTown.trim()}, ${selectedDistrict}, ${selectedState}`
@@ -234,7 +221,7 @@ export const AuthOnboardingScreen: React.FC<AuthOnboardingScreenProps> = ({
         mobile,
         farmName: farmName.trim() || `${farmerName.trim() || 'Farmer'}'s Dairy Farm`,
         farmLocation: fullLocationStr,
-        language: chosenLang,
+        language: (language as Language) || 'en',
       });
 
       setTimeout(() => {
@@ -270,7 +257,7 @@ export const AuthOnboardingScreen: React.FC<AuthOnboardingScreenProps> = ({
           <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/80 px-2.5 py-1 rounded-xl">
             {step === 1
               ? mode === 'signup' ? 'New User' : 'Login'
-              : `Step ${step} of 5`}
+              : `Step ${step} of 4`}
           </div>
         </div>
 
@@ -360,19 +347,6 @@ export const AuthOnboardingScreen: React.FC<AuthOnboardingScreenProps> = ({
                 {t.enterOtp} <strong className="text-slate-700 dark:text-slate-200">+91 {mobile}</strong>
               </p>
             </div>
-
-            {demoOtpHint && (
-              <div className="p-2.5 rounded-xl bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-200 text-xs font-semibold flex items-center justify-between">
-                <span>Demo OTP: <strong>{demoOtpHint}</strong></span>
-                <button
-                  type="button"
-                  onClick={() => setOtp(demoOtpHint)}
-                  className="px-2 py-0.5 rounded-lg bg-teal-600 text-white text-[10px] font-bold"
-                >
-                  Auto-Fill
-                </button>
-              </div>
-            )}
 
             <form onSubmit={handleVerifyOtp} className="space-y-4 pt-2">
               <div>
@@ -715,7 +689,7 @@ export const AuthOnboardingScreen: React.FC<AuthOnboardingScreenProps> = ({
                   className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 active:scale-95 transition"
                 >
                   <CheckCircle2 size={15} />
-                  <span>{t.addAndContinue}</span>
+                  <span>{t.addAndContinue || 'Complete Setup & Open Dashboard'}</span>
                 </button>
 
                 <button
@@ -727,69 +701,6 @@ export const AuthOnboardingScreen: React.FC<AuthOnboardingScreenProps> = ({
                 </button>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* STEP 5: LANGUAGE SELECTION */}
-        {step === 5 && (
-          <div className="space-y-4 animate-fadeIn">
-            <div className="space-y-1">
-              <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-                <Globe size={22} className="text-teal-600" />
-                {t.chooseLanguage}
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                {t.chooseLanguageSubtitle}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1 custom-scrollbar">
-              {SUPPORTED_LANGUAGES.map((lang: LanguageConfig) => {
-                const isSelected = selectedLanguage === lang.code;
-
-                return (
-                  <button
-                    key={lang.code}
-                    type="button"
-                    onClick={() => setSelectedLanguage(lang.code)}
-                    className={`p-3 rounded-2xl border text-left transition-all duration-200 active:scale-95 flex flex-col justify-between relative overflow-hidden ${
-                      isSelected
-                        ? 'bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/80 dark:to-teal-950/80 border-emerald-600 dark:border-emerald-500 shadow-md ring-2 ring-emerald-500/30'
-                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
-                    }`}
-                  >
-                    {isSelected && (
-                      <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center">
-                        <Check size={10} strokeWidth={3} />
-                      </div>
-                    )}
-
-                    <div>
-                      <span className="text-xs font-black text-slate-900 dark:text-white block">
-                        {lang.nativeName}
-                      </span>
-                      <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
-                        {lang.name}
-                      </span>
-                    </div>
-
-                    <span className="text-[9px] text-slate-400 font-medium mt-1 truncate">
-                      {lang.region}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <button
-              type="button"
-              onClick={handleFinishOnboarding}
-              className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-black text-xs shadow-lg shadow-teal-600/30 flex items-center justify-center gap-2 active:scale-95 transition-all mt-2"
-            >
-              <Sparkles size={16} />
-              <span>Complete Setup & Open Dashboard</span>
-              <ArrowRight size={15} />
-            </button>
           </div>
         )}
 

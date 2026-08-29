@@ -54,7 +54,6 @@ const ScreenRouter: React.FC = () => {
   if (isAuthenticated && (currentScreen === 'login' || currentScreen === 'register' || currentScreen === 'splash')) {
     return role === 'officer' ? <OfficerDashboardScreen /> : <HomeDashboardScreen />;
   }
-
   switch (currentScreen) {
     case 'splash':
       return <SplashScreen />;

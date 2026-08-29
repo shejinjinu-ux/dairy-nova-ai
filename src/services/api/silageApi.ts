@@ -1,5 +1,10 @@
 import { apiFetch, getStoredItem, setStoredItem } from './apiHelper';
-import { SilageAnalysisResult, IoTSilageReading } from '../../types';
+import {
+  SilageAnalysisResult,
+  IoTSilageReading,
+  SilageVisualScreeningResponse,
+  CombinedSilageAnalysisResponse,
+} from '../../types';
 import { INITIAL_SILAGE_ANALYSES, MOCK_IOT_SILAGE_READINGS } from '../../mocks/mockData';
 
 export const silageApi = {
@@ -9,6 +14,63 @@ export const silageApi = {
 
   async getIoTReadings(): Promise<IoTSilageReading[]> {
     return MOCK_IOT_SILAGE_READINGS;
+  },
+
+  /**
+   * METHOD 1: Visual Silage Spoilage & Aerobic Mould Screening
+   * Endpoint: POST /api/v1/predict/silage-visual (multipart/form-data with 'file')
+   */
+  async screenSilageVisual(imageFile: File | Blob): Promise<SilageVisualScreeningResponse> {
+    const formData = new FormData();
+    formData.append('file', imageFile, (imageFile as File).name || 'silage_sample.jpg');
+
+    return await apiFetch<SilageVisualScreeningResponse>('/predict/silage-visual', {
+      method: 'POST',
+      body: formData,
+    });
+  },
+
+  /**
+   * METHOD 2: Consolidated Silage Quality & Fermentation Analysis (FAO & Random Forest Engine)
+   * Endpoint: POST /api/v1/analyze/silage (multipart/form-data)
+   */
+  async analyzeSilageCombined(params: {
+    pH: number;
+    dmPercent: number;
+    cpPercent?: number;
+    lacticAcidPercent?: number;
+    aceticAcidPercent?: number;
+    butyricAcidPercent?: number;
+    ammoniaNPercent?: number;
+    starchPercent?: number;
+    ndfPercent?: number;
+    adfPercent?: number;
+    farmId?: string | null;
+    animalId?: string | null;
+    imageFile?: File | Blob | null;
+  }): Promise<CombinedSilageAnalysisResponse> {
+    const formData = new FormData();
+    formData.append('pH', String(params.pH));
+    formData.append('dm_s', String(params.dmPercent));
+    formData.append('cp_s', String(params.cpPercent ?? 14.0));
+    formData.append('lactic_ac_s', String(params.lacticAcidPercent ?? (params.pH <= 4.0 ? 6.2 : 4.5)));
+    formData.append('acetic_ac_s', String(params.aceticAcidPercent ?? 1.8));
+    formData.append('butyric_ac_s', String(params.butyricAcidPercent ?? (params.pH > 4.8 ? 1.2 : 0.05)));
+    formData.append('ammonia_s', String(params.ammoniaNPercent ?? (params.pH > 4.5 ? 11.5 : 6.5)));
+    formData.append('starch_s', String(params.starchPercent ?? 21.0));
+    formData.append('ndf_s', String(params.ndfPercent ?? 46.5));
+    formData.append('adf_s', String(params.adfPercent ?? 27.9));
+
+    if (params.farmId) formData.append('farm_id', params.farmId);
+    if (params.animalId) formData.append('animal_id', params.animalId);
+    if (params.imageFile) {
+      formData.append('image', params.imageFile, (params.imageFile as File).name || 'silage_image.jpg');
+    }
+
+    return await apiFetch<CombinedSilageAnalysisResponse>('/analyze/silage', {
+      method: 'POST',
+      body: formData,
+    });
   },
 
   /**

@@ -26,7 +26,7 @@ export const vaccinationApi = {
   },
 
   async addVaccinationSchedule(record: Omit<VaccinationRecord, 'id'>): Promise<VaccinationRecord> {
-    await delay(400);
+    await delay(300);
     const vaccinations = getStoredItem<VaccinationRecord[]>('vaccinations', INITIAL_VACCINATIONS);
     const newRecord: VaccinationRecord = {
       ...record,
@@ -35,5 +35,24 @@ export const vaccinationApi = {
     const updated = [newRecord, ...vaccinations];
     setStoredItem('vaccinations', updated);
     return newRecord;
+  },
+
+  async updateVaccination(id: string, updates: Partial<VaccinationRecord>): Promise<VaccinationRecord> {
+    await delay(300);
+    const vaccinations = getStoredItem<VaccinationRecord[]>('vaccinations', INITIAL_VACCINATIONS);
+    const index = vaccinations.findIndex((v) => v.id === id);
+    if (index === -1) throw new Error('Vaccination record not found');
+    const updated = { ...vaccinations[index], ...updates };
+    vaccinations[index] = updated;
+    setStoredItem('vaccinations', [...vaccinations]);
+    return updated;
+  },
+
+  async deleteVaccination(id: string): Promise<boolean> {
+    await delay(200);
+    const vaccinations = getStoredItem<VaccinationRecord[]>('vaccinations', INITIAL_VACCINATIONS);
+    const filtered = vaccinations.filter((v) => v.id !== id);
+    setStoredItem('vaccinations', filtered);
+    return true;
   },
 };

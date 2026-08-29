@@ -27,6 +27,7 @@ import {
 } from '../mocks/mockData';
 import { getStoredItem, setStoredItem } from '../services/api/apiHelper';
 import { useOffline } from './OfflineContext';
+import { useAuth } from './AuthContext';
 
 export type ScreenType =
   | 'splash'
@@ -121,6 +122,9 @@ interface AppDataContextType {
   updateAnimal: (id: string, updates: Partial<Animal>) => void;
   deleteAnimal: (id: string) => void;
   recordMilk: (record: Omit<MilkRecord, 'id' | 'isSynced'>) => void;
+  addVaccination: (record: Omit<VaccinationRecord, 'id'>) => void;
+  updateVaccination: (id: string, updates: Partial<VaccinationRecord>) => void;
+  deleteVaccination: (id: string) => void;
   markVaccinated: (id: string, vetName: string, notes?: string, nextDueDate?: string) => void;
   addHealthAlert: (alert: Omit<HealthAlert, 'id' | 'timestamp'>) => void;
   resolveHealthAlert: (id: string) => void;
@@ -140,6 +144,7 @@ const AppDataContext = createContext<AppDataContextType | undefined>(undefined);
 
 export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isOffline, addToQueue } = useOffline();
+  const { user, isAuthenticated } = useAuth();
 
   // Helper to scope storage by current active user
   const getUserKey = (prefix: string) => {
@@ -166,7 +171,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [vaccinations, setVaccinations] = useState<VaccinationRecord[]>(() => {
     const user = getStoredItem<any>('active_user', null);
     if (user?.id === 'farmer-demo') return getStoredItem('vaccinations_demo', DEMO_VACCINATIONS);
-    return user ? getStoredItem(`vaccinations_${user.id}`, []) : [];
+    return user ? getStoredItem(`vaccinations_${user.id}`, getStoredItem('vaccinations', [])) : [];
   });
   const [feedAnalyses, setFeedAnalyses] = useState<FeedAnalysisResult[]>(() => {
     const user = getStoredItem<any>('active_user', null);
@@ -203,7 +208,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (activeUser && activeUser.isOnboarded) {
       return activeUser.role === 'officer' ? 'officer-dashboard' : 'home';
     }
-    const hasSelectedLang = getStoredItem<boolean>('has_selected_initial_language', false);
+    const hasSelectedLang = getStoredItem<boolean>('has_selected_initial_language', false) || getStoredItem<boolean>('has_language_pref', false);
     if (!hasSelectedLang) {
       return 'language-select';
     }
@@ -215,6 +220,41 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [selectedBreedId, setSelectedBreedId] = useState<string | null>(null);
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
   const [chatAnimalContext, setChatAnimalContext] = useState<Animal | null>(null);
+
+  // Sync user state reactively on login and logout
+  useEffect(() => {
+    if (!isAuthenticated) {
+      // Clear user scoped state
+      setAnimals([]);
+      setHealthAlerts([]);
+      setVaccinations([]);
+      setFeedAnalyses([]);
+      setSilageAnalyses([]);
+      setMilkRecords([]);
+      setNotifications([]);
+      setQrBatches([]);
+
+      // If currently on an authenticated screen, immediately navigate to login or splash
+      const publicScreens: ScreenType[] = ['splash', 'language-select', 'login', 'register', 'forgot-password'];
+      if (!publicScreens.includes(currentScreen)) {
+        const hasLang = getStoredItem<boolean>('has_selected_initial_language', false) || getStoredItem<boolean>('has_language_pref', false);
+        const targetScreen: ScreenType = hasLang ? 'login' : 'language-select';
+        setCurrentScreen(targetScreen);
+        setScreenHistory([targetScreen]);
+      }
+    } else if (user) {
+      // Load datasets specifically scoped to this authenticated user
+      const userAnimals = getStoredItem(`animals_${user.id}`, getStoredItem('animals', []));
+      setAnimals(userAnimals);
+      setHealthAlerts(getStoredItem(`health_alerts_${user.id}`, []));
+      setVaccinations(getStoredItem(`vaccinations_${user.id}`, getStoredItem('vaccinations', [])));
+      setFeedAnalyses(getStoredItem(`feed_analyses_${user.id}`, getStoredItem('feed_analyses', [])));
+      setSilageAnalyses(getStoredItem(`silage_analyses_${user.id}`, getStoredItem('silage_analyses', [])));
+      setMilkRecords(getStoredItem(`milk_records_${user.id}`, []));
+      setNotifications(getStoredItem(`notifications_${user.id}`, []));
+      setQrBatches(getStoredItem(`qr_batches_${user.id}`, []));
+    }
+  }, [isAuthenticated, user?.id]);
 
   const navigate = (
     screen: ScreenType,
@@ -282,7 +322,8 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     let capacitorBackListener: any = null;
     const setupCapacitor = async () => {
       try {
-        const { App } = await import('@capacitor/app');
+        const appPkg = '@capacitor/app';
+        const { App } = await import(/* @vite-ignore */ appPkg);
         capacitorBackListener = await App.addListener('backButton', () => {
           setScreenHistory((prev) => {
             const current = prev[prev.length - 1];
@@ -436,6 +477,39 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  const addVaccination = (recordData: Omit<VaccinationRecord, 'id'>) => {
+    const newRecord: VaccinationRecord = {
+      ...recordData,
+      id: `vac-${Date.now()}`,
+    };
+    const updated = [newRecord, ...vaccinations];
+    setVaccinations(updated);
+    setStoredItem(getUserKey('vaccinations'), updated);
+    setStoredItem('vaccinations', updated);
+
+    if (isOffline) {
+      addToQueue('vaccination_add', newRecord);
+    }
+  };
+
+  const updateVaccination = (id: string, updates: Partial<VaccinationRecord>) => {
+    const updated = vaccinations.map((v) => (v.id === id ? { ...v, ...updates } : v));
+    setVaccinations(updated);
+    setStoredItem(getUserKey('vaccinations'), updated);
+    setStoredItem('vaccinations', updated);
+
+    if (isOffline) {
+      addToQueue('vaccination_edit', { id, updates });
+    }
+  };
+
+  const deleteVaccination = (id: string) => {
+    const updated = vaccinations.filter((v) => v.id !== id);
+    setVaccinations(updated);
+    setStoredItem(getUserKey('vaccinations'), updated);
+    setStoredItem('vaccinations', updated);
+  };
+
   const markVaccinated = (id: string, vetName: string, notes?: string, nextDueDate?: string) => {
     const todayStr = new Date().toISOString().split('T')[0];
     const updated = vaccinations.map((v) =>
@@ -452,6 +526,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     );
     setVaccinations(updated);
     setStoredItem(getUserKey('vaccinations'), updated);
+    setStoredItem('vaccinations', updated);
 
     if (isOffline) {
       addToQueue('vaccination_mark', { id, vetName, notes, nextDueDate });
@@ -533,6 +608,9 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     updateAnimal,
     deleteAnimal,
     recordMilk,
+    addVaccination,
+    updateVaccination,
+    deleteVaccination,
     markVaccinated,
     addHealthAlert,
     resolveHealthAlert,

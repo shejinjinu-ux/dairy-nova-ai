@@ -18,37 +18,93 @@ import {
   UserCheck,
   Clock,
   FileText,
+  Plus,
+  Edit2,
+  Trash2,
+  AlertTriangle,
+  Info,
 } from 'lucide-react';
 
+const COMMON_VACCINES = [
+  { name: 'FMD Trivalent (O, A, Asia-1)', disease: 'Foot & Mouth Disease (FMD)', boosterMonths: 6 },
+  { name: 'HS + BQ Combined Vaccine', disease: 'Haemorrhagic Septicaemia & Black Quarter', boosterMonths: 12 },
+  { name: 'Anthrax Spore Vaccine', disease: 'Anthrax', boosterMonths: 12 },
+  { name: 'Brucella abortus S19 Strain', disease: 'Brucellosis (Calfhood)', boosterMonths: 0 },
+  { name: 'Theileria (Rakshavac-T)', disease: 'Bovine Theileriosis', boosterMonths: 12 },
+  { name: 'Broad Spectrum Deworming (Albendazole)', disease: 'Internal Helminth Parasites', boosterMonths: 3 },
+];
+
 export const VaccinationsScreen: React.FC = () => {
-  const { vaccinations, navigate, markVaccinated, animals } = useAppData();
+  const {
+    vaccinations,
+    animals,
+    navigate,
+    markVaccinated,
+    addVaccination,
+    updateVaccination,
+    deleteVaccination,
+  } = useAppData();
   const { t } = useLanguage();
 
   // Active View Tab: 'schedule' or 'history'
   const [activeTab, setActiveTab] = useState<'schedule' | 'history'>('schedule');
   const [search, setSearch] = useState<string>('');
-  const [selectedStatus, setSelectedStatus] = useState<'All' | 'Upcoming' | 'Due' | 'Overdue'>('All');
+  const [selectedStatus, setSelectedStatus] = useState<'All' | VaccinationStatus>('All');
 
-  // Mark vaccinated modal state
+  // Modal states
+  const [showAddEditModal, setShowAddEditModal] = useState<boolean>(false);
+  const [editingRecord, setEditingRecord] = useState<VaccinationRecord | null>(null);
+
+  // Form fields
+  const [selectedAnimalId, setSelectedAnimalId] = useState<string>(animals[0]?.id || '');
+  const [customAnimalTag, setCustomAnimalTag] = useState<string>('');
+  const [customAnimalName, setCustomAnimalName] = useState<string>('');
+  const [vaccineName, setVaccineName] = useState<string>('FMD Trivalent (O, A, Asia-1)');
+  const [diseaseName, setDiseaseName] = useState<string>('Foot & Mouth Disease (FMD)');
+  const [doseNumber, setDoseNumber] = useState<number>(1);
+  const [scheduledDate, setScheduledDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [nextBoosterDate, setNextBoosterDate] = useState<string>(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 6);
+    return d.toISOString().split('T')[0];
+  });
+  const [administeredBy, setAdministeringBy] = useState<string>('');
+  const [notes, setNotes] = useState<string>('');
+  const [formError, setFormError] = useState<string>('');
+
+  // Delete Confirmation State
+  const [recordToDelete, setRecordToDelete] = useState<VaccinationRecord | null>(null);
+
+  // Mark vaccinated modal
   const [selectedVacToMark, setSelectedVacToMark] = useState<VaccinationRecord | null>(null);
   const [vetName, setVetName] = useState<string>('Dr. S. Sundaram (Veterinary Surgeon)');
   const [vetNotes, setVetNotes] = useState<string>('Standard intramuscular dose administered.');
   const [adminDate, setAdminDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [nextDueDate, setNextDueDate] = useState<string>('');
 
-  const upcomingCount = vaccinations.filter((v) => v.status === 'Upcoming').length;
-  const dueCount = vaccinations.filter((v) => v.status === 'Due').length;
-  const overdueCount = vaccinations.filter((v) => v.status === 'Overdue').length;
-  const completedCount = vaccinations.filter((v) => v.status === 'Completed').length;
+  // Auto calculate dynamic status helper
+  const getDerivedStatus = (v: VaccinationRecord): VaccinationStatus => {
+    if (v.status === 'Completed') return 'Completed';
+    const today = new Date().toISOString().split('T')[0];
+    if (v.scheduledDate < today) return 'Overdue';
+    const sevenDaysLater = new Date();
+    sevenDaysLater.setDate(sevenDaysLater.getDate() + 7);
+    const sevenDaysStr = sevenDaysLater.toISOString().split('T')[0];
+    if (v.scheduledDate <= sevenDaysStr) return 'Due';
+    return 'Upcoming';
+  };
 
-  // Active Schedule records (Upcoming, Due, Overdue)
-  const activeScheduleRecords = vaccinations.filter((v) => v.status !== 'Completed');
+  const processedVaccinations = vaccinations.map((v) => ({
+    ...v,
+    status: v.status === 'Completed' ? ('Completed' as const) : getDerivedStatus(v),
+  }));
 
-  // Completed History records
-  const completedHistoryRecords = vaccinations.filter((v) => v.status === 'Completed');
+  const upcomingCount = processedVaccinations.filter((v) => v.status === 'Upcoming').length;
+  const dueCount = processedVaccinations.filter((v) => v.status === 'Due').length;
+  const overdueCount = processedVaccinations.filter((v) => v.status === 'Overdue').length;
+  const completedCount = processedVaccinations.filter((v) => v.status === 'Completed').length;
 
-  // Filter Active Schedule
-  const filteredSchedule = activeScheduleRecords.filter((v) => {
+  const filtered = processedVaccinations.filter((v) => {
     const matchSearch =
       v.animalName.toLowerCase().includes(search.toLowerCase()) ||
       v.animalTag.toLowerCase().includes(search.toLowerCase()) ||
@@ -58,18 +114,39 @@ export const VaccinationsScreen: React.FC = () => {
     return matchSearch && matchStatus;
   });
 
-  // Filter Completed History
-  const filteredHistory = completedHistoryRecords.filter((v) => {
-    const query = search.toLowerCase();
-    return (
-      v.animalName.toLowerCase().includes(query) ||
-      v.animalTag.toLowerCase().includes(query) ||
-      v.diseaseName.toLowerCase().includes(query) ||
-      v.vaccineName.toLowerCase().includes(query) ||
-      (v.administeredBy && v.administeredBy.toLowerCase().includes(query)) ||
-      (v.completedDate && v.completedDate.toLowerCase().includes(query))
-    );
-  });
+  const handleOpenAdd = () => {
+    setEditingRecord(null);
+    setSelectedAnimalId(animals[0]?.id || '');
+    setCustomAnimalTag('');
+    setCustomAnimalName('');
+    setVaccineName('FMD Trivalent (O, A, Asia-1)');
+    setDiseaseName('Foot & Mouth Disease (FMD)');
+    setDoseNumber(1);
+    setScheduledDate(new Date().toISOString().split('T')[0]);
+    const d = new Date();
+    d.setMonth(d.getMonth() + 6);
+    setNextBoosterDate(d.toISOString().split('T')[0]);
+    setAdministeringBy('');
+    setNotes('');
+    setFormError('');
+    setShowAddEditModal(true);
+  };
+
+  const handleOpenEdit = (record: VaccinationRecord) => {
+    setEditingRecord(record);
+    setSelectedAnimalId(record.animalId);
+    setCustomAnimalTag(record.animalTag);
+    setCustomAnimalName(record.animalName);
+    setVaccineName(record.vaccineName);
+    setDiseaseName(record.diseaseName);
+    setDoseNumber(record.doseNumber || 1);
+    setScheduledDate(record.scheduledDate);
+    setNextBoosterDate(record.nextBoosterDate || '');
+    setAdministeringBy(record.administeredBy || '');
+    setNotes(record.notes || '');
+    setFormError('');
+    setShowAddEditModal(true);
+  };
 
   const handleOpenMarkModal = (vac: VaccinationRecord) => {
     setSelectedVacToMark(vac);
@@ -79,6 +156,93 @@ export const VaccinationsScreen: React.FC = () => {
     setNextDueDate(sixMonthsLater.toISOString().split('T')[0]);
   };
 
+  const handleSelectVaccinePreset = (preset: typeof COMMON_VACCINES[0]) => {
+    setVaccineName(preset.name);
+    setDiseaseName(preset.disease);
+    if (preset.boosterMonths > 0) {
+      const d = new Date(scheduledDate || new Date().toISOString().split('T')[0]);
+      d.setMonth(d.getMonth() + preset.boosterMonths);
+      setNextBoosterDate(d.toISOString().split('T')[0]);
+    } else {
+      setNextBoosterDate('');
+    }
+  };
+
+  const handleSaveVaccination = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!vaccineName.trim()) {
+      setFormError('Vaccine name is required');
+      return;
+    }
+    if (!scheduledDate) {
+      setFormError('Scheduled date is required');
+      return;
+    }
+
+    let animalTag = customAnimalTag.trim();
+    let animalName = customAnimalName.trim();
+    let animalId = selectedAnimalId;
+
+    if (selectedAnimalId) {
+      const matchAnimal = animals.find((a) => a.id === selectedAnimalId);
+      if (matchAnimal) {
+        animalTag = matchAnimal.tagId;
+        animalName = matchAnimal.name;
+        animalId = matchAnimal.id;
+      }
+    }
+
+    if (!animalTag) {
+      animalTag = `TAG-${Date.now().toString().slice(-4)}`;
+    }
+    if (!animalName) {
+      animalName = 'Herd Cattle';
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    let initialStatus: VaccinationStatus = 'Upcoming';
+    if (scheduledDate < today) initialStatus = 'Overdue';
+    else if (scheduledDate === today) initialStatus = 'Due';
+
+    if (editingRecord) {
+      updateVaccination(editingRecord.id, {
+        animalId,
+        animalTag,
+        animalName,
+        vaccineName: vaccineName.trim(),
+        diseaseName: diseaseName.trim() || vaccineName.trim(),
+        doseNumber: Number(doseNumber) || 1,
+        scheduledDate,
+        nextBoosterDate: nextBoosterDate || undefined,
+        administeredBy: administeredBy.trim() || undefined,
+        notes: notes.trim() || undefined,
+        status: editingRecord.status === 'Completed' ? 'Completed' : initialStatus,
+      });
+    } else {
+      addVaccination({
+        animalId: animalId || `ani-${Date.now()}`,
+        animalTag,
+        animalName,
+        vaccineName: vaccineName.trim(),
+        diseaseName: diseaseName.trim() || vaccineName.trim(),
+        doseNumber: Number(doseNumber) || 1,
+        scheduledDate,
+        nextBoosterDate: nextBoosterDate || undefined,
+        administeredBy: administeredBy.trim() || undefined,
+        notes: notes.trim() || undefined,
+        status: initialStatus,
+      });
+    }
+
+    setShowAddEditModal(false);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!recordToDelete) return;
+    deleteVaccination(recordToDelete.id);
+    setRecordToDelete(null);
+  };
+
   const handleConfirmMarkVaccinated = () => {
     if (!selectedVacToMark) return;
     markVaccinated(selectedVacToMark.id, vetName, vetNotes, nextDueDate || undefined);
@@ -86,83 +250,89 @@ export const VaccinationsScreen: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-950 min-h-full">
+    <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-950">
       <MobileHeader
         showBack={true}
-        title={t.vaccinations || 'Herd Immunization & Vaccines'}
-        subtitle="Vaccination Tracking & Completed History"
+        title={t.vaccinationSchedule || 'Vaccinations Schedule'}
+        subtitle={t.tagline || 'Herd Immunization & Disease Prevention'}
       />
 
-      <main className="p-4 sm:p-5 space-y-4 pb-24 animate-fadeIn">
+      <main className="p-4 sm:p-5 space-y-4 pb-24 animate-fadeIn max-w-lg mx-auto w-full">
         
-        {/* Main Tab Switcher */}
-        <div className="grid grid-cols-2 p-1 rounded-2xl bg-slate-200/70 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-          <button
-            type="button"
-            onClick={() => setActiveTab('schedule')}
-            className={`py-2 px-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 active:scale-95 ${
-              activeTab === 'schedule'
-                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
-                : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-            }`}
-          >
-            <Calendar size={14} className={activeTab === 'schedule' ? 'text-teal-600' : ''} />
-            <span>Active Schedule ({activeScheduleRecords.length})</span>
-          </button>
+        {/* Top Header with Add Action */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-black text-slate-900 dark:text-white">
+              {t.vaccinationSchedule || 'Herd Schedule'}
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Track boosters and timely immunization
+            </p>
+          </div>
 
           <button
             type="button"
-            onClick={() => setActiveTab('history')}
-            className={`py-2 px-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 active:scale-95 ${
-              activeTab === 'history'
-                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
-                : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-            }`}
+            onClick={handleOpenAdd}
+            className="py-2.5 px-4 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-extrabold text-xs shadow-lg shadow-teal-600/30 flex items-center gap-1.5 active:scale-95 transition"
           >
-            <History size={14} className={activeTab === 'history' ? 'text-emerald-600' : ''} />
-            <span>Vaccination History ({completedCount})</span>
+            <Plus size={16} strokeWidth={2.5} />
+            <span>{t.addVaccination || '+ Add Vaccination'}</span>
           </button>
         </div>
 
         {/* KPI Counter Grid */}
-        <div className="grid grid-cols-4 gap-1.5 text-center">
-          <div
-            onClick={() => {
-              setActiveTab('schedule');
-              setSelectedStatus('Upcoming');
-            }}
-            className="p-2.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 cursor-pointer active:scale-95 transition"
+        <div className="grid grid-cols-4 gap-2 text-center">
+          <button
+            type="button"
+            onClick={() => setSelectedStatus(selectedStatus === 'Upcoming' ? 'All' : 'Upcoming')}
+            className={`p-2.5 rounded-2xl border transition-all ${
+              selectedStatus === 'Upcoming'
+                ? 'bg-blue-100 dark:bg-blue-900/60 border-blue-400 ring-2 ring-blue-500/30'
+                : 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900'
+            }`}
           >
-            <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold block">Upcoming</span>
-            <span className="text-base font-extrabold text-amber-900 dark:text-amber-200">{upcomingCount}</span>
-          </div>
-          <div
-            onClick={() => {
-              setActiveTab('schedule');
-              setSelectedStatus('Due');
-            }}
-            className="p-2.5 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-900 cursor-pointer active:scale-95 transition"
+            <span className="text-[10px] text-blue-700 dark:text-blue-400 font-bold block">{t.upcoming || 'Upcoming'}</span>
+            <span className="text-base font-black text-blue-900 dark:text-blue-200">{upcomingCount}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSelectedStatus(selectedStatus === 'Due' ? 'All' : 'Due')}
+            className={`p-2.5 rounded-2xl border transition-all ${
+              selectedStatus === 'Due'
+                ? 'bg-amber-100 dark:bg-amber-900/60 border-amber-400 ring-2 ring-amber-500/30'
+                : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900'
+            }`}
           >
-            <span className="text-[10px] text-teal-700 dark:text-teal-400 font-bold block">Due</span>
-            <span className="text-base font-extrabold text-teal-900 dark:text-teal-200">{dueCount}</span>
-          </div>
-          <div
-            onClick={() => {
-              setActiveTab('schedule');
-              setSelectedStatus('Overdue');
-            }}
-            className="p-2.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 cursor-pointer active:scale-95 transition"
+            <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold block">{t.due || 'Due'}</span>
+            <span className="text-base font-black text-amber-900 dark:text-amber-200">{dueCount}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSelectedStatus(selectedStatus === 'Overdue' ? 'All' : 'Overdue')}
+            className={`p-2.5 rounded-2xl border transition-all ${
+              selectedStatus === 'Overdue'
+                ? 'bg-rose-100 dark:bg-rose-900/60 border-rose-400 ring-2 ring-rose-500/30'
+                : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900'
+            }`}
           >
-            <span className="text-[10px] text-rose-700 dark:text-rose-400 font-bold block">Overdue</span>
-            <span className="text-base font-extrabold text-rose-900 dark:text-rose-200">{overdueCount}</span>
-          </div>
-          <div
-            onClick={() => setActiveTab('history')}
-            className="p-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 cursor-pointer active:scale-95 transition"
+            <span className="text-[10px] text-rose-700 dark:text-rose-400 font-bold block">{t.overdue || 'Overdue'}</span>
+            <span className="text-base font-black text-rose-900 dark:text-rose-200">{overdueCount}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSelectedStatus(selectedStatus === 'Completed' ? 'All' : 'Completed')}
+            className={`p-2.5 rounded-2xl border transition-all ${
+              selectedStatus === 'Completed'
+                ? 'bg-emerald-100 dark:bg-emerald-900/60 border-emerald-400 ring-2 ring-emerald-500/30'
+                : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900'
+            }`}
           >
-            <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold block">Done</span>
-            <span className="text-base font-extrabold text-emerald-900 dark:text-emerald-200">{completedCount}</span>
-          </div>
+            <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold block">{t.completed || 'Done'}</span>
+            <span className="text-base font-black text-emerald-900 dark:text-emerald-200">{completedCount}</span>
+          </button>
         </div>
 
         {/* Search Bar */}
@@ -171,241 +341,186 @@ export const VaccinationsScreen: React.FC = () => {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={
-              activeTab === 'schedule'
-                ? 'Search by Disease, Vaccine, or Cattle Tag...'
-                : 'Search completed history by Cattle, Tag, Vaccine, Disease, or Vet...'
-            }
-            className="w-full pl-9 pr-3 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-dairy-500 shadow-sm"
+            placeholder="Search by Vaccine, Disease, or Tag ID..."
+            className="w-full pl-9 pr-8 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-sm"
           />
           <Search size={15} className="absolute left-3 top-3 text-slate-400" />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-3 top-3 text-slate-400 hover:text-slate-600"
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
 
-        {/* TAB 1: ACTIVE SCHEDULE */}
-        {activeTab === 'schedule' && (
+        {/* Status Filter Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
+          {(['All', 'Due', 'Overdue', 'Upcoming', 'Completed'] as const).map((st) => (
+            <button
+              key={st}
+              onClick={() => setSelectedStatus(st)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition active:scale-95 ${
+                selectedStatus === st
+                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-sm'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800'
+              }`}
+            >
+              {st === 'All' ? 'All Vaccines' : st}
+            </button>
+          ))}
+        </div>
+
+        {/* Vaccination Records List */}
+        {filtered.length > 0 ? (
           <div className="space-y-3">
-            {/* Status Filter Tabs */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-              {(['All', 'Due', 'Overdue', 'Upcoming'] as const).map((st) => (
-                <button
-                  key={st}
-                  onClick={() => setSelectedStatus(st)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition active:scale-95 ${
-                    selectedStatus === st
-                      ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-sm'
-                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800'
+            {filtered.map((vac) => {
+              const isCompleted = vac.status === 'Completed';
+
+              return (
+                <div
+                  key={vac.id}
+                  className={`p-4 rounded-3xl border transition-all duration-200 shadow-sm space-y-3 ${
+                    isCompleted
+                      ? 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800'
+                      : vac.status === 'Overdue'
+                      ? 'bg-rose-50/70 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900'
+                      : vac.status === 'Due'
+                      ? 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900'
+                      : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800'
                   }`}
                 >
-                  {st === 'All' ? 'All Active Vaccines' : st}
-                </button>
-              ))}
-            </div>
-
-            {filteredSchedule.length > 0 ? (
-              <div className="space-y-3">
-                {filteredSchedule.map((vac) => {
-                  const animal = animals.find((a) => a.id === vac.animalId);
-
-                  return (
-                    <div
-                      key={vac.id}
-                      className={`p-4 rounded-3xl border transition-all duration-200 shadow-card-soft space-y-3 ${
-                        vac.status === 'Overdue'
-                          ? 'bg-rose-50/60 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900'
-                          : vac.status === 'Due'
-                          ? 'bg-teal-50/60 dark:bg-teal-950/30 border-teal-200 dark:border-teal-900'
-                          : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <div className="flex items-center gap-1.5 mb-1">
-                            <span className="font-mono text-xs font-bold text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/80 px-2 py-0.5 rounded-md">
-                              {vac.animalTag}
-                            </span>
-                            <span className="text-xs font-extrabold text-slate-900 dark:text-white">
-                              {vac.animalName}
-                            </span>
-                            {animal?.breed && (
-                              <span className="text-[10px] text-slate-400 font-medium">
-                                • {animal.breed}
-                              </span>
-                            )}
-                          </div>
-                          <h4 className="font-bold text-sm text-slate-900 dark:text-white">{vac.diseaseName}</h4>
-                          <p className="text-xs text-slate-500">{vac.vaccineName} • Dose #{vac.doseNumber}</p>
-                        </div>
-
-                        <StatusBadge status={vac.status} size="sm" />
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-mono text-[11px] font-bold text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/80 px-2 py-0.5 rounded-md border border-teal-200/50 dark:border-teal-800/50">
+                          {vac.animalTag}
+                        </span>
+                        <span className="text-xs font-black text-slate-900 dark:text-white">
+                          {vac.animalName}
+                        </span>
                       </div>
-
-                      {/* Schedule Details */}
-                      <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800/60 text-xs space-y-1 text-slate-600 dark:text-slate-300">
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-400 flex items-center gap-1">
-                            <Calendar size={12} /> Scheduled Date:
-                          </span>
-                          <span className="font-semibold text-slate-800 dark:text-slate-200">
-                            {formatDate(vac.scheduledDate)}
-                          </span>
-                        </div>
-
-                        {vac.notes && (
-                          <div className="text-[11px] text-slate-500 pt-0.5 border-t border-slate-100 dark:border-slate-800">
-                            <span>Note: {vac.notes}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex items-center justify-between pt-1 text-xs">
-                        <button
-                          onClick={() => navigate('animal-details', { animalId: vac.animalId })}
-                          className="text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline"
-                        >
-                          View Animal Profile
-                        </button>
-
-                        <button
-                          onClick={() => handleOpenMarkModal(vac)}
-                          className="py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-sm shadow-emerald-600/30 active:scale-95 transition"
-                        >
-                          <Check size={14} /> Vaccine Given / Completed
-                        </button>
-                      </div>
-
+                      <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                        {vac.diseaseName}
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {vac.vaccineName} • Dose #{vac.doseNumber}
+                      </p>
                     </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <EmptyState
-                icon={Syringe}
-                title="No Scheduled Vaccines Found"
-                description="All scheduled vaccine protocols for this filter are up to date."
-              />
-            )}
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <StatusBadge status={vac.status} size="sm" />
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEdit(vac)}
+                        className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition"
+                        title="Edit"
+                      >
+                        <Edit2 size={13} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRecordToDelete(vac)}
+                        className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900 text-rose-600 dark:text-rose-400 transition"
+                        title="Delete"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Schedule Details */}
+                  <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800/60 text-xs space-y-1.5 text-slate-600 dark:text-slate-300">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400 flex items-center gap-1.5">
+                        <Calendar size={13} className="text-teal-600" />
+                        {t.vaccinationDate || 'Scheduled Date'}:
+                      </span>
+                      <span className="font-bold text-slate-900 dark:text-white">
+                        {formatDate(vac.scheduledDate)}
+                      </span>
+                    </div>
+
+                    {vac.nextBoosterDate && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400 flex items-center gap-1.5">
+                          <Syringe size={13} className="text-amber-500" />
+                          {t.nextDueDate || 'Next Due / Booster'}:
+                        </span>
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">
+                          {formatDate(vac.nextBoosterDate)}
+                        </span>
+                      </div>
+                    )}
+
+                    {vac.completedDate && (
+                      <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
+                        <span className="flex items-center gap-1.5">
+                          <CheckCircle2 size={13} /> Administered Date:
+                        </span>
+                        <span className="font-bold">{formatDate(vac.completedDate)}</span>
+                      </div>
+                    )}
+
+                    {vac.administeredBy && (
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-400">Administered By:</span>
+                        <span className="font-medium text-slate-700 dark:text-slate-300 truncate max-w-[170px]">
+                          {vac.administeredBy}
+                        </span>
+                      </div>
+                    )}
+
+                    {vac.notes && (
+                      <div className="pt-1 text-[11px] text-slate-500 dark:text-slate-400 border-t border-slate-200/50 dark:border-slate-800/50 flex items-start gap-1">
+                        <Info size={12} className="shrink-0 mt-0.5 text-slate-400" />
+                        <span>{vac.notes}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Bottom Actions */}
+                  <div className="flex items-center justify-between pt-1">
+                    <button
+                      type="button"
+                      onClick={() => navigate('animal-details', { animalId: vac.animalId })}
+                      className="text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline"
+                    >
+                      View Animal Profile
+                    </button>
+
+                    {!isCompleted && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedVacToMark(vac)}
+                        className="py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-sm shadow-emerald-600/30 active:scale-95 transition"
+                      >
+                        <Check size={14} />
+                        <span>Mark Vaccinated</span>
+                      </button>
+                    )}
+                  </div>
+
+                </div>
+              );
+            })}
           </div>
-        )}
-
-        {/* TAB 2: VACCINATION HISTORY (ALREADY GIVEN VACCINES) */}
-        {activeTab === 'history' && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-xs font-bold text-slate-500">
-                Total Administered: <strong>{completedHistoryRecords.length}</strong> records
-              </span>
-              <span className="text-[10px] text-emerald-600 bg-emerald-50 dark:bg-emerald-950/80 px-2 py-0.5 rounded-full font-bold">
-                ✓ Verified Records
-              </span>
-            </div>
-
-            {filteredHistory.length > 0 ? (
-              <div className="space-y-3">
-                {filteredHistory.map((vac) => {
-                  const animal = animals.find((a) => a.id === vac.animalId);
-
-                  return (
-                    <div
-                      key={vac.id}
-                      className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-card-soft space-y-3 hover:border-emerald-500/50 transition-all"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <div className="flex items-center gap-1.5 mb-1">
-                            <span className="font-mono text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/80 px-2 py-0.5 rounded-md">
-                              {vac.animalTag}
-                            </span>
-                            <span className="text-xs font-extrabold text-slate-900 dark:text-white">
-                              {vac.animalName}
-                            </span>
-                            {animal?.breed && (
-                              <span className="text-[10px] text-slate-400 font-medium">
-                                ({animal.type} • {animal.breed})
-                              </span>
-                            )}
-                          </div>
-                          <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
-                            {vac.diseaseName}
-                          </h4>
-                          <p className="text-xs text-slate-500">
-                            {vac.vaccineName} • Dose #{vac.doseNumber}
-                          </p>
-                        </div>
-
-                        <span className="bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
-                          <CheckCircle2 size={11} /> Completed
-                        </span>
-                      </div>
-
-                      {/* Completed Details Audit Box */}
-                      <div className="p-3 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/50 text-xs space-y-1.5 text-slate-700 dark:text-slate-300">
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-500 flex items-center gap-1">
-                            <CheckCircle2 size={12} className="text-emerald-600" /> Date Administered:
-                          </span>
-                          <span className="font-bold text-emerald-700 dark:text-emerald-300">
-                            {formatDate(vac.completedDate || vac.scheduledDate)}
-                          </span>
-                        </div>
-
-                        {vac.nextBoosterDate && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-slate-500 flex items-center gap-1">
-                              <Clock size={12} className="text-amber-500" /> Next Due Booster:
-                            </span>
-                            <span className="font-semibold text-slate-800 dark:text-slate-200">
-                              {formatDate(vac.nextBoosterDate)}
-                            </span>
-                          </div>
-                        )}
-
-                        {vac.administeredBy && (
-                          <div className="flex items-center justify-between pt-1 border-t border-emerald-200/50 dark:border-emerald-800/50">
-                            <span className="text-slate-500 flex items-center gap-1">
-                              <UserCheck size={12} className="text-teal-600" /> Administered By:
-                            </span>
-                            <span className="font-semibold truncate max-w-[180px]">
-                              {vac.administeredBy}
-                            </span>
-                          </div>
-                        )}
-
-                        {vac.notes && (
-                          <div className="text-[11px] text-slate-500 pt-1 border-t border-emerald-200/50 dark:border-emerald-800/50 flex items-start gap-1">
-                            <FileText size={12} className="shrink-0 mt-0.5 text-slate-400" />
-                            <span>Notes: {vac.notes}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Action */}
-                      <div className="flex items-center justify-between pt-1 text-xs">
-                        <button
-                          onClick={() => navigate('animal-details', { animalId: vac.animalId })}
-                          className="text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline"
-                        >
-                          View Animal Profile
-                        </button>
-                        <span className="text-[10px] text-slate-400 font-mono">
-                          Record ID: {vac.id}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <EmptyState
-                icon={History}
-                title="No Vaccination History Found"
-                description={
-                  search.trim()
-                    ? 'No completed vaccine records matched your search.'
-                    : 'When you administer scheduled vaccines and mark them as given, they will be archived here permanently.'
-                }
-              />
-            )}
+        ) : (
+          <div className="text-center py-8 space-y-4">
+            <EmptyState
+              icon={Syringe}
+              title={t.noVaccinationsScheduled || 'No Vaccinations Scheduled'}
+              description="No scheduled vaccines found for this filter. Add your first immunization schedule to stay protected."
+            />
+            <button
+              type="button"
+              onClick={handleOpenAdd}
+              className="py-3 px-5 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-600 text-white font-bold text-xs shadow-lg shadow-teal-600/30 inline-flex items-center gap-2 active:scale-95 transition"
+            >
+              <Plus size={16} />
+              <span>{t.addVaccination || '+ Add Vaccination'}</span>
+            </button>
           </div>
         )}
 
@@ -413,7 +528,262 @@ export const VaccinationsScreen: React.FC = () => {
 
       <BottomNavigation />
 
-      {/* Mark Vaccinated / Completed Modal */}
+      {/* Add / Edit Vaccination Modal */}
+      {showAddEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-teal-50 dark:bg-teal-950 text-teal-600 flex items-center justify-center">
+                  <Syringe size={16} />
+                </div>
+                <h3 className="font-black text-sm text-slate-900 dark:text-white">
+                  {editingRecord ? 'Edit Vaccination Record' : 'Schedule New Vaccination'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowAddEditModal(false)}
+                className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center active:scale-95"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {formError && (
+              <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 text-xs font-semibold border border-rose-200 dark:border-rose-800 flex items-center gap-2">
+                <AlertTriangle size={15} className="shrink-0 text-rose-500" />
+                <span>{formError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveVaccination} className="space-y-3 text-xs">
+              
+              {/* Select Cow / Buffalo */}
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  {t.selectAnimal || 'Select Cow / Buffalo'} *
+                </label>
+                {animals.length > 0 ? (
+                  <select
+                    value={selectedAnimalId}
+                    onChange={(e) => setSelectedAnimalId(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  >
+                    {animals.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name} ({a.tagId}) - {a.breed}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      value={customAnimalTag}
+                      onChange={(e) => setCustomAnimalTag(e.target.value)}
+                      placeholder="Tag ID (e.g. COW-101)"
+                      className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold"
+                    />
+                    <input
+                      type="text"
+                      value={customAnimalName}
+                      onChange={(e) => setCustomAnimalName(e.target.value)}
+                      placeholder="Animal Name (e.g. Ganga)"
+                      className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Vaccine Presets */}
+              <div>
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1">
+                  Quick Standard Vaccines (ICAR Protocols):
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {COMMON_VACCINES.map((preset) => (
+                    <button
+                      key={preset.name}
+                      type="button"
+                      onClick={() => handleSelectVaccinePreset(preset)}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition ${
+                        vaccineName === preset.name
+                          ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-teal-400'
+                      }`}
+                    >
+                      {preset.name.split(' ')[0]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Vaccine Name */}
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  {t.vaccineName || 'Vaccine Name'} *
+                </label>
+                <input
+                  type="text"
+                  value={vaccineName}
+                  onChange={(e) => setVaccineName(e.target.value)}
+                  placeholder={t.vaccineNamePlaceholder || 'e.g. FMD Trivalent / Anthrax'}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-semibold"
+                  required
+                />
+              </div>
+
+              {/* Disease Target */}
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  {t.diseaseTarget || 'Target Disease'}
+                </label>
+                <input
+                  type="text"
+                  value={diseaseName}
+                  onChange={(e) => setDiseaseName(e.target.value)}
+                  placeholder="e.g. Foot & Mouth Disease (FMD)"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-semibold"
+                />
+              </div>
+
+              {/* Dates & Dose */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    {t.vaccinationDate || 'Scheduled Date'} *
+                  </label>
+                  <input
+                    type="date"
+                    value={scheduledDate}
+                    onChange={(e) => setScheduledDate(e.target.value)}
+                    className="w-full px-2.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-semibold"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    {t.nextDueDate || 'Next Due / Booster'}
+                  </label>
+                  <input
+                    type="date"
+                    value={nextBoosterDate}
+                    onChange={(e) => setNextBoosterDate(e.target.value)}
+                    className="w-full px-2.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-semibold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    {t.doseNumber || 'Dose Number'}
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={doseNumber}
+                    onChange={(e) => setDoseNumber(parseInt(e.target.value) || 1)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    {t.administeringVet || 'Veterinarian / Officer'}
+                  </label>
+                  <input
+                    type="text"
+                    value={administeredBy}
+                    onChange={(e) => setAdministeringBy(e.target.value)}
+                    placeholder="e.g. Dr. Ramesh (Vet)"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-semibold"
+                  />
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  {t.notes || 'Notes / Batch Number'}
+                </label>
+                <input
+                  type="text"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder={t.notesPlaceholder || 'Batch #8812, 2ml subcutaneous'}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="grid grid-cols-2 gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddEditModal(false)}
+                  className="py-3 px-3 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="py-3 px-3 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-600 text-white font-black text-xs shadow-lg shadow-teal-600/30 flex items-center justify-center gap-1 active:scale-95 transition"
+                >
+                  <Check size={14} />
+                  <span>{editingRecord ? 'Save Changes' : 'Schedule Vaccine'}</span>
+                </button>
+              </div>
+
+            </form>
+
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {recordToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 max-w-sm w-full shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/80 text-rose-600 mx-auto flex items-center justify-center">
+              <Trash2 size={24} />
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="font-black text-sm text-slate-900 dark:text-white">
+                {t.deleteVaccination || 'Delete Vaccination Record?'}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {t.deleteVaccineConfirm || 'Are you sure you want to delete this scheduled vaccination?'}
+              </p>
+              <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 text-xs font-bold text-slate-800 dark:text-slate-200 mt-2">
+                {recordToDelete.vaccineName} ({recordToDelete.animalName})
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setRecordToDelete(null)}
+                className="py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirm}
+                className="py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md shadow-rose-600/30 active:scale-95 transition"
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mark Vaccinated Modal */}
       {selectedVacToMark && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 max-w-sm w-full shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 max-h-[90vh] overflow-y-auto">

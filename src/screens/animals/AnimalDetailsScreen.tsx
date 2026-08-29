@@ -5,6 +5,7 @@ import { MobileHeader } from '../../components/common/MobileHeader';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { SourceTag } from '../../components/common/SourceTag';
 import { EditAnimalModal } from '../../components/animals/EditAnimalModal';
+import { ConfirmationDialog } from '../../components/common/ConfirmationDialog';
 import { DiseaseScreeningModal } from '../../components/health/DiseaseScreeningModal';
 import { RecordMilkModal } from '../../components/milk/RecordMilkModal';
 import { FeedAnalysisModal } from '../../components/feed/FeedAnalysisModal';
@@ -19,6 +20,7 @@ import {
   Syringe,
   Calendar,
   Edit2,
+  Trash2,
   Activity,
   Heart,
   Thermometer,
@@ -40,6 +42,7 @@ export const AnimalDetailsScreen: React.FC = () => {
     feedAnalyses,
     navigate,
     updateAnimal,
+    deleteAnimal,
     addHealthAlert,
     recordMilk,
     addFeedAnalysis,
@@ -49,6 +52,7 @@ export const AnimalDetailsScreen: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'overview' | 'health' | 'vaccination' | 'feed' | 'milk' | 'history'>('overview');
   const [isEditOpen, setIsEditOpen] = useState<boolean>(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState<boolean>(false);
   const [isDiseaseCheckOpen, setIsDiseaseCheckOpen] = useState<boolean>(false);
   const [isRecordMilkOpen, setIsRecordMilkOpen] = useState<boolean>(false);
   const [isFeedCheckOpen, setIsFeedCheckOpen] = useState<boolean>(false);
@@ -115,13 +119,22 @@ export const AnimalDetailsScreen: React.FC = () => {
                 <span className="font-mono text-xs font-black text-white bg-teal-600/90 px-2.5 py-1 rounded-xl shadow-sm backdrop-blur-xs">
                   {animal.tagId}
                 </span>
-                <button
-                  onClick={() => setIsEditOpen(true)}
-                  className="w-8 h-8 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md text-white flex items-center justify-center active:scale-95 transition"
-                  title="Edit Animal"
-                >
-                  <Edit2 size={14} />
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setIsEditOpen(true)}
+                    className="w-8 h-8 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md text-white flex items-center justify-center active:scale-95 transition"
+                    title="Edit Animal"
+                  >
+                    <Edit2 size={14} />
+                  </button>
+                  <button
+                    onClick={() => setIsDeleteOpen(true)}
+                    className="w-8 h-8 rounded-xl bg-rose-600/80 hover:bg-rose-600 backdrop-blur-md text-white flex items-center justify-center active:scale-95 transition"
+                    title="Delete Animal"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-1">
@@ -496,6 +509,22 @@ export const AnimalDetailsScreen: React.FC = () => {
         onClose={() => setIsFeedCheckOpen(false)}
         onAnalysisSaved={addFeedAnalysis}
         onGenerateQRBatch={addQRBatch}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={isDeleteOpen}
+        title="Delete Cattle Record"
+        message={`Are you sure you want to remove ${animal.name} (${animal.tagId}) from your herd registry? This action cannot be undone.`}
+        confirmLabel="Delete Cattle"
+        cancelLabel="Cancel"
+        isDestructive={true}
+        onConfirm={() => {
+          deleteAnimal(animal.id);
+          setIsDeleteOpen(false);
+          navigate('animals');
+        }}
+        onCancel={() => setIsDeleteOpen(false)}
       />
 
     </div>

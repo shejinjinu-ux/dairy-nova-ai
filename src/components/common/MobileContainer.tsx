@@ -20,7 +20,6 @@ export const MobileContainer: React.FC<MobileContainerProps> = ({ children }) =>
     <div className="min-h-screen bg-slate-900 flex justify-center items-start sm:p-4 md:p-6 lg:p-8 select-none">
       {/* Mobile Frame Container */}
       <div className="w-full max-w-md min-h-screen sm:min-h-[844px] sm:max-h-[920px] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 sm:rounded-[36px] sm:shadow-2xl sm:shadow-black/60 overflow-hidden flex flex-col relative border-0 sm:border sm:border-slate-800/80">
-
         {/* Offline Warning Banner */}
         {isOffline && (
           <div className="bg-gradient-to-r from-amber-600 to-amber-700 text-white px-3.5 py-1.5 flex items-center justify-between text-xs font-medium shadow-sm shrink-0 z-40 animate-fadeIn">

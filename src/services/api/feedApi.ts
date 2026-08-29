@@ -3,12 +3,98 @@ import {
   FeedAnalysisResult,
   NutritionRecommendationRequest,
   NutritionRecommendationResponse,
+  FeedVisualScreeningResponse,
+  FeedReferenceResponse,
+  CombinedFeedAnalysisResponse,
 } from '../../types';
 import { INITIAL_FEED_ANALYSES } from '../../mocks/mockData';
 
 export const feedApi = {
   async getFeedAnalyses(): Promise<FeedAnalysisResult[]> {
     return getStoredItem<FeedAnalysisResult[]>('feed_analyses', INITIAL_FEED_ANALYSES);
+  },
+
+  /**
+   * METHOD 1: Visual Mould & Spoilage Screening via Feed Image
+   * Endpoint: POST /api/v1/predict/feed-visual (multipart/form-data with 'file')
+   */
+  async screenFeedVisual(imageFile: File | Blob): Promise<FeedVisualScreeningResponse> {
+    const formData = new FormData();
+    formData.append('file', imageFile, (imageFile as File).name || 'feed_sample.jpg');
+
+    return await apiFetch<FeedVisualScreeningResponse>('/predict/feed-visual', {
+      method: 'POST',
+      body: formData,
+    });
+  },
+
+  /**
+   * METHOD 2: Indian Feed Reference Proximate Nutrition (ICAR-NIANP Tables)
+   * Endpoint: POST /api/v1/feed/reference (JSON body: feed_name, quantity_kg)
+   */
+  async getFeedReference(feedName: string, quantityKg: number = 1.0): Promise<FeedReferenceResponse> {
+    return await apiFetch<FeedReferenceResponse>('/feed/reference', {
+      method: 'POST',
+      body: JSON.stringify({
+        feed_name: feedName,
+        quantity_kg: Number(quantityKg) || 1.0,
+      }),
+    });
+  },
+
+  /**
+   * Get all supported ICAR reference feed names
+   * Endpoint: GET /api/v1/feed/reference/all
+   */
+  async getAllReferenceFeeds(): Promise<{ success: boolean; total_feeds: number; feeds: any[] }> {
+    return await apiFetch<{ success: boolean; total_feeds: number; feeds: any[] }>('/feed/reference/all', {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Consolidated Feed Analysis (Reference Nutrients + Visual Image + Spoilage Risk)
+   * Endpoint: POST /api/v1/analyze/feed (multipart/form-data)
+   */
+  async analyzeFeedCombined(params: {
+    feedName: string;
+    quantityKg?: number;
+    imageFile?: File | Blob | null;
+    farmId?: string | null;
+    animalId?: string | null;
+    dryMatterGPerKg?: number;
+    crudeProteinGPerKg?: number;
+    crudeFibreGPerKg?: number;
+    ndfGPerKg?: number;
+    adfGPerKg?: number;
+    adlGPerKg?: number;
+    starchGPerKg?: number;
+    etherExtractGPerKg?: number;
+    ashGPerKg?: number;
+  }): Promise<CombinedFeedAnalysisResponse> {
+    const formData = new FormData();
+    formData.append('feed_name', params.feedName);
+    formData.append('quantity_kg', String(params.quantityKg || 1.0));
+
+    if (params.imageFile) {
+      formData.append('image', params.imageFile, (params.imageFile as File).name || 'feed_image.jpg');
+    }
+    if (params.farmId) formData.append('farm_id', params.farmId);
+    if (params.animalId) formData.append('animal_id', params.animalId);
+    if (params.dryMatterGPerKg !== undefined) formData.append('dry_matter_g_per_kg', String(params.dryMatterGPerKg));
+    if (params.crudeProteinGPerKg !== undefined) formData.append('crude_protein_g_per_kg', String(params.crudeProteinGPerKg));
+    if (params.crudeFibreGPerKg !== undefined) formData.append('crude_fibre_g_per_kg', String(params.crudeFibreGPerKg));
+    if (params.ndfGPerKg !== undefined) formData.append('ndf_g_per_kg', String(params.ndfGPerKg));
+    if (params.adfGPerKg !== undefined) formData.append('adf_g_per_kg', String(params.adfGPerKg));
+    if (params.adlGPerKg !== undefined) formData.append('adl_g_per_kg', String(params.adlGPerKg));
+    if (params.starchGPerKg !== undefined) formData.append('starch_g_per_kg', String(params.starchGPerKg));
+    if (params.etherExtractGPerKg !== undefined) formData.append('ether_extract_g_per_kg', String(params.etherExtractGPerKg));
+    if (params.ashGPerKg !== undefined) formData.append('ash_g_per_kg', String(params.ashGPerKg));
+
+    return await apiFetch<CombinedFeedAnalysisResponse>('/analyze/feed', {
+      method: 'POST',
+      body: formData,
+    });
   },
 
   /**

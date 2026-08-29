@@ -34,7 +34,16 @@ export type PregnancyStatus = 'Pregnant' | 'Non-Pregnant' | 'Suspected' | 'Recen
 
 export type VaccinationStatus = 'Upcoming' | 'Due' | 'Overdue' | 'Completed';
 
-export type DataSourceType = 'Measured' | 'Estimated' | 'Sensor Reading' | 'AI Screening';
+export type DataSourceType =
+  | 'Measured'
+  | 'Estimated'
+  | 'Sensor Reading'
+  | 'AI Screening'
+  | 'Visual Screening'
+  | 'ICAR Reference Tables'
+  | 'FAO Fermentation Model'
+  | 'Visual Spoilage Screening'
+  | 'Rule-Based Visual Screening';
 
 export interface UserProfile {
   id: string;
@@ -305,7 +314,15 @@ export interface ChatMessage {
 
 export interface OfflineQueueItem {
   id: string;
-  type: 'milk_record' | 'animal_add' | 'animal_edit' | 'vaccination_mark' | 'disease_screening' | 'feed_analysis';
+  type:
+    | 'milk_record'
+    | 'animal_add'
+    | 'animal_edit'
+    | 'vaccination_mark'
+    | 'vaccination_add'
+    | 'vaccination_edit'
+    | 'disease_screening'
+    | 'feed_analysis';
   payload: any;
   queuedAt: string;
   status: 'pending' | 'syncing' | 'synced' | 'failed';
@@ -457,3 +474,197 @@ export interface ContaminationScreenResponse {
   lab_verification_required: boolean;
   disclaimer: string;
 }
+
+// Visual Screening Responses (Method 1)
+export interface FeedVisualScreeningResponse {
+  success: boolean;
+  predicted_class: 'GOOD' | 'MOULD_RISK' | 'SPOILED' | string;
+  confidence: number;
+  confidence_percentage: number;
+  risk_level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | string;
+  screening_type: string;
+  probabilities?: Record<string, number>;
+  visual_indicators?: {
+    surface_discolouration_index?: number;
+    dark_or_mould_cluster_spots?: boolean;
+    texture_roughness_score?: number;
+    white_grey_hyphae_indicators?: boolean;
+  };
+  why: string[];
+  recommended_action: string[];
+  disclaimer: string;
+}
+
+export interface SilageVisualScreeningResponse {
+  success: boolean;
+  predicted_class: 'GOOD' | 'MOULD_RISK' | 'SPOILED' | 'POOR_FERMENTATION' | string;
+  confidence: number;
+  confidence_percentage: number;
+  risk_level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | string;
+  screening_type: string;
+  probabilities?: Record<string, number>;
+  visual_indicators?: {
+    surface_discolouration_index?: number;
+    dark_or_mould_cluster_spots?: boolean;
+    texture_roughness_score?: number;
+    white_grey_hyphae_indicators?: boolean;
+  };
+  why: string[];
+  recommended_action: string[];
+  disclaimer: string;
+}
+
+// Feed Reference Nutrition Response (Method 2)
+export interface FeedReferenceNutrientsPerKg {
+  dry_matter_g: number;
+  crude_protein_g: number;
+  crude_fibre_g: number;
+  ndf_g: number;
+  adf_g: number;
+  adl_g: number;
+  starch_g: number;
+  ether_extract_g: number;
+  ash_g: number;
+  energy_mj: number;
+  calcium_g: number;
+  phosphorus_g: number;
+}
+
+export interface FeedReferenceNutrientPercentages {
+  dry_matter_percent: number;
+  crude_protein_percent_dm: number;
+  crude_fibre_percent_dm: number;
+  ndf_percent_dm: number;
+  adf_percent_dm: number;
+  adl_percent_dm: number;
+  starch_percent_dm: number;
+  ether_extract_percent_dm: number;
+  ash_percent_dm: number;
+  metabolizable_energy_mj_kg_dm: number;
+}
+
+export interface FeedReferenceResponse {
+  success: boolean;
+  feed_name: string;
+  matched_feed_name: string;
+  category: string;
+  quantity_kg: number;
+  basis: string;
+  per_kg: FeedReferenceNutrientsPerKg;
+  total_for_quantity: FeedReferenceNutrientsPerKg;
+  nutrient_percentages_dm: FeedReferenceNutrientPercentages;
+  source: string;
+  disclaimer: string;
+}
+
+// Combined Feed Analysis Response
+export interface CombinedFeedAnalysisResponse {
+  success: boolean;
+  feed_name: string;
+  category: string;
+  quantity_kg: number;
+  quality_score: number;
+  status: 'GOOD' | 'CAUTION' | 'HIGH_RISK' | string;
+  nutrition_reference?: FeedReferenceResponse | null;
+  nutrition_ml_predictions?: any;
+  visual_screening?: FeedVisualScreeningResponse | null;
+  risk_analysis: {
+    mould_risk: { level: string; basis: string; details: string };
+    spoilage_risk: { level: string; basis: string; details: string };
+    urea_adulteration?: { status: string; message: string };
+    sand_silica_contamination?: { status: string; message: string };
+    mycotoxin?: { status: string; message: string };
+    disclaimer: string;
+  };
+  why: string[];
+  recommended_action: string[];
+  farm_id?: string | null;
+  animal_id?: string | null;
+  record_id?: string | null;
+  persisted_at?: string | null;
+  disclaimer: string;
+}
+
+// Combined Silage Analysis Response
+export interface CombinedSilageAnalysisResponse {
+  success: boolean;
+  quality_score: number;
+  status: 'GOOD' | 'CAUTION' | 'UNSAFE' | string;
+  fermentation_ml: {
+    quality_classification: {
+      predicted_class: 'ea' | 'la' | string;
+      class_label: string;
+      confidence: number;
+      probabilities: Record<string, number>;
+      model_accuracy: number;
+    };
+    fermentation_quality_index: {
+      predicted_fqi: number;
+      interpretation: string;
+      model_r2_score: number;
+    };
+    screening_result: {
+      screening_status: string;
+      composite_quality_score: number;
+      fermentation_tier: string;
+      why: string[];
+      recommended_action: string[];
+      screening_type: string;
+      disclaimer: string;
+    };
+  };
+  visual_screening?: SilageVisualScreeningResponse | null;
+  risk_analysis: {
+    mould_risk: { level: string; basis: string; details: string };
+    spoilage_risk: { level: string; basis: string; details: string };
+    urea_adulteration?: { status: string; message: string };
+    sand_silica_contamination?: { status: string; message: string };
+    mycotoxin?: { status: string; message: string };
+    disclaimer: string;
+  };
+  fermentation_metrics: {
+    pH: number;
+    dry_matter_percent: number;
+    moisture_percent: number;
+    crude_protein_percent_dm: number;
+    lactic_acid_percent_dm: number;
+    acetic_acid_percent_dm: number;
+    butyric_acid_percent_dm: number;
+    ammonia_n_percent_total_n: number;
+    fqi_score: number;
+    fao_quality_class: string;
+  };
+  why: string[];
+  recommended_action: string[];
+  farm_id?: string | null;
+  animal_id?: string | null;
+  record_id?: string | null;
+  persisted_at?: string | null;
+  disclaimer: string;
+}
+
+// Chat Request & Response
+export interface ChatRequestPayload {
+  message: string;
+  language?: string | null;
+  session_id?: string | null;
+  user_id?: string | null;
+  farm_id?: string | null;
+  selected_animal_id?: string | null;
+}
+
+export interface ChatResponsePayload {
+  success: boolean;
+  reply: string;
+  language: string;
+  detected_language: string;
+  intent: string;
+  module: string;
+  session_id: string;
+  metadata?: {
+    suggested_questions?: string[];
+    intent_confidence?: number;
+    [key: string]: any;
+  } | null;
+}
+

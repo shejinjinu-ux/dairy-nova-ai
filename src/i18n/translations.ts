@@ -209,6 +209,39 @@ export interface TranslationDictionary {
   officerPortal?: string;
   bulkMilkQuality?: string;
   contaminationAlerts?: string;
+  imageTest?: string;
+  manualTest?: string;
+  addVaccination?: string;
+  editVaccination?: string;
+  deleteVaccination?: string;
+  deleteVaccineConfirm?: string;
+  vaccineName?: string;
+  vaccineNamePlaceholder?: string;
+  diseaseTarget?: string;
+  selectAnimal?: string;
+  vaccinationDate?: string;
+  nextDueDate?: string;
+  notes?: string;
+  notesPlaceholder?: string;
+  doseNumber?: string;
+  administeringVet?: string;
+  due?: string;
+  overdue?: string;
+  upcoming?: string;
+  completed?: string;
+  noVaccinationsScheduled?: string;
+  analyzingSample?: string;
+  visualScreening?: string;
+  nutritionAnalysis?: string;
+  riskAssessment?: string;
+  laboratoryDisclaimer?: string;
+  quantityKg?: string;
+  feedNameOptional?: string;
+  visualOnlyExplain?: string;
+  selectFeedTypeForNutrition?: string;
+  technicalParameters?: string;
+  chemicalMeasurements?: string;
+  fermentationClass?: string;
 }
 
 export const LANGUAGE_OPTIONS: LanguageConfig[] = SUPPORTED_LANGUAGES;
@@ -223,6 +256,39 @@ export const TRANSLATIONS: Record<string, TranslationDictionary> = {
     "forgotPassword": "Forgot Password?",
     "demoFarmer": "Demo Farmer Login",
     "demoOfficer": "Field Officer / Cooperative Demo",
+    "imageTest": "📷 Image Test",
+    "manualTest": "✍ Manual Test",
+    "addVaccination": "+ Add Vaccination",
+    "editVaccination": "Edit Vaccination",
+    "deleteVaccination": "Delete Vaccination",
+    "deleteVaccineConfirm": "Are you sure you want to delete this vaccination record?",
+    "vaccineName": "Vaccine Name",
+    "vaccineNamePlaceholder": "e.g. FMD Trivalent / Anthrax / HS-BQ",
+    "diseaseTarget": "Target Disease / Condition",
+    "selectAnimal": "Select Cow / Buffalo",
+    "vaccinationDate": "Vaccination Date",
+    "nextDueDate": "Next Due Date / Booster",
+    "notes": "Clinical Notes / Batch",
+    "notesPlaceholder": "e.g. Administered by local vet, batch #9042",
+    "doseNumber": "Dose Number",
+    "administeringVet": "Administering Veterinarian / Officer",
+    "due": "Due",
+    "overdue": "Overdue",
+    "upcoming": "Upcoming",
+    "completed": "Completed",
+    "noVaccinationsScheduled": "No Vaccinations Scheduled",
+    "analyzingSample": "Analyzing sample...",
+    "visualScreening": "Visual Screening",
+    "nutritionAnalysis": "Nutrition Analysis",
+    "riskAssessment": "Risk Assessment",
+    "laboratoryDisclaimer": "Rule-based visual screening and ICAR reference estimates. Laboratory analysis required for definitive chemical validation.",
+    "quantityKg": "Quantity (kg)",
+    "feedNameOptional": "Feed Type (Optional for image screening)",
+    "visualOnlyExplain": "Image screening checks visible mould and spoilage indicators. For detailed nutritional reference analysis, select the feed type.",
+    "selectFeedTypeForNutrition": "Select feed type for full nutritional reference values",
+    "technicalParameters": "Proximate Nutrients (ICAR Tables)",
+    "chemicalMeasurements": "Fermentation Chemistry (FAO Model)",
+    "fermentationClass": "Fermentation Class",
     "navHome": "Home",
     "navAnimals": "Animals",
     "navHealth": "Health",

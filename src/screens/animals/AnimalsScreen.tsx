@@ -5,12 +5,13 @@ import { MobileHeader } from '../../components/common/MobileHeader';
 import { BottomNavigation } from '../../components/common/BottomNavigation';
 import { AnimalCard } from '../../components/animals/AnimalCard';
 import { AddAnimalModal } from '../../components/animals/AddAnimalModal';
+import { ConfirmationDialog } from '../../components/common/ConfirmationDialog';
 import { EmptyState } from '../../components/common/FeedbackStates';
-import { AnimalType, HealthStatus } from '../../types';
+import { Animal, AnimalType, HealthStatus } from '../../types';
 import { Search, Plus, Filter, ArrowUpDown, Layers, Milk } from 'lucide-react';
 
 export const AnimalsScreen: React.FC = () => {
-  const { animals, navigate, addAnimal } = useAppData();
+  const { animals, navigate, addAnimal, deleteAnimal } = useAppData();
   const { t } = useLanguage();
 
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -18,6 +19,7 @@ export const AnimalsScreen: React.FC = () => {
   const [selectedHealth, setSelectedHealth] = useState<'All' | HealthStatus>('All');
   const [sortBy, setSortBy] = useState<'tag' | 'milk' | 'age'>('tag');
   const [isAddAnimalOpen, setIsAddAnimalOpen] = useState<boolean>(false);
+  const [animalToDelete, setAnimalToDelete] = useState<Animal | null>(null);
 
   // Filtered and sorted animals
   const filteredAnimals = animals
@@ -128,6 +130,7 @@ export const AnimalsScreen: React.FC = () => {
                 animal={animal}
                 onClick={() => navigate('animal-details', { animalId: animal.id })}
                 onAskAI={(a) => navigate('ai-chat', { chatAnimal: a })}
+                onDelete={(a) => setAnimalToDelete(a)}
               />
             ))}
           </div>
@@ -164,6 +167,23 @@ export const AnimalsScreen: React.FC = () => {
         isOpen={isAddAnimalOpen}
         onClose={() => setIsAddAnimalOpen(false)}
         onAnimalAdded={addAnimal}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={!!animalToDelete}
+        title="Delete Cattle Record"
+        message={`Are you sure you want to remove ${animalToDelete?.name || 'this animal'} (${animalToDelete?.tagId}) from your herd registry? This action cannot be undone.`}
+        confirmLabel="Delete Cattle"
+        cancelLabel="Cancel"
+        isDestructive={true}
+        onConfirm={() => {
+          if (animalToDelete) {
+            deleteAnimal(animalToDelete.id);
+            setAnimalToDelete(null);
+          }
+        }}
+        onCancel={() => setAnimalToDelete(null)}
       />
 
     </div>
