@@ -7,19 +7,26 @@ import { SUPPORTED_LANGUAGES, LanguageConfig } from '../../config/languageConfig
 import { AnimatedLogo } from '../../components/common/AnimatedLogo';
 import { Globe, Check, ArrowRight, ArrowLeft } from 'lucide-react';
 
+import { setStoredItem } from '../../services/api/apiHelper';
+
 export const LanguageSelectionScreen: React.FC = () => {
   const { language, setLanguage, t } = useLanguage();
-  const { navigate, goBack } = useAppData();
+  const { navigate, goBack, screenHistory } = useAppData();
   const { isAuthenticated, updateProfile } = useAuth();
   const [selected, setSelected] = useState<string>(language);
 
+  const canGoBack = screenHistory.length > 1;
+
   const handleContinue = async () => {
-    setLanguage(selected as Language);
+    const chosenLang = selected as Language;
+    setLanguage(chosenLang);
+    setStoredItem('has_selected_initial_language', true);
+
     if (isAuthenticated) {
-      await updateProfile({ language: selected as Language });
+      await updateProfile({ language: chosenLang });
       goBack();
     } else {
-      navigate('login');
+      navigate('splash');
     }
   };
 
@@ -29,13 +36,18 @@ export const LanguageSelectionScreen: React.FC = () => {
       {/* Top Section */}
       <div className="space-y-3.5 animate-fadeIn">
         <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={goBack}
-            className="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center active:scale-95 transition shadow-sm"
-          >
-            <ArrowLeft size={16} />
-          </button>
+          {canGoBack ? (
+            <button
+              type="button"
+              onClick={goBack}
+              className="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center active:scale-95 transition shadow-sm"
+              aria-label="Back"
+            >
+              <ArrowLeft size={16} />
+            </button>
+          ) : (
+            <div className="w-9" />
+          )}
 
           <AnimatedLogo size="sm" showText={true} />
 

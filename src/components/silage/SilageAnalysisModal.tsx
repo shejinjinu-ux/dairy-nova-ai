@@ -13,7 +13,6 @@ import {
   ArrowLeft,
   CheckCircle2,
   AlertTriangle,
-  AlertOctagon,
   ChevronDown,
   ChevronUp,
   QrCode,
@@ -24,6 +23,10 @@ import {
   AlertCircle,
   Camera,
   Upload,
+  Trash2,
+  RefreshCw,
+  Keyboard,
+  Scale,
 } from 'lucide-react';
 
 interface SilageAnalysisModalProps {
@@ -35,21 +38,35 @@ interface SilageAnalysisModalProps {
   initialInputMethod?: 'Manual Entry' | 'Portable Scanner Simulation' | 'Mock IoT Storage Monitoring';
 }
 
+const COMMON_SILAGE_SUGGESTIONS = [
+  'Whole Corn (Maize) Silage',
+  'Super Napier Silage',
+  'Sorghum (Jowar) Silage',
+  'Hybrid Napier Grass Silage',
+  'Sugarcane Tops Silage',
+  'Oats Silage',
+  'Mixed Legume Silage',
+];
+
 export const SilageAnalysisModal: React.FC<SilageAnalysisModalProps> = ({
   isOpen,
   onClose,
   onAnalysisSaved,
   onGenerateQRBatch,
-  initialSilageType = 'Whole Corn (Maize) Silage',
+  initialSilageType = '',
   initialInputMethod = 'Manual Entry',
 }) => {
   const { user } = useAuth();
   const { t, language } = useLanguage();
 
-  const [step, setStep] = useState<number>(2);
+  const [inputMode, setInputMode] = useState<'photo' | 'manual'>('manual');
+  const [step, setStep] = useState<number>(1);
   const [imageUrl, setImageUrl] = useState<string>('');
-  const [silageType, setSilageType] = useState<string>(initialSilageType);
-  const [inputSource, setInputSource] = useState<'Manual Entry' | 'Portable Scanner Simulation' | 'Mock IoT Storage Monitoring'>(initialInputMethod);
+  const [silageType, setSilageType] = useState<string>(
+    initialSilageType && initialSilageType !== 'Silage' ? initialSilageType : ''
+  );
+  const [sampleAmount, setSampleAmount] = useState<string>('');
+  const [sampleUnit, setSampleUnit] = useState<string>('kg');
 
   // Silage Fermentation Parameters
   const [phValue, setPhValue] = useState<number>(3.85);
@@ -59,6 +76,7 @@ export const SilageAnalysisModal: React.FC<SilageAnalysisModalProps> = ({
 
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [validationError, setValidationError] = useState<string>('');
   const [result, setResult] = useState<SilageAnalysisResult | null>(null);
   const [showDetailedParameters, setShowDetailedParameters] = useState<boolean>(false);
   const [showReportModal, setShowReportModal] = useState<boolean>(false);
@@ -66,20 +84,62 @@ export const SilageAnalysisModal: React.FC<SilageAnalysisModalProps> = ({
 
   if (!isOpen) return null;
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageUrl(reader.result as string);
+        setValidationError('');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImageUrl('');
+  };
+
+  const validateInputs = (): boolean => {
+    setValidationError('');
+
+    if (!silageType.trim()) {
+      setValidationError('Please enter or select the silage type.');
+      return false;
+    }
+
+    if (!sampleAmount.trim()) {
+      setValidationError('Please enter the sample amount / weight.');
+      return false;
+    }
+
+    const amountNum = Number(sampleAmount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      setValidationError('Sample amount / weight must be a valid positive number (greater than 0).');
+      return false;
+    }
+
+    return true;
+  };
+
   const handleStartAnalysis = async () => {
-    setStep(4);
+    if (!validateInputs()) return;
+
+    setStep(2);
     setIsAnalyzing(true);
     setErrorMessage('');
 
     try {
       const output = await silageApi.analyzeSilage({
-        silageType,
-        imageUrl,
+        silageType: silageType.trim(),
+        imageUrl: inputMode === 'photo' ? imageUrl : '',
+        sampleAmount: Number(sampleAmount),
+        sampleAmountUnit: sampleUnit,
         phValue,
         moisturePercent,
         storageDurationDays,
         internalTemperatureC,
-        inputSource,
+        inputSource: inputMode === 'photo' ? 'Portable Scanner Simulation' : 'Manual Entry',
       });
 
       setResult(output);
@@ -108,8 +168,10 @@ export const SilageAnalysisModal: React.FC<SilageAnalysisModalProps> = ({
       qualityGrade: result.overallQuality,
       adulterationFlags: `Spoilage: ${result.spoilageRisk} • Mould: ${result.mouldRisk}`,
       verificationStatus: result.isGood === 'Good' ? 'Certified Safe' : 'Requires Lab Review',
-      dataSource: 'Sensor Reading',
+      dataSource: inputMode === 'photo' ? 'AI Screening' : 'Measured',
       parameters: {
+        'Silage Type': result.silageType,
+        'Sample Amount': result.sampleAmount ? `${result.sampleAmount} ${result.sampleAmountUnit || 'kg'}` : 'Not Specified',
         'pH Acidity': `${result.phValue} pH`,
         'FQI Score': `${result.fqiScore || 84}/100`,
         'Moisture': `${result.moisturePercent}%`,
@@ -182,41 +244,200 @@ export const SilageAnalysisModal: React.FC<SilageAnalysisModalProps> = ({
             </div>
           )}
 
-          {/* Step 2: Silage Sample Parameters */}
-          {step === 2 && (
-            <div className="space-y-3 animate-fadeIn text-xs">
-              <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  Silage Crop Variety
+          {/* Validation Warning Alert */}
+          {validationError && (
+            <div className="p-2.5 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2 animate-fadeIn">
+              <AlertCircle size={14} className="shrink-0 text-rose-500" />
+              <span>{validationError}</span>
+            </div>
+          )}
+
+          {/* STEP 1: FORM INPUT (PHOTO OR MANUAL) */}
+          {step === 1 && (
+            <div className="space-y-3.5 animate-fadeIn text-xs">
+              
+              {/* Mode Switcher Tabs */}
+              <div className="grid grid-cols-2 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInputMode('photo');
+                    setValidationError('');
+                  }}
+                  className={`py-2 px-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 ${
+                    inputMode === 'photo'
+                      ? 'bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                  }`}
+                >
+                  <Camera size={14} />
+                  <span>📷 Photo Upload</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInputMode('manual');
+                    setValidationError('');
+                  }}
+                  className={`py-2 px-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 ${
+                    inputMode === 'manual'
+                      ? 'bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                  }`}
+                >
+                  <Keyboard size={14} />
+                  <span>⌨️ Manual Entry</span>
+                </button>
+              </div>
+
+              {/* FLOW 1: PHOTO UPLOAD SECTION */}
+              {inputMode === 'photo' && (
+                <div className="space-y-2 animate-fadeIn">
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block">
+                    Silage Sample Photo (Camera or Device Upload)
+                  </label>
+
+                  {imageUrl ? (
+                    <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 group">
+                      <img
+                        src={imageUrl}
+                        alt="Silage sample preview"
+                        className="h-36 w-full object-cover rounded-2xl"
+                      />
+                      <div className="p-2 bg-teal-50 dark:bg-teal-950/80 text-[11px] text-teal-700 dark:text-teal-300 font-semibold flex items-center justify-between">
+                        <span className="flex items-center gap-1">
+                          <CheckCircle2 size={12} /> Photo Attached
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <label className="text-teal-700 dark:text-teal-300 hover:underline cursor-pointer flex items-center gap-0.5">
+                            <RefreshCw size={11} /> Replace
+                            <input
+                              type="file"
+                              accept="image/*"
+                              capture="environment"
+                              onChange={handleImageChange}
+                              className="hidden"
+                            />
+                          </label>
+                          <span>•</span>
+                          <button type="button" onClick={handleRemoveImage} className="text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-0.5">
+                            <Trash2 size={11} /> Remove
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border-2 border-dashed border-slate-300 dark:border-slate-700 text-center space-y-2">
+                      <div className="w-10 h-10 rounded-xl bg-teal-100 dark:bg-teal-950 text-teal-600 flex items-center justify-center mx-auto">
+                        <Camera size={20} />
+                      </div>
+                      <div>
+                        <strong className="block text-slate-900 dark:text-white text-xs">
+                          Capture or Select Silage Photo
+                        </strong>
+                        <p className="text-[10px] text-slate-400">
+                          Supports pit face camera, bunker sample, or file upload
+                        </p>
+                      </div>
+                      <label className="inline-flex py-2 px-3.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs cursor-pointer shadow-md shadow-teal-600/20 active:scale-95 transition">
+                        <Upload size={13} className="mr-1.5" /> Select Photo
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          onChange={handleImageChange}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* FLOW 1 & 2: MANUALLY TYPEABLE SILAGE TYPE */}
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700 dark:text-slate-300 block">
+                  Silage Type * <span className="font-normal text-[10px] text-slate-400">(Manually enter or select below)</span>
                 </label>
-                <div className="grid grid-cols-2 gap-1.5 mb-2">
-                  {[
-                    'Whole Corn (Maize) Silage',
-                    'Sorghum (Jowar) Silage',
-                    'Hybrid Napier Grass Silage',
-                    'Oats / Mixed Silage',
-                  ].map((type) => (
+                <input
+                  type="text"
+                  value={silageType}
+                  onChange={(e) => {
+                    setSilageType(e.target.value);
+                    setValidationError('');
+                  }}
+                  placeholder="Enter Silage Type (e.g. Maize Silage, Super Napier Silage, Sorghum Pit Silage)..."
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-teal-500"
+                />
+
+                {/* Quick Suggestion Chips */}
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  {COMMON_SILAGE_SUGGESTIONS.slice(0, 4).map((item) => (
                     <button
-                      key={type}
+                      key={item}
                       type="button"
-                      onClick={() => setSilageType(type)}
-                      className={`p-2 rounded-xl border text-[11px] font-bold transition active:scale-95 text-left ${
-                        silageType === type
-                          ? 'bg-teal-50 dark:bg-teal-950/80 text-teal-700 dark:text-teal-300 border-teal-500 ring-1 ring-teal-500'
-                          : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                      onClick={() => {
+                        setSilageType(item);
+                        setValidationError('');
+                      }}
+                      className={`px-2 py-0.5 rounded-lg border text-[10px] font-semibold transition ${
+                        silageType === item
+                          ? 'bg-teal-600 text-white border-teal-600'
+                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-teal-400'
                       }`}
                     >
-                      🌽 {type.split('(')[0].replace('Silage', '').trim()}
+                      {item}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Supported Silage Parameters */}
-              <div className="space-y-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+              {/* REQUIRED: AMOUNT / WEIGHT */}
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700 dark:text-slate-300 block flex items-center justify-between">
+                  <span className="flex items-center gap-1">
+                    <Scale size={13} className="text-teal-600" /> Amount / Weight *
+                  </span>
+                  <span className="text-[10px] text-rose-500 font-bold">Required</span>
+                </label>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-2">
+                    <input
+                      type="number"
+                      min="0.1"
+                      step="0.1"
+                      value={sampleAmount}
+                      onChange={(e) => {
+                        setSampleAmount(e.target.value);
+                        setValidationError('');
+                      }}
+                      placeholder="Enter amount (e.g. 50)"
+                      className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-teal-500"
+                    />
+                  </div>
+
+                  <div>
+                    <select
+                      value={sampleUnit}
+                      onChange={(e) => setSampleUnit(e.target.value)}
+                      className="w-full px-2.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500"
+                    >
+                      <option value="kg">kg</option>
+                      <option value="quintal">quintal</option>
+                      <option value="tons">tons</option>
+                      <option value="pit tons">pit tons</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* MANUAL FERMENTATION PARAMETERS (OPTIONAL TUNING) */}
+              <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-slate-700 dark:text-slate-300">
-                    Fermentation Test Parameters
+                    Fermentation Indicators <span className="text-[10px] font-normal text-slate-400">(Optional)</span>
                   </span>
                   <span className="text-[10px] text-teal-600 font-semibold">FAO Calibrated</span>
                 </div>
@@ -292,22 +513,22 @@ export const SilageAnalysisModal: React.FC<SilageAnalysisModalProps> = ({
                 </div>
               </div>
 
-              {/* Action */}
+              {/* Submit Button */}
               <div className="pt-2">
                 <button
                   type="button"
                   onClick={handleStartAnalysis}
-                  className="w-full py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md shadow-teal-600/30 flex items-center justify-center gap-1.5 active:scale-95 transition"
+                  className="w-full py-3.5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-black text-xs shadow-lg shadow-teal-600/30 flex items-center justify-center gap-1.5 active:scale-95 transition"
                 >
-                  <Sparkles size={15} />
-                  <span>Evaluate Silage Quality</span>
+                  <Sparkles size={16} />
+                  <span>Run Rapid Silage Test</span>
                 </button>
               </div>
             </div>
           )}
 
-          {/* Step 4: Loading or Complete Result */}
-          {step === 4 && (
+          {/* STEP 2: LOADING / RESULTS SCREEN */}
+          {step === 2 && (
             <div className="space-y-3.5 animate-fadeIn text-xs">
               {isAnalyzing ? (
                 <div className="py-10 text-center space-y-3">
@@ -328,13 +549,19 @@ export const SilageAnalysisModal: React.FC<SilageAnalysisModalProps> = ({
                   <div className="p-4 rounded-3xl bg-gradient-to-br from-slate-900 to-slate-950 text-white border border-slate-800 text-center space-y-2 shadow-lg">
                     <div className="flex items-center justify-between text-[10px] text-slate-400">
                       <span>{result.batchId}</span>
-                      <SourceTag source="AI Screening" className="bg-white/10 text-slate-200 border-white/20" />
+                      <SourceTag source={inputMode === 'photo' ? 'AI Screening' : 'Manual Entry'} className="bg-white/10 text-slate-200 border-white/20" />
                     </div>
 
                     <div>
                       <h4 className="text-xs font-black uppercase tracking-wider text-teal-400 mb-1">
-                        🌽 SILAGE QUALITY RESULT
+                        🌽 {result.silageType}
                       </h4>
+                      {result.sampleAmount && (
+                        <span className="inline-block text-[10px] font-bold bg-white/10 px-2.5 py-0.5 rounded-full text-slate-200 mb-2">
+                          Sample Weight: {result.sampleAmount} {result.sampleAmountUnit || 'kg'}
+                        </span>
+                      )}
+
                       <div className="text-[10px] font-bold uppercase tracking-widest text-slate-300">
                         Quality Score:
                       </div>
@@ -491,6 +718,19 @@ export const SilageAnalysisModal: React.FC<SilageAnalysisModalProps> = ({
                         <span>Save to History</span>
                       </button>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStep(1);
+                        setResult(null);
+                        setSampleAmount('');
+                        setValidationError('');
+                      }}
+                      className="w-full py-2 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 hover:underline"
+                    >
+                      ← Test Another Silage Pit
+                    </button>
                   </div>
 
                 </div>

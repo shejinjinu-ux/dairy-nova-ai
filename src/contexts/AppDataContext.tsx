@@ -62,6 +62,41 @@ export type ScreenType =
   | 'officer-dashboard'
   | 'officer-farm-details';
 
+export const PARENT_ROUTE_MAP: Record<ScreenType, ScreenType> = {
+  'splash': 'language-select',
+  'language-select': 'language-select',
+  'login': 'splash',
+  'register': 'splash',
+  'forgot-password': 'login',
+  'home': 'home',
+  'rapid-test': 'feed',
+  'animals': 'home',
+  'animal-details': 'animals',
+  'add-animal': 'animals',
+  'breeds': 'home',
+  'breed-details': 'breeds',
+  'health': 'home',
+  'disease-screening': 'health',
+  'vaccinations': 'health',
+  'feed': 'home',
+  'feed-analysis': 'feed',
+  'silage': 'home',
+  'silage-analysis': 'silage',
+  'milk': 'home',
+  'milk-quality': 'milk',
+  'record-milk': 'milk',
+  'ai-chat': 'home',
+  'qr-traceability': 'home',
+  'byproducts': 'home',
+  'history': 'home',
+  'notifications': 'home',
+  'more': 'home',
+  'profile': 'home',
+  'settings': 'home',
+  'officer-dashboard': 'officer-dashboard',
+  'officer-farm-details': 'officer-dashboard',
+};
+
 interface AppDataContextType {
   animals: Animal[];
   healthAlerts: HealthAlert[];
@@ -75,17 +110,18 @@ interface AppDataContextType {
   officerFarms: OfficerFarm[];
   contaminationAlerts: ContaminationAlert[];
   currentScreen: ScreenType;
+  screenHistory: ScreenType[];
   selectedAnimalId: string | null;
   selectedBreedId: string | null;
   selectedFarmId: string | null;
   chatAnimalContext: Animal | null;
-  navigate: (screen: ScreenType, params?: { animalId?: string; breedId?: string; farmId?: string; chatAnimal?: Animal }) => void;
+  navigate: (screen: ScreenType, params?: { animalId?: string; breedId?: string; farmId?: string; chatAnimal?: Animal }, replace?: boolean) => void;
   goBack: () => void;
   addAnimal: (animal: Omit<Animal, 'id' | 'createdDate' | 'lastCheckDate'>) => void;
   updateAnimal: (id: string, updates: Partial<Animal>) => void;
   deleteAnimal: (id: string) => void;
   recordMilk: (record: Omit<MilkRecord, 'id' | 'isSynced'>) => void;
-  markVaccinated: (id: string, vetName: string, notes?: string) => void;
+  markVaccinated: (id: string, vetName: string, notes?: string, nextDueDate?: string) => void;
   addHealthAlert: (alert: Omit<HealthAlert, 'id' | 'timestamp'>) => void;
   resolveHealthAlert: (id: string) => void;
   addFeedAnalysis: (result: FeedAnalysisResult) => void;
@@ -97,6 +133,7 @@ interface AppDataContextType {
   seedNewUserHerd: (initialAnimal?: Omit<Animal, 'id' | 'createdDate' | 'lastCheckDate'>) => void;
   loadDemoHerd: () => void;
   clearUserData: () => void;
+  resetOnLogout: () => void;
 }
 
 const AppDataContext = createContext<AppDataContextType | undefined>(undefined);
@@ -160,26 +197,48 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [officerFarms] = useState<OfficerFarm[]>(() => getStoredItem('officer_farms', OFFICER_COOPERATIVE_FARMS));
   const [contaminationAlerts, setContaminationAlerts] = useState<ContaminationAlert[]>(() => getStoredItem('contamination_alerts', CONTAMINATION_ALERTS));
 
+  // Determine initial entry screen
   const [currentScreen, setCurrentScreen] = useState<ScreenType>(() => {
     const activeUser = getStoredItem<any>('active_user', null);
     if (activeUser && activeUser.isOnboarded) {
       return activeUser.role === 'officer' ? 'officer-dashboard' : 'home';
     }
+    const hasSelectedLang = getStoredItem<boolean>('has_selected_initial_language', false);
+    if (!hasSelectedLang) {
+      return 'language-select';
+    }
     return 'splash';
   });
-  const [screenHistory, setScreenHistory] = useState<ScreenType[]>(['splash']);
+
+  const [screenHistory, setScreenHistory] = useState<ScreenType[]>([currentScreen]);
   const [selectedAnimalId, setSelectedAnimalId] = useState<string | null>(null);
   const [selectedBreedId, setSelectedBreedId] = useState<string | null>(null);
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
   const [chatAnimalContext, setChatAnimalContext] = useState<Animal | null>(null);
 
-  const navigate = (screen: ScreenType, params?: { animalId?: string; breedId?: string; farmId?: string; chatAnimal?: Animal }) => {
-    if (params?.animalId) setSelectedAnimalId(params.animalId);
-    if (params?.breedId) setSelectedBreedId(params.breedId);
-    if (params?.farmId) setSelectedFarmId(params.farmId);
-    if (params?.chatAnimal !== undefined) setChatAnimalContext(params.chatAnimal);
+  const navigate = (
+    screen: ScreenType,
+    params?: { animalId?: string; breedId?: string; farmId?: string; chatAnimal?: Animal },
+    replace: boolean = false
+  ) => {
+    if (params?.animalId !== undefined) setSelectedAnimalId(params.animalId || null);
+    if (params?.breedId !== undefined) setSelectedBreedId(params.breedId || null);
+    if (params?.farmId !== undefined) setSelectedFarmId(params.farmId || null);
+    if (params?.chatAnimal !== undefined) setChatAnimalContext(params.chatAnimal || null);
 
-    setScreenHistory((prev) => [...prev, screen]);
+    if (replace) {
+      setScreenHistory((prev) => {
+        const copy = [...prev];
+        if (copy.length > 0) copy[copy.length - 1] = screen;
+        else copy.push(screen);
+        return copy;
+      });
+      window.history.replaceState({ screen, params }, '', window.location.pathname);
+    } else {
+      setScreenHistory((prev) => [...prev, screen]);
+      window.history.pushState({ screen, params }, '', window.location.pathname);
+    }
+
     setCurrentScreen(screen);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -191,10 +250,68 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const previousScreen = nextHistory[nextHistory.length - 1];
       setScreenHistory(nextHistory);
       setCurrentScreen(previousScreen);
+      window.history.replaceState({ screen: previousScreen }, '', window.location.pathname);
     } else {
-      setCurrentScreen('home');
+      const fallback = PARENT_ROUTE_MAP[currentScreen] || 'home';
+      if (fallback !== currentScreen) {
+        setCurrentScreen(fallback);
+        setScreenHistory([fallback]);
+        window.history.replaceState({ screen: fallback }, '', window.location.pathname);
+      }
     }
   };
+
+  // Synchronize browser history and Capacitor Android Hardware Back Button
+  useEffect(() => {
+    const handlePopState = () => {
+      setScreenHistory((prev) => {
+        if (prev.length > 1) {
+          const next = [...prev];
+          next.pop();
+          const prevScreen = next[next.length - 1];
+          setCurrentScreen(prevScreen);
+          return next;
+        }
+        return prev;
+      });
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    // Capacitor Native Android Back Button Listener
+    let capacitorBackListener: any = null;
+    const setupCapacitor = async () => {
+      try {
+        const { App } = await import('@capacitor/app');
+        capacitorBackListener = await App.addListener('backButton', () => {
+          setScreenHistory((prev) => {
+            const current = prev[prev.length - 1];
+            const isRootScreen = ['home', 'officer-dashboard', 'splash', 'language-select'].includes(current);
+            if (prev.length > 1 && !isRootScreen) {
+              const next = [...prev];
+              next.pop();
+              const prevScreen = next[next.length - 1];
+              setCurrentScreen(prevScreen);
+              return next;
+            } else if (isRootScreen) {
+              App.minimizeApp().catch(() => {});
+            }
+            return prev;
+          });
+        });
+      } catch {
+        // Web or non-Capacitor environment
+      }
+    };
+    setupCapacitor();
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      if (capacitorBackListener?.remove) {
+        capacitorBackListener.remove();
+      }
+    };
+  }, []);
 
   // Seed fresh herd for a newly registered farmer
   const seedNewUserHerd = (initialAnimal?: Omit<Animal, 'id' | 'createdDate' | 'lastCheckDate'>) => {
@@ -256,6 +373,19 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setQrBatches([]);
   };
 
+  // Complete reset on logout to prevent back-navigation into protected screens
+  const resetOnLogout = () => {
+    clearUserData();
+    setSelectedAnimalId(null);
+    setSelectedBreedId(null);
+    setSelectedFarmId(null);
+    setChatAnimalContext(null);
+    const targetScreen: ScreenType = 'login';
+    setScreenHistory([targetScreen]);
+    setCurrentScreen(targetScreen);
+    window.history.replaceState({ screen: targetScreen }, '', window.location.pathname);
+  };
+
   const addAnimal = (animalData: Omit<Animal, 'id' | 'createdDate' | 'lastCheckDate'>) => {
     const newAnimal: Animal = {
       ...animalData,
@@ -306,15 +436,17 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  const markVaccinated = (id: string, vetName: string, notes?: string) => {
+  const markVaccinated = (id: string, vetName: string, notes?: string, nextDueDate?: string) => {
+    const todayStr = new Date().toISOString().split('T')[0];
     const updated = vaccinations.map((v) =>
       v.id === id
         ? {
             ...v,
             status: 'Completed' as const,
-            completedDate: new Date().toISOString().split('T')[0],
+            completedDate: todayStr,
             administeredBy: vetName,
-            notes: notes || v.notes,
+            notes: notes !== undefined ? notes : v.notes,
+            nextBoosterDate: nextDueDate || v.nextBoosterDate,
           }
         : v
     );
@@ -322,7 +454,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setStoredItem(getUserKey('vaccinations'), updated);
 
     if (isOffline) {
-      addToQueue('vaccination_mark', { id, vetName, notes });
+      addToQueue('vaccination_mark', { id, vetName, notes, nextDueDate });
     }
   };
 
@@ -390,6 +522,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     officerFarms,
     contaminationAlerts,
     currentScreen,
+    screenHistory,
     selectedAnimalId,
     selectedBreedId,
     selectedFarmId,
@@ -412,6 +545,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     seedNewUserHerd,
     loadDemoHerd,
     clearUserData,
+    resetOnLogout,
   };
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;

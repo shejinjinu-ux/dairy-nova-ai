@@ -55,12 +55,13 @@ export const AuthOnboardingScreen: React.FC<AuthOnboardingScreenProps> = ({
   const [locationSuccessMsg, setLocationSuccessMsg] = useState<string>('');
 
   // Step 4: Cattle Details
-  const [cattleName, setCattleName] = useState<string>('Gouri');
+  const [cattleName, setCattleName] = useState<string>('');
   const [cattleTag, setCattleTag] = useState<string>(`TAG-${Math.floor(Math.random() * 800 + 100)}`);
   const [species, setSpecies] = useState<AnimalType>('Cow');
   const [breed, setBreed] = useState<string>('Gir');
-  const [weightKg, setWeightKg] = useState<number>(420);
-  const [dailyYield, setDailyYield] = useState<number>(15.0);
+  const [customBreed, setCustomBreed] = useState<string>('');
+  const [weightKg, setWeightKg] = useState<string>('');
+  const [dailyYield, setDailyYield] = useState<string>('');
   const [lactationStage, setLactationStage] = useState<LactationStage>('Early');
   const [pendingCattle, setPendingCattle] = useState<Omit<Animal, 'id' | 'createdDate' | 'lastCheckDate'> | null>(null);
 
@@ -180,18 +181,28 @@ export const AuthOnboardingScreen: React.FC<AuthOnboardingScreenProps> = ({
   // Step 4: Save Cattle & Continue to Language
   const handleSaveCattle = (skip: boolean = false) => {
     if (!skip) {
+      const finalBreed = breed === 'Other' ? (customBreed.trim() || 'Other Breed') : breed;
+      const parsedWeight =
+        weightKg.trim() !== '' && !isNaN(Number(weightKg)) && Number(weightKg) > 0
+          ? Number(weightKg)
+          : undefined;
+      const parsedYield =
+        dailyYield.trim() !== '' && !isNaN(Number(dailyYield)) && Number(dailyYield) >= 0
+          ? Number(dailyYield)
+          : undefined;
+
       const cattleData: Omit<Animal, 'id' | 'createdDate' | 'lastCheckDate'> = {
         tagId: cattleTag.trim() || `TAG-${Date.now().toString().slice(-4)}`,
-        name: cattleName.trim() || 'My Cattle',
+        name: cattleName.trim() || `${finalBreed} #${cattleTag.trim() || '101'}`,
         type: species,
-        breed,
+        breed: finalBreed,
         ageYears: 4,
         ageMonths: 0,
         sex: 'Female',
-        weightKg,
+        weightKg: parsedWeight,
         lactationStage,
         pregnancyStatus: 'Non-Pregnant',
-        dailyMilkYieldL: dailyYield,
+        dailyMilkYieldL: parsedYield,
         healthStatus: 'Healthy',
         temperatureC: 38.5,
         ruminationMinutesPerDay: 460,
@@ -610,37 +621,56 @@ export const AuthOnboardingScreen: React.FC<AuthOnboardingScreenProps> = ({
               </div>
 
               {/* Breed & Weight */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="font-bold text-[11px] text-slate-700 dark:text-slate-300 block mb-1">
-                    {t.breed} (41+ Indian Breeds)
-                  </label>
-                  <select
-                    value={breed}
-                    onChange={(e) => setBreed(e.target.value)}
-                    className="w-full px-2.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-semibold"
-                  >
-                    {currentBreedList.map((bName) => (
-                      <option key={bName} value={bName}>
-                        {bName}
-                      </option>
-                    ))}
-                  </select>
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="font-bold text-[11px] text-slate-700 dark:text-slate-300 block mb-1">
+                      {t.breed} ({species === 'Cow' ? 'Cow' : 'Buffalo'} Breeds)
+                    </label>
+                    <select
+                      value={breed}
+                      onChange={(e) => setBreed(e.target.value)}
+                      className="w-full px-2.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-semibold"
+                    >
+                      {currentBreedList.map((bName) => (
+                        <option key={bName} value={bName}>
+                          {bName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-[11px] text-slate-700 dark:text-slate-300 block mb-1">
+                      {t.weightKg} (kg)
+                    </label>
+                    <input
+                      type="number"
+                      value={weightKg}
+                      onChange={(e) => setWeightKg(e.target.value)}
+                      placeholder="e.g. 380"
+                      min={0}
+                      max={1200}
+                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-semibold placeholder-slate-400"
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="font-bold text-[11px] text-slate-700 dark:text-slate-300 block mb-1">
-                    {t.weightKg}
-                  </label>
-                  <input
-                    type="number"
-                    value={weightKg}
-                    onChange={(e) => setWeightKg(Number(e.target.value))}
-                    min={200}
-                    max={800}
-                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-semibold"
-                  />
-                </div>
+                {/* Custom Breed Input when "Other" is chosen */}
+                {breed === 'Other' && (
+                  <div className="animate-fadeIn">
+                    <label className="font-bold text-[11px] text-slate-700 dark:text-slate-300 block mb-1">
+                      Specify Custom Breed Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={customBreed}
+                      onChange={(e) => setCustomBreed(e.target.value)}
+                      placeholder="e.g. Alambadi, Bargur, Malnad Gidda..."
+                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-emerald-500 font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Daily Yield & Lactation */}
@@ -652,11 +682,12 @@ export const AuthOnboardingScreen: React.FC<AuthOnboardingScreenProps> = ({
                   <input
                     type="number"
                     value={dailyYield}
-                    onChange={(e) => setDailyYield(Number(e.target.value))}
+                    onChange={(e) => setDailyYield(e.target.value)}
+                    placeholder="e.g. 12.5"
                     step="0.5"
                     min={0}
-                    max={50}
-                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-semibold"
+                    max={60}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-semibold placeholder-slate-400"
                   />
                 </div>
 

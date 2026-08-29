@@ -18,6 +18,8 @@ export const silageApi = {
   async analyzeSilage(params: {
     silageType: string;
     imageUrl?: string;
+    sampleAmount?: number;
+    sampleAmountUnit?: string;
     phValue?: number;
     moisturePercent?: number;
     storageDurationDays?: number;
@@ -116,6 +118,8 @@ export const silageApi = {
         date: new Date().toISOString().split('T')[0],
         silageType: params.silageType || 'Whole Corn (Maize) Silage',
         imageUrl: params.imageUrl || '',
+        sampleAmount: params.sampleAmount,
+        sampleAmountUnit: params.sampleAmountUnit || 'kg',
         overallQuality,
         isGood: isGoodVerdict,
         simpleVerdict,
@@ -159,6 +163,8 @@ export const silageApi = {
       date: new Date().toISOString().split('T')[0],
       silageType: params.silageType || 'Whole Corn (Maize) Silage',
       imageUrl: params.imageUrl || '',
+      sampleAmount: params.sampleAmount,
+      sampleAmountUnit: params.sampleAmountUnit || 'kg',
       overallQuality: isHeating ? 'Spoiled / Butyric' : isLactic ? 'Excellent Lactic' : 'Good Fermentation',
       isGood: isGoodFallback,
       simpleVerdict: isGoodFallback === 'Good' ? 'Silage is well preserved (Offline Calculation).' : 'Silage requires monitoring for temperature and compaction.',

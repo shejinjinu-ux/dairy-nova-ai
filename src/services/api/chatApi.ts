@@ -15,10 +15,11 @@ export const chatApi = {
   async sendMessage(
     question: string,
     options?: {
+      history?: Array<{ sender: 'user' | 'ai'; text: string }>;
       language?: string;
       sessionId?: string;
       userId?: string;
-      animalContext?: { id: string; tag: string; name: string };
+      animalContext?: { id?: string; tag?: string; name?: string; type?: string; breed?: string; dailyMilkYieldL?: number; weightKg?: number; healthStatus?: string };
     }
   ): Promise<ChatApiResult> {
     const selectedLang = options?.language || 'en';
@@ -34,43 +35,39 @@ export const chatApi = {
     }
 
     if (!isOffline) {
-      // Call real FastAPI backend at POST /api/v1/chat
-      const result = await apiFetch<{
-        success: boolean;
-        reply: string;
-        language?: string;
-        detected_language?: string;
-        intent?: string;
-        module?: string;
-        session_id?: string;
-        metadata?: {
-          suggested_questions?: string[];
-          intent_confidence?: number;
-        };
-      }>('/chat', {
-        method: 'POST',
-        body: JSON.stringify({
-          message: messageToSend,
-          language: selectedLang,
-          session_id: sessionId || undefined,
-          user_id: userId || undefined,
-        }),
-      });
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: messageToSend,
+            history: options?.history,
+            language: selectedLang,
+            session_id: sessionId || undefined,
+            animalContext,
+          }),
+        });
 
-      if (result && result.reply) {
-        return {
-          response: result.reply,
-          suggestedFollowUps: result.metadata?.suggested_questions || [
-            'How do I test my feed quality?',
-            'Is my corn silage safe for cattle?',
-            'Recommend daily ration for my lactating cow',
-          ],
-          sessionId: result.session_id,
-          language: result.language,
-          detectedLanguage: result.detected_language,
-          intent: result.intent,
-          isOffline: false,
-        };
+        if (response.ok) {
+          const result = await response.json();
+          if (result && result.reply) {
+            return {
+              response: result.reply,
+              suggestedFollowUps: result.suggested_questions || [
+                'How do I test my feed quality?',
+                'Is my corn silage safe for cattle?',
+                'Recommend daily ration for my lactating cow',
+              ],
+              sessionId: result.session_id,
+              language: result.language,
+              isOffline: false,
+            };
+          }
+        }
+      } catch (err) {
+        console.warn('Live API request failed, checking fallback:', err);
       }
     }
 
@@ -78,9 +75,9 @@ export const chatApi = {
     await delay(300);
     const q = question.toLowerCase();
 
-    if (animalContext && (q.includes('this animal') || q.includes('she') || q.includes('her') || q.includes(animalContext.tag.toLowerCase()))) {
+    if (animalContext && (q.includes('this animal') || q.includes('she') || q.includes('her') || (animalContext.tag && q.includes(animalContext.tag.toLowerCase())))) {
       return {
-        response: `[Offline Mode] Regarding **${animalContext.name} (${animalContext.tag})**:
+        response: `[Offline Mode] Regarding **${animalContext.name || 'Cattle'} (${animalContext.tag || 'N/A'})**:
 • **Lactation & Nutrition:** Ensure 60% green fodder and 40% dry matter with balanced mineral supplementation.
 • **Health Routine:** Keep vaccination schedules updated and maintain clean stall bedding.
 

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { MobileHeader } from '../../components/common/MobileHeader';
@@ -130,7 +130,7 @@ export const AnimalDetailsScreen: React.FC = () => {
                   <StatusBadge status={animal.healthStatus} size="sm" />
                 </div>
                 <p className="text-xs text-slate-200 font-medium">
-                  {animal.breed} • {animal.ageYears} Years {animal.ageMonths} Months • {animal.weightKg} kg
+                  {animal.breed} • {animal.ageYears} Years {animal.ageMonths} Months {animal.weightKg !== undefined ? `• ${animal.weightKg} kg` : ''}
                 </p>
               </div>
 
@@ -194,13 +194,13 @@ export const AnimalDetailsScreen: React.FC = () => {
             <div className="grid grid-cols-2 gap-2.5">
               <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-card-soft space-y-1">
                 <span className="text-[10px] text-slate-400 block font-medium">Daily Milk Yield</span>
-                <span className="text-xl font-extrabold text-dairy-600 dark:text-dairy-400">{animal.dailyMilkYieldL} L / day</span>
+                <span className="text-xl font-extrabold text-dairy-600 dark:text-dairy-400">{animal.dailyMilkYieldL !== undefined ? `${animal.dailyMilkYieldL} L / day` : '—'}</span>
                 <span className="text-[10px] text-slate-400 block">Lactation: {animal.lactationStage} Stage</span>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-card-soft space-y-1">
                 <span className="text-[10px] text-slate-400 block font-medium">Body Weight</span>
-                <span className="text-xl font-extrabold text-slate-800 dark:text-slate-200">{animal.weightKg} kg</span>
+                <span className="text-xl font-extrabold text-slate-800 dark:text-slate-200">{animal.weightKg !== undefined ? `${animal.weightKg} kg` : '—'}</span>
                 <span className="text-[10px] text-slate-400 block">Status: {animal.pregnancyStatus}</span>
               </div>
             </div>
@@ -347,7 +347,7 @@ export const AnimalDetailsScreen: React.FC = () => {
                         ₹{rationData.total_daily_cost_inr.toFixed(2)} <span className="text-xs font-normal text-dairy-200">/ animal / day</span>
                       </h4>
                       <span className="text-[11px] text-teal-100 font-semibold">
-                        Optimized for {animal.weightKg}kg • {animal.dailyMilkYieldL} L/day Yield
+                        Optimized for {animal.weightKg ?? 400}kg • {animal.dailyMilkYieldL ?? 10} L/day Yield
                       </span>
                     </div>
                     <SourceTag source="AI Screening" />

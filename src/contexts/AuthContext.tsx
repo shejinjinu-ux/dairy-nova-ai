@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { UserProfile, UserRole, Language } from '../types';
 import { authApi } from '../services/api/authApi';
 import { getStoredItem, setStoredItem } from '../services/api/apiHelper';
@@ -94,6 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+    if (isLoggingOut) return;
     setIsLoggingOut(true);
     setShowLogoutModal(false);
     try {
@@ -102,7 +103,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLogoutSuccessToast(true);
       setTimeout(() => {
         setLogoutSuccessToast(false);
-      }, 4000);
+      }, 3500);
+    } catch (err) {
+      console.error('Logout failed:', err);
     } finally {
       setIsLoggingOut(false);
     }

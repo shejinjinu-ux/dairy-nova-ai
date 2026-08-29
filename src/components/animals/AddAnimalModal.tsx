@@ -23,16 +23,18 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
   const [name, setName] = useState<string>('');
   const [type, setType] = useState<AnimalType>('Cow');
   const [breed, setBreed] = useState<string>('Gir');
+  const [customBreedName, setCustomBreedName] = useState<string>('');
   const [ageYears, setAgeYears] = useState<number>(3);
   const [ageMonths, setAgeMonths] = useState<number>(6);
   const [sex, setSex] = useState<'Female' | 'Male'>('Female');
-  const [weightKg, setWeightKg] = useState<number>(400);
+  const [weightKg, setWeightKg] = useState<string>('');
   const [lactationStage, setLactationStage] = useState<LactationStage>('Early');
   const [pregnancyStatus, setPregnancyStatus] = useState<PregnancyStatus>('Non-Pregnant');
   const [calvingDate, setCalvingDate] = useState<string>('2026-06-15');
-  const [dailyMilkYieldL, setDailyMilkYieldL] = useState<number>(14.5);
+  const [dailyMilkYieldL, setDailyMilkYieldL] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [breedSearch, setBreedSearch] = useState<string>('');
+  const [validationError, setValidationError] = useState<string>('');
 
   if (!isOpen) return null;
 
@@ -42,10 +44,35 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
     : rawBreedList;
 
   const handleNext = () => {
+    setValidationError('');
+    if (step === 1) {
+      if (breed === 'Other' && !customBreedName.trim()) {
+        setValidationError('Please specify the custom breed name.');
+        return;
+      }
+    } else if (step === 2) {
+      if (weightKg.trim() !== '') {
+        const w = Number(weightKg);
+        if (isNaN(w) || w <= 0 || w > 1500) {
+          setValidationError('Please enter a valid positive weight in kg (e.g. 100 - 1200 kg).');
+          return;
+        }
+      }
+    } else if (step === 3) {
+      if (dailyMilkYieldL.trim() !== '') {
+        const y = Number(dailyMilkYieldL);
+        if (isNaN(y) || y < 0 || y > 100) {
+          setValidationError('Please enter a valid daily milk yield in L/day (e.g. 0 - 60 L).');
+          return;
+        }
+      }
+    }
+
     if (step < 4) setStep(step + 1);
   };
 
   const handleBack = () => {
+    setValidationError('');
     if (step > 1) setStep(step - 1);
   };
 
@@ -55,19 +82,29 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
       setIsSaving(false);
       setIsSuccess(true);
 
+      const finalBreed = breed === 'Other' ? (customBreedName.trim() || 'Other Breed') : breed;
+      const parsedWeight =
+        weightKg.trim() !== '' && !isNaN(Number(weightKg)) && Number(weightKg) > 0
+          ? Number(weightKg)
+          : undefined;
+      const parsedYield =
+        dailyMilkYieldL.trim() !== '' && !isNaN(Number(dailyMilkYieldL)) && Number(dailyMilkYieldL) >= 0
+          ? Number(dailyMilkYieldL)
+          : undefined;
+
       const animalData: Omit<Animal, 'id' | 'createdDate' | 'lastCheckDate'> = {
         tagId,
-        name: name || `${breed} #${tagId}`,
+        name: name || `${finalBreed} #${tagId}`,
         type,
-        breed,
+        breed: finalBreed,
         ageYears,
         ageMonths,
         sex,
-        weightKg,
+        weightKg: parsedWeight,
         lactationStage,
         pregnancyStatus,
         calvingDate,
-        dailyMilkYieldL,
+        dailyMilkYieldL: parsedYield,
         healthStatus: 'Healthy',
         temperatureC: 38.5,
         ruminationMinutesPerDay: 480,
@@ -122,6 +159,14 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
             />
           ))}
         </div>
+
+        {/* Validation Error Alert */}
+        {validationError && (
+          <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs font-semibold animate-fadeIn flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+            <span>{validationError}</span>
+          </div>
+        )}
 
         {/* Step 1 — Basic Information */}
         {step === 1 && (
@@ -181,7 +226,7 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Breed (41+ Indian Breeds) *
+                  Breed ({type === 'Cow' ? 'Indigenous Cow' : 'Buffalo'} Breeds) *
                 </label>
                 <span className="text-[10px] text-slate-400">Searchable</span>
               </div>
@@ -189,7 +234,7 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
                 type="text"
                 value={breedSearch}
                 onChange={(e) => setBreedSearch(e.target.value)}
-                placeholder="Type to filter breeds (e.g. Gir, Murrah)..."
+                placeholder="Type to filter breeds (e.g. Gir, Murrah, Sahiwal)..."
                 className="w-full px-3 py-1.5 mb-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
               />
               <select
@@ -203,6 +248,22 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
                   </option>
                 ))}
               </select>
+
+              {/* Custom Breed Input when "Other" is chosen */}
+              {breed === 'Other' && (
+                <div className="pt-2 animate-fadeIn">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                    Specify Custom Breed Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={customBreedName}
+                    onChange={(e) => setCustomBreedName(e.target.value)}
+                    placeholder="e.g. Alambadi, Bargur, Malnad Gidda..."
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-emerald-500 text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -241,15 +302,16 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
 
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Estimated Weight (kg)
+                Measured Weight (kg)
               </label>
               <input
                 type="number"
-                min="100"
-                max="900"
+                min="0"
+                max="1200"
                 value={weightKg}
-                onChange={(e) => setWeightKg(Number(e.target.value))}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white"
+                onChange={(e) => setWeightKg(e.target.value)}
+                placeholder="Enter cattle weight in kg (e.g. 380)"
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white placeholder-slate-400"
               />
             </div>
 
@@ -321,8 +383,9 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
                 min="0"
                 max="60"
                 value={dailyMilkYieldL}
-                onChange={(e) => setDailyMilkYieldL(Number(e.target.value))}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white"
+                onChange={(e) => setDailyMilkYieldL(e.target.value)}
+                placeholder="Enter daily milk production in liters (e.g. 12.5)"
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white placeholder-slate-400"
               />
             </div>
           </div>
@@ -341,19 +404,19 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
               <div className="flex justify-between">
                 <span className="text-slate-400">Type & Breed:</span>
                 <strong className="text-slate-900 dark:text-white">
-                  {type} • {breed}
+                  {type} • {breed === 'Other' ? (customBreedName.trim() || 'Other Breed') : breed}
                 </strong>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Age & Weight:</span>
                 <strong className="text-slate-900 dark:text-white">
-                  {ageYears}y {ageMonths}m • {weightKg} kg
+                  {ageYears}y {ageMonths}m • {weightKg.trim() !== '' ? `${weightKg.trim()} kg` : 'Not specified'}
                 </strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Lactation:</span>
+                <span className="text-slate-400">Lactation & Yield:</span>
                 <strong className="text-emerald-600 dark:text-emerald-400">
-                  {lactationStage} ({dailyMilkYieldL} L/day)
+                  {lactationStage} {dailyMilkYieldL.trim() !== '' ? `(${dailyMilkYieldL.trim()} L/day)` : '(Unrecorded)'}
                 </strong>
               </div>
             </div>

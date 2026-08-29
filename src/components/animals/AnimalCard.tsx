@@ -58,7 +58,7 @@ export const AnimalCard: React.FC<AnimalCardProps> = ({
         <div className="bg-slate-50 dark:bg-slate-950/50 p-2 rounded-xl">
           <span className="text-[10px] text-slate-400 block font-medium">Daily Milk</span>
           <span className="font-bold text-dairy-600 dark:text-dairy-400 flex items-center justify-center gap-0.5">
-            <Milk size={11} /> {animal.dailyMilkYieldL} L
+            <Milk size={11} /> {animal.dailyMilkYieldL !== undefined ? `${animal.dailyMilkYieldL} L` : '—'}
           </span>
         </div>
 

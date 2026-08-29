@@ -62,11 +62,11 @@ export interface Animal {
   ageYears: number;
   ageMonths: number;
   sex: 'Female' | 'Male';
-  weightKg: number;
+  weightKg?: number;
   lactationStage: LactationStage;
   pregnancyStatus: PregnancyStatus;
   calvingDate?: string;
-  dailyMilkYieldL: number;
+  dailyMilkYieldL?: number;
   healthStatus: HealthStatus;
   imageUrl: string;
   temperatureC: number;
@@ -134,6 +134,8 @@ export interface FeedAnalysisResult {
   feedCategory: string;
   feedName: string;
   imageUrl: string;
+  sampleAmount?: number;
+  sampleAmountUnit?: string;
   overallScore: number;
   qualityGrade: 'Grade A+ (Premium)' | 'Grade A (Good)' | 'Grade B (Acceptable)' | 'Grade C (Low Quality)' | 'Reject (Unsafe)' | string;
   isGood?: 'Good' | 'Moderate' | 'Poor';
@@ -166,6 +168,8 @@ export interface SilageAnalysisResult {
   date: string;
   silageType: string;
   imageUrl: string;
+  sampleAmount?: number;
+  sampleAmountUnit?: string;
   overallQuality: 'Excellent Lactic' | 'Good Fermentation' | 'Moderate / Secondary' | 'Spoiled / Butyric' | string;
   isGood?: 'Good' | 'Moderate' | 'Poor';
   simpleVerdict?: string;

@@ -171,9 +171,9 @@ export const TestReportModal: React.FC<TestReportModalProps> = ({
               </strong>
             </div>
             <div>
-              <span className="text-slate-400 text-[10px] block">Farm & Farmer:</span>
-              <strong className="text-slate-800 dark:text-slate-200 font-bold truncate block">
-                {user?.name || 'Dairy Farmer'} • {user?.farmName || 'Model Farm'}
+              <span className="text-slate-400 text-[10px] block">Sample Weight:</span>
+              <strong className="text-slate-800 dark:text-slate-200 font-bold">
+                {result.sampleAmount ? `${result.sampleAmount} ${result.sampleAmountUnit || 'kg'}` : '—'}
               </strong>
             </div>
             <div>

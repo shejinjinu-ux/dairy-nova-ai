@@ -58,8 +58,7 @@ export const ALL_INDIAN_COW_BREEDS: string[] = [
   'Holstein Friesian (HF Cross)',
   'Jersey (Cross)',
   'Desi / Indigenous Cross',
-  'Unknown Cow',
-  'Other Cow Breed',
+  'Other',
 ];
 
 export const ALL_INDIAN_BUFFALO_BREEDS: string[] = [
@@ -77,8 +76,7 @@ export const ALL_INDIAN_BUFFALO_BREEDS: string[] = [
   'Kalahandi',
   'Marathwadi',
   'Swamp / Desi Buffalo',
-  'Unknown Buffalo',
-  'Other Buffalo Breed',
+  'Other',
 ];
 
 export const INITIAL_USER: UserProfile = {

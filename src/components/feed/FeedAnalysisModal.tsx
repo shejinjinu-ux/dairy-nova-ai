@@ -15,7 +15,6 @@ import {
   ArrowLeft,
   CheckCircle2,
   AlertTriangle,
-  AlertOctagon,
   ChevronDown,
   ChevronUp,
   QrCode,
@@ -24,8 +23,10 @@ import {
   AlertCircle,
   Loader2,
   FileText,
-  Radio,
-  Share2,
+  Trash2,
+  RefreshCw,
+  Keyboard,
+  Scale,
 } from 'lucide-react';
 
 interface FeedAnalysisModalProps {
@@ -37,30 +38,42 @@ interface FeedAnalysisModalProps {
   initialInputMethod?: 'Camera Only' | 'Portable Scanner Simulation' | 'Manual Entry';
 }
 
+const COMMON_FEED_SUGGESTIONS = [
+  'Super Napier CO-5',
+  'Green Fodder (Maize)',
+  'Lucerne / Alfalfa',
+  'Sorghum Green Fodder',
+  'Paddy Straw (Dry)',
+  'Wheat Straw',
+  'Dried Hay',
+  'Concentrate Cattle Pellets',
+  'Cottonseed Cake',
+  'Wheat Bran (Choker)',
+];
+
 export const FeedAnalysisModal: React.FC<FeedAnalysisModalProps> = ({
   isOpen,
   onClose,
   onAnalysisSaved,
   onGenerateQRBatch,
-  initialFeedType = 'Green Fodder',
+  initialFeedType = '',
   initialInputMethod = 'Manual Entry',
 }) => {
   const { user } = useAuth();
   const { t, language } = useLanguage();
 
-  const [step, setStep] = useState<number>(initialInputMethod === 'Camera Only' ? 1 : 2);
-  const [imageUrl, setImageUrl] = useState<string>('');
-  const [feedCategory, setFeedCategory] = useState<string>(initialFeedType);
-  const [feedName, setFeedName] = useState<string>(
-    initialFeedType === 'Green Fodder'
-      ? 'Super Napier CO-5'
-      : initialFeedType === 'Dry Feed'
-      ? 'Paddy Straw / Hay'
-      : initialFeedType === 'Silage'
-      ? 'Maize Silage'
-      : 'Concentrate Pellet'
+  const [inputMode, setInputMode] = useState<'photo' | 'manual'>(
+    initialInputMethod === 'Camera Only' ? 'photo' : 'manual'
   );
-  const [inputSource, setInputSource] = useState<'Camera Only' | 'Portable Scanner Simulation' | 'Manual Entry'>(initialInputMethod);
+  const [step, setStep] = useState<number>(1);
+  const [imageUrl, setImageUrl] = useState<string>('');
+  const [feedName, setFeedName] = useState<string>(
+    initialFeedType && !['Green Fodder', 'Dry Feed', 'Silage', 'Mixed Feed'].includes(initialFeedType)
+      ? initialFeedType
+      : ''
+  );
+  const [sampleAmount, setSampleAmount] = useState<string>('');
+  const [sampleUnit, setSampleUnit] = useState<string>('kg');
 
   // Supported Manual / Optical Parameters
   const [moisture, setMoisture] = useState<number>(12.5);
@@ -70,6 +83,7 @@ export const FeedAnalysisModal: React.FC<FeedAnalysisModalProps> = ({
 
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [validationError, setValidationError] = useState<string>('');
   const [result, setResult] = useState<FeedAnalysisResult | null>(null);
   const [showDetailedParameters, setShowDetailedParameters] = useState<boolean>(false);
   const [showReportModal, setShowReportModal] = useState<boolean>(false);
@@ -83,22 +97,53 @@ export const FeedAnalysisModal: React.FC<FeedAnalysisModalProps> = ({
       const reader = new FileReader();
       reader.onloadend = () => {
         setImageUrl(reader.result as string);
+        setValidationError('');
       };
       reader.readAsDataURL(file);
     }
   };
 
+  const handleRemoveImage = () => {
+    setImageUrl('');
+  };
+
+  const validateInputs = (): boolean => {
+    setValidationError('');
+
+    if (!feedName.trim()) {
+      setValidationError('Please enter or select the feed type name.');
+      return false;
+    }
+
+    if (!sampleAmount.trim()) {
+      setValidationError('Please enter the sample amount / weight.');
+      return false;
+    }
+
+    const amountNum = Number(sampleAmount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      setValidationError('Sample amount / weight must be a valid positive number (greater than 0).');
+      return false;
+    }
+
+    return true;
+  };
+
   const handleStartAnalysis = async () => {
-    setStep(4);
+    if (!validateInputs()) return;
+
+    setStep(2);
     setIsAnalyzing(true);
     setErrorMessage('');
 
     try {
       const output = await feedApi.analyzeFeed({
-        feedCategory,
-        feedName,
-        imageUrl,
-        inputSource,
+        feedCategory: 'Feed',
+        feedName: feedName.trim(),
+        imageUrl: inputMode === 'photo' ? imageUrl : '',
+        sampleAmount: Number(sampleAmount),
+        sampleAmountUnit: sampleUnit,
+        inputSource: inputMode === 'photo' ? 'Camera Only' : 'Manual Entry',
         manualParameters: {
           moisture,
           crudeProtein,
@@ -133,8 +178,10 @@ export const FeedAnalysisModal: React.FC<FeedAnalysisModalProps> = ({
       qualityGrade: result.qualityGrade,
       adulterationFlags: `Urea: ${result.ureaRisk} • Mould: ${result.fungalMouldRisk}`,
       verificationStatus: result.isGood === 'Good' ? 'Certified Safe' : 'Requires Lab Review',
-      dataSource: 'AI Screening',
+      dataSource: inputMode === 'photo' ? 'AI Screening' : 'Measured',
       parameters: {
+        'Feed Type': result.feedName,
+        'Sample Amount': result.sampleAmount ? `${result.sampleAmount} ${result.sampleAmountUnit || 'kg'}` : 'Not Specified',
         'Crude Protein': `${result.crudeProteinPercent}%`,
         'Dry Matter': `${result.dryMatterPercent}%`,
         'Moisture': `${result.moisturePercent}%`,
@@ -209,123 +256,203 @@ export const FeedAnalysisModal: React.FC<FeedAnalysisModalProps> = ({
             </div>
           )}
 
-          {/* Step 1: Capture Sample Photo (Honest UX) */}
-          {step === 1 && (
-            <div className="space-y-3.5 animate-fadeIn text-xs">
-              <div className="text-center space-y-1">
-                <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                  {t.photoSampleScan || 'Photo / Sample Scan'}
-                </h4>
-                <p className="text-slate-500 dark:text-slate-400 text-[11px]">
-                  Capture a sample image of your feed for batch logging and visual records.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-3xl bg-slate-50 dark:bg-slate-800/80 border-2 border-dashed border-slate-300 dark:border-slate-700 text-center space-y-3">
-                {imageUrl ? (
-                  <div className="space-y-2">
-                    <img
-                      src={imageUrl}
-                      alt="Feed sample preview"
-                      className="h-40 w-full object-cover rounded-2xl border border-slate-200 dark:border-slate-700"
-                    />
-                    <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold flex items-center justify-center gap-1">
-                      <CheckCircle2 size={13} />
-                      <span>{t.photoSampleCaptured || 'Photo sample captured'}</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="py-4 space-y-2">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 flex items-center justify-center mx-auto">
-                      <Camera size={24} />
-                    </div>
-                    <strong className="block text-slate-900 dark:text-white text-xs">
-                      {t.takePhoto || 'Capture Sample Photo'}
-                    </strong>
-                    <label className="inline-flex py-2 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer shadow-md shadow-emerald-600/20 active:scale-95 transition">
-                      <Upload size={14} className="mr-1.5" /> {t.uploadPhoto || 'Select Photo'}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        onChange={handleImageChange}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setStep(2)}
-                  className="py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold"
-                >
-                  Skip Photo
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStep(2)}
-                  className="py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center justify-center gap-1 shadow-md shadow-emerald-600/20 active:scale-95 transition"
-                >
-                  <span>{t.continueBtn || 'Next: Test Values'}</span>
-                  <ArrowRight size={14} />
-                </button>
-              </div>
+          {/* Validation Warning Alert */}
+          {validationError && (
+            <div className="p-2.5 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2 animate-fadeIn">
+              <AlertCircle size={14} className="shrink-0 text-rose-500" />
+              <span>{validationError}</span>
             </div>
           )}
 
-          {/* Step 2: Feed Selection & Test Parameters */}
-          {step === 2 && (
-            <div className="space-y-3 animate-fadeIn text-xs">
-              <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  Feed Category & Sample Name
-                </label>
-                <div className="grid grid-cols-2 gap-1.5 mb-2">
-                  {[
-                    { id: 'Green Fodder', label: '🌱 Green Fodder' },
-                    { id: 'Dry Feed', label: '🌾 Dry Feed' },
-                    { id: 'Silage', label: '🌽 Silage' },
-                    { id: 'Concentrate', label: '🥣 Concentrate' },
-                  ].map((cat) => (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => {
-                        setFeedCategory(cat.id);
-                        if (cat.id === 'Green Fodder') setFeedName('Super Napier CO-5');
-                        else if (cat.id === 'Dry Feed') setFeedName('Paddy Straw');
-                        else if (cat.id === 'Silage') setFeedName('Corn Silage');
-                        else setFeedName('Concentrate Cattle Feed');
-                      }}
-                      className={`p-2 rounded-xl border text-[11px] font-bold transition active:scale-95 text-left ${
-                        feedCategory === cat.id
-                          ? 'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-500 ring-1 ring-emerald-500'
-                          : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
-                      }`}
-                    >
-                      {cat.label}
-                    </button>
-                  ))}
+          {/* STEP 1: FORM INPUT (PHOTO OR MANUAL) */}
+          {step === 1 && (
+            <div className="space-y-3.5 animate-fadeIn text-xs">
+              
+              {/* Mode Switcher Tabs */}
+              <div className="grid grid-cols-2 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInputMode('photo');
+                    setValidationError('');
+                  }}
+                  className={`py-2 px-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 ${
+                    inputMode === 'photo'
+                      ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                  }`}
+                >
+                  <Camera size={14} />
+                  <span>📷 Photo Upload</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInputMode('manual');
+                    setValidationError('');
+                  }}
+                  className={`py-2 px-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 ${
+                    inputMode === 'manual'
+                      ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                  }`}
+                >
+                  <Keyboard size={14} />
+                  <span>⌨️ Manual Entry</span>
+                </button>
+              </div>
+
+              {/* FLOW 1: PHOTO UPLOAD SECTION */}
+              {inputMode === 'photo' && (
+                <div className="space-y-2 animate-fadeIn">
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block">
+                    Sample Photo (Camera or Device Upload)
+                  </label>
+
+                  {imageUrl ? (
+                    <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 group">
+                      <img
+                        src={imageUrl}
+                        alt="Feed sample preview"
+                        className="h-36 w-full object-cover rounded-2xl"
+                      />
+                      <div className="p-2 bg-emerald-50 dark:bg-emerald-950/80 text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold flex items-center justify-between">
+                        <span className="flex items-center gap-1">
+                          <CheckCircle2 size={12} /> Photo Attached
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <label className="text-emerald-700 dark:text-emerald-300 hover:underline cursor-pointer flex items-center gap-0.5">
+                            <RefreshCw size={11} /> Replace
+                            <input
+                              type="file"
+                              accept="image/*"
+                              capture="environment"
+                              onChange={handleImageChange}
+                              className="hidden"
+                            />
+                          </label>
+                          <span>•</span>
+                          <button type="button" onClick={handleRemoveImage} className="text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-0.5">
+                            <Trash2 size={11} /> Remove
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border-2 border-dashed border-slate-300 dark:border-slate-700 text-center space-y-2">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 flex items-center justify-center mx-auto">
+                        <Camera size={20} />
+                      </div>
+                      <div>
+                        <strong className="block text-slate-900 dark:text-white text-xs">
+                          Capture or Select Feed Photo
+                        </strong>
+                        <p className="text-[10px] text-slate-400">
+                          Supports phone camera, gallery, or image files
+                        </p>
+                      </div>
+                      <label className="inline-flex py-2 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer shadow-md shadow-emerald-600/20 active:scale-95 transition">
+                        <Upload size={13} className="mr-1.5" /> Select Photo
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          onChange={handleImageChange}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  )}
                 </div>
+              )}
+
+              {/* FLOW 1 & 2: MANUALLY TYPEABLE FEED TYPE */}
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700 dark:text-slate-300 block">
+                  Feed Type * <span className="font-normal text-[10px] text-slate-400">(Manually enter or select below)</span>
+                </label>
                 <input
                   type="text"
                   value={feedName}
-                  onChange={(e) => setFeedName(e.target.value)}
-                  placeholder="e.g. Super Napier, Sorghum Fodder, Straw"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white"
+                  onChange={(e) => {
+                    setFeedName(e.target.value);
+                    setValidationError('');
+                  }}
+                  placeholder="Enter Feed Type (e.g. Super Napier, Sorghum Fodder, Paddy Straw)..."
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500"
                 />
+
+                {/* Quick Suggestion Chips */}
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  {COMMON_FEED_SUGGESTIONS.slice(0, 5).map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => {
+                        setFeedName(item);
+                        setValidationError('');
+                      }}
+                      className={`px-2 py-0.5 rounded-lg border text-[10px] font-semibold transition ${
+                        feedName === item
+                          ? 'bg-emerald-600 text-white border-emerald-600'
+                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-emerald-400'
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {/* Supported Parameters */}
-              <div className="space-y-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+              {/* REQUIRED: AMOUNT / WEIGHT */}
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700 dark:text-slate-300 block flex items-center justify-between">
+                  <span className="flex items-center gap-1">
+                    <Scale size={13} className="text-emerald-600" /> Amount / Weight *
+                  </span>
+                  <span className="text-[10px] text-rose-500 font-bold">Required</span>
+                </label>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-2">
+                    <input
+                      type="number"
+                      min="0.1"
+                      step="0.1"
+                      value={sampleAmount}
+                      onChange={(e) => {
+                        setSampleAmount(e.target.value);
+                        setValidationError('');
+                      }}
+                      placeholder="Enter amount (e.g. 25)"
+                      className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+
+                  <div>
+                    <select
+                      value={sampleUnit}
+                      onChange={(e) => setSampleUnit(e.target.value)}
+                      className="w-full px-2.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="kg">kg</option>
+                      <option value="quintal">quintal</option>
+                      <option value="tons">tons</option>
+                      <option value="bundle">bundle</option>
+                      <option value="g">g</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* MANUAL PARAMETERS SECTION (OPTIONAL TUNING) */}
+              <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-slate-700 dark:text-slate-300">
-                    Sample Test Parameters
+                    Proximate Nutrients <span className="text-[10px] font-normal text-slate-400">(Optional)</span>
                   </span>
-                  <span className="text-[10px] text-emerald-600 font-semibold">ICAR Calibration</span>
+                  <span className="text-[10px] text-emerald-600 font-semibold">ICAR / NRC Calibrated</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
@@ -395,22 +522,22 @@ export const FeedAnalysisModal: React.FC<FeedAnalysisModalProps> = ({
                 </div>
               </div>
 
-              {/* Action */}
+              {/* Submit Button */}
               <div className="pt-2">
                 <button
                   type="button"
                   onClick={handleStartAnalysis}
-                  className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/30 flex items-center justify-center gap-1.5 active:scale-95 transition"
+                  className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-1.5 active:scale-95 transition"
                 >
-                  <Sparkles size={15} />
-                  <span>Run AI Feed Analysis</span>
+                  <Sparkles size={16} />
+                  <span>Run Rapid Quality Test</span>
                 </button>
               </div>
             </div>
           )}
 
-          {/* Step 4: Loading or Complete Result */}
-          {step === 4 && (
+          {/* STEP 2: LOADING / RESULTS SCREEN */}
+          {step === 2 && (
             <div className="space-y-3.5 animate-fadeIn text-xs">
               {isAnalyzing ? (
                 <div className="py-10 text-center space-y-3">
@@ -431,13 +558,19 @@ export const FeedAnalysisModal: React.FC<FeedAnalysisModalProps> = ({
                   <div className="p-4 rounded-3xl bg-gradient-to-br from-slate-900 to-slate-950 text-white border border-slate-800 text-center space-y-2 shadow-lg">
                     <div className="flex items-center justify-between text-[10px] text-slate-400">
                       <span>{result.batchId}</span>
-                      <SourceTag source="AI Screening" className="bg-white/10 text-slate-200 border-white/20" />
+                      <SourceTag source={result.inputSource === 'Camera Only' ? 'AI Screening' : 'Manual Entry'} className="bg-white/10 text-slate-200 border-white/20" />
                     </div>
 
                     <div>
                       <h4 className="text-xs font-black uppercase tracking-wider text-emerald-400 mb-1">
-                        🌾 FEED QUALITY RESULT
+                        🌾 {result.feedName}
                       </h4>
+                      {result.sampleAmount && (
+                        <span className="inline-block text-[10px] font-bold bg-white/10 px-2.5 py-0.5 rounded-full text-slate-200 mb-2">
+                          Sample Weight: {result.sampleAmount} {result.sampleAmountUnit || 'kg'}
+                        </span>
+                      )}
+
                       <div className="text-[10px] font-bold uppercase tracking-widest text-slate-300">
                         Quality Score:
                       </div>
@@ -602,6 +735,19 @@ export const FeedAnalysisModal: React.FC<FeedAnalysisModalProps> = ({
                         <span>Save to History</span>
                       </button>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStep(1);
+                        setResult(null);
+                        setSampleAmount('');
+                        setValidationError('');
+                      }}
+                      className="w-full py-2 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 hover:underline"
+                    >
+                      ← Test Another Feed Sample
+                    </button>
                   </div>
 
                 </div>

@@ -31,7 +31,7 @@ export const AnimalsScreen: React.FC = () => {
       return matchSearch && matchType && matchHealth;
     })
     .sort((a, b) => {
-      if (sortBy === 'milk') return b.dailyMilkYieldL - a.dailyMilkYieldL;
+      if (sortBy === 'milk') return (b.dailyMilkYieldL || 0) - (a.dailyMilkYieldL || 0);
       if (sortBy === 'age') return b.ageYears * 12 + b.ageMonths - (a.ageYears * 12 + a.ageMonths);
       return a.tagId.localeCompare(b.tagId);
     });

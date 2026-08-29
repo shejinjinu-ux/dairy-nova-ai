@@ -17,10 +17,10 @@ export const EditAnimalModal: React.FC<EditAnimalModalProps> = ({
   onAnimalUpdated,
 }) => {
   const [name, setName] = useState<string>(animal.name);
-  const [weightKg, setWeightKg] = useState<number>(animal.weightKg);
+  const [weightKg, setWeightKg] = useState<string>(animal.weightKg !== undefined ? String(animal.weightKg) : '');
   const [lactationStage, setLactationStage] = useState<LactationStage>(animal.lactationStage);
   const [pregnancyStatus, setPregnancyStatus] = useState<PregnancyStatus>(animal.pregnancyStatus);
-  const [dailyMilkYieldL, setDailyMilkYieldL] = useState<number>(animal.dailyMilkYieldL);
+  const [dailyMilkYieldL, setDailyMilkYieldL] = useState<string>(animal.dailyMilkYieldL !== undefined ? String(animal.dailyMilkYieldL) : '');
   const [healthStatus, setHealthStatus] = useState<HealthStatus>(animal.healthStatus);
   const [notes, setNotes] = useState<string>(animal.notes || '');
 
@@ -30,10 +30,10 @@ export const EditAnimalModal: React.FC<EditAnimalModalProps> = ({
 
   const isDirty =
     name !== animal.name ||
-    weightKg !== animal.weightKg ||
+    weightKg !== (animal.weightKg !== undefined ? String(animal.weightKg) : '') ||
     lactationStage !== animal.lactationStage ||
     pregnancyStatus !== animal.pregnancyStatus ||
-    dailyMilkYieldL !== animal.dailyMilkYieldL ||
+    dailyMilkYieldL !== (animal.dailyMilkYieldL !== undefined ? String(animal.dailyMilkYieldL) : '') ||
     healthStatus !== animal.healthStatus ||
     notes !== (animal.notes || '');
 
@@ -46,12 +46,15 @@ export const EditAnimalModal: React.FC<EditAnimalModalProps> = ({
   };
 
   const handleSave = () => {
+    const parsedWeight = weightKg.trim() !== '' ? Number(weightKg) : undefined;
+    const parsedYield = dailyMilkYieldL.trim() !== '' ? Number(dailyMilkYieldL) : undefined;
+
     onAnimalUpdated(animal.id, {
       name,
-      weightKg,
+      weightKg: parsedWeight,
       lactationStage,
       pregnancyStatus,
-      dailyMilkYieldL,
+      dailyMilkYieldL: parsedYield,
       healthStatus,
       notes,
     });
@@ -103,7 +106,8 @@ export const EditAnimalModal: React.FC<EditAnimalModalProps> = ({
                 <input
                   type="number"
                   value={weightKg}
-                  onChange={(e) => setWeightKg(Number(e.target.value))}
+                  onChange={(e) => setWeightKg(e.target.value)}
+                  placeholder="e.g. 380"
                   className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold"
                 />
               </div>
@@ -116,7 +120,8 @@ export const EditAnimalModal: React.FC<EditAnimalModalProps> = ({
                   type="number"
                   step="0.5"
                   value={dailyMilkYieldL}
-                  onChange={(e) => setDailyMilkYieldL(Number(e.target.value))}
+                  onChange={(e) => setDailyMilkYieldL(e.target.value)}
+                  placeholder="e.g. 12.5"
                   className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-dairy-600"
                 />
               </div>

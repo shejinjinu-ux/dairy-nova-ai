@@ -1,0 +1,198 @@
+﻿import type { IncomingMessage, ServerResponse } from 'http';
+
+interface ChatHistoryItem {
+  sender: 'user' | 'ai';
+  text: string;
+}
+
+interface AnimalContextData {
+  id?: string;
+  tag?: string;
+  name?: string;
+  type?: string;
+  breed?: string;
+  dailyMilkYieldL?: number;
+  weightKg?: number;
+  healthStatus?: string;
+}
+
+interface ChatRequestBody {
+  message: string;
+  history?: ChatHistoryItem[];
+  language?: string;
+  animalContext?: AnimalContextData;
+  sessionId?: string;
+}
+
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: 'English',
+  ta: 'Tamil (தமிழ்)',
+  hi: 'Hindi (हिन्दी)',
+  te: 'Telugu (తెలుగు)',
+  kn: 'Kannada (ಕನ್ನಡ)',
+  ml: 'Malayalam (മലയാളം)',
+  bn: 'Bengali (বাংলা)',
+  mr: 'Marathi (मराठी)',
+  gu: 'Gujarati (ગુજરાતી)',
+  pa: 'Punjabi (ਪੰਜਾਬੀ)',
+  or: 'Odia (ଓଡ଼ିଆ)',
+  as: 'Assamese (অসমীয়া)',
+  ur: 'Urdu (اردو)',
+  sa: 'Sanskrit (संस्कृतम्)',
+  ne: 'Nepali (नेपाली)',
+  kok: 'Konkani (कोंकणी)',
+  ks: 'Kashmiri (کٲشُر)',
+  sd: 'Sindhi (سنڌي)',
+  mai: 'Maithili (मैथिली)',
+  mni: 'Manipuri (মৈতৈলোন্)',
+  tanglish: 'Tanglish (Tamil in English Script)',
+};
+
+export const DAIRY_NOVA_SYSTEM_PROMPT = `You are Dairy Nova AI, an expert, empathetic, and highly specialized dairy cattle and buffalo advisory intelligence assistant created for Indian dairy farmers and cooperative officers.
+
+CORE DOMAIN KNOWLEDGE & EXPERTISE:
+1. Dairy Cattle & Buffalo Health:
+   - Indigenous zebu cow breeds (Gir, Sahiwal, Red Sindhi, Tharparkar, Kankrej, Ongole, Kangayam, Rathi, Punganur, Vechur, etc.) and crossbreeds (HF Cross, Jersey Cross).
+   - Indian buffalo breeds (Murrah, Nili-Ravi, Jaffarabadi, Surti, Mehsana, Bhadawari, Banni, etc.).
+   - Common diseases & signs: Foot & Mouth Disease (FMD), Mastitis (clinical & subclinical), Hemorrhagic Septicemia (HS), Black Quarter (BQ), Theileriosis, Babesiosis, Lumpy Skin Disease (LSD), Brucellosis, Ketosis, Milk Fever (Hypocalcemia), Bloat/Acidosis.
+   - Vaccination protocols and booster schedules.
+2. Scientific Nutrition & Feed Management (ICAR-NIANP & NRC standards):
+   - High-energy green fodders (Super Napier CO-5, Maize, Sorghum, Lucerne/Alfalfa, Berseem, Cowpea, Hybrid Napier).
+   - Dry roughage (Paddy straw, Wheat straw, Ragi straw) and Urea Ammoniation treatment.
+   - Concentrate formulation: Balanced cattle feed pellets, bypass protein, mustard cake, cottonseed cake, mineral mixture (50g/day), and common salt.
+   - Dry Matter (DM), Crude Protein (CP), and Total Digestible Nutrients (TDN) balancing according to lactation stage and body weight.
+3. Silage Fermentation & Quality Control:
+   - Optimal silage pH (3.8 - 4.2 for corn/sorghum silage).
+   - Moisture management (65-70% optimal, avoid >75% effluent loss or clostridial/butyric spoilage).
+   - Temperature monitoring (<30°C optimal; >40°C indicates aerobic spoilage / yeast mould).
+   - Mycotoxins (Aflatoxin B1/M1) prevention and safe bunker packing/anaerobic sealing.
+4. Milk Production & Farm Operations:
+   - Milking hygiene, clean milk production, California Mastitis Test (CMT), post-milking teat dipping.
+   - Peak yield management, dry period management, transition feeding (3 weeks pre & post calving).
+   - Heat/estrus detection (standing heat, AM-PM insemination rule), artificial insemination, and pregnancy care.
+
+CRITICAL RESPONSE GUIDELINES:
+1. DIRECTNESS & RELEVANCE: Answer the user's exact question directly and practically. Avoid generic or repetitive boilerplate.
+2. CONTEXT AWARENESS: Utilize multi-turn conversation history and any provided animal context (e.g. tag ID, breed, daily yield).
+3. FARMER-FRIENDLY TONE: Keep advice practical, actionable, easy to understand, and respectful of traditional dairy farming wisdom.
+4. LANGUAGE ADHERENCE: ALWAYS respond in the user's selected language. If Tamil is selected, respond completely in natural, accurate Tamil. If Hindi, respond in Hindi. If Tanglish, respond in Tanglish.
+5. VETERINARY SAFETY: For severe symptoms (high fever >40°C, acute mastitis, downer cow, bloody diarrhea, respiratory distress), provide immediate first-aid guidance and clearly advise urgent physical examination by a certified veterinarian. Never provide false certainty on life-threatening conditions.`;
+
+export async function handleChatRequest(body: ChatRequestBody): Promise<{
+  reply: string;
+  suggested_questions: string[];
+  session_id?: string;
+  language?: string;
+}> {
+  const { message, history = [], language = 'en', animalContext, sessionId } = body;
+  const targetLanguageName = LANGUAGE_NAMES[language] || language;
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      'GEMINI_API_KEY environment variable is not configured on the server. Please set GEMINI_API_KEY in your deployment environment.'
+    );
+  }
+
+  // Construct Gemini multi-turn contents
+  const contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
+
+  // Contextual instruction for language and active cattle
+  let systemContextText = `${DAIRY_NOVA_SYSTEM_PROMPT}\n\nIMPORTANT LANGUAGE INSTRUCTION: The user has chosen ${targetLanguageName} (${language}). You MUST write your entire response in ${targetLanguageName}.`;
+
+  if (animalContext) {
+    systemContextText += `\n\nACTIVE CATTLE CONTEXT: The user is currently inspecting Cattle Name: "${animalContext.name || 'Cattle'}", Tag ID: "${animalContext.tag || 'N/A'}", Species/Breed: "${animalContext.type || ''} ${animalContext.breed || ''}", Daily Yield: ${animalContext.dailyMilkYieldL || 'N/A'} L/day, Weight: ${animalContext.weightKg || 'N/A'} kg, Health: ${animalContext.healthStatus || 'Healthy'}. If the user's query relates to their animal, refer to this specific cattle context appropriately.`;
+  }
+
+  // Multi-turn history mapping
+  for (const item of history.slice(-8)) {
+    contents.push({
+      role: item.sender === 'user' ? 'user' : 'model',
+      parts: [{ text: item.text }],
+    });
+  }
+
+  // Current user prompt with system context prepended if first turn
+  const currentUserText = contents.length === 0
+    ? `${systemContextText}\n\nUser Question:\n${message}`
+    : `[System Note: Maintain response in ${targetLanguageName}]\n${message}`;
+
+  contents.push({
+    role: 'user',
+    parts: [{ text: currentUserText }],
+  });
+
+  // Call Gemini REST API (gemini-2.5-flash with fallback to gemini-1.5-flash)
+  const modelsToTry = ['gemini-2.5-flash', 'gemini-1.5-flash'];
+  let lastError: any = null;
+  let replyText = '';
+
+  for (const model of modelsToTry) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents,
+          generationConfig: {
+            temperature: 0.4,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 1024,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const errJson: any = await response.json().catch(() => ({}));
+        throw new Error(errJson?.error?.message || `Gemini API error ${response.status}`);
+      }
+
+      const data: any = await response.json();
+      replyText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (replyText) break;
+    } catch (e: any) {
+      lastError = e;
+    }
+  }
+
+  if (!replyText) {
+    throw new Error(lastError?.message || 'Failed to generate response from Gemini AI.');
+  }
+
+  // Generate 3 contextual follow-up suggestions in selected language
+  const suggested_questions = [
+    language === 'ta' ? 'தீவன ஊட்டச்சத்து விகிதம் என்ன?' : language === 'hi' ? 'दैनिक आहार अनुपात क्या होना चाहिए?' : 'What is the optimal daily ration formula?',
+    language === 'ta' ? 'அடுத்த தடுப்பூசி எப்போது செலுத்த வேண்டும்?' : language === 'hi' ? 'अगला टीकाकरण कब दे सकते हैं?' : 'When is the next vaccination booster due?',
+    language === 'ta' ? 'சைலேஜ் தரம் பரிசோதிப்பது எப்படி?' : language === 'hi' ? 'साइलेज की गुणवत्ता कैसे जांचें?' : 'How do I test my silage fermentation quality?',
+  ];
+
+  return {
+    reply: replyText.trim(),
+    suggested_questions,
+    session_id: sessionId || `sess_${Date.now()}`,
+    language,
+  };
+}
+
+// Vercel Serverless Function Handler
+export default async function handler(req: any, res: any) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed. Only POST is supported.' });
+  }
+
+  try {
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const result = await handleChatRequest(body);
+    return res.status(200).json({
+      success: true,
+      ...result,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      error: error?.message || 'Internal Server Error during Gemini chat processing.',
+    });
+  }
+}

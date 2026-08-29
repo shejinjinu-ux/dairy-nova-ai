@@ -127,6 +127,8 @@ export const feedApi = {
     feedCategory: string;
     feedName: string;
     imageUrl?: string;
+    sampleAmount?: number;
+    sampleAmountUnit?: string;
     inputSource: 'Camera Only' | 'Portable Scanner Simulation' | 'Manual Entry';
     manualParameters?: {
       crudeProtein?: number;
@@ -224,6 +226,8 @@ export const feedApi = {
         feedCategory: params.feedCategory,
         feedName: params.feedName || `${params.feedCategory} Sample`,
         imageUrl: params.imageUrl || '',
+        sampleAmount: params.sampleAmount,
+        sampleAmountUnit: params.sampleAmountUnit || 'kg',
         overallScore: evalResult.score,
         qualityGrade: evalResult.qualityGrade,
         isGood: evalResult.isGood,
@@ -283,6 +287,8 @@ export const feedApi = {
       feedCategory: params.feedCategory,
       feedName: params.feedName || `${params.feedCategory} Sample`,
       imageUrl: params.imageUrl || '',
+      sampleAmount: params.sampleAmount,
+      sampleAmountUnit: params.sampleAmountUnit || 'kg',
       overallScore: evalResult.score,
       qualityGrade: evalResult.qualityGrade,
       isGood: evalResult.isGood,

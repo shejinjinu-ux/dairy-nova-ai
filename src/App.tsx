@@ -38,6 +38,23 @@ const ScreenRouter: React.FC = () => {
   const { currentScreen } = useAppData();
   const { isAuthenticated, role } = useAuth();
 
+  // Public unauthenticated screens
+  const isPublicScreen =
+    currentScreen === 'splash' ||
+    currentScreen === 'language-select' ||
+    currentScreen === 'login' ||
+    currentScreen === 'register' ||
+    currentScreen === 'forgot-password';
+
+  if (!isAuthenticated && !isPublicScreen) {
+    return <LoginScreen />;
+  }
+
+  // If already authenticated and on login/register screens, show main app dashboard
+  if (isAuthenticated && (currentScreen === 'login' || currentScreen === 'register' || currentScreen === 'splash')) {
+    return role === 'officer' ? <OfficerDashboardScreen /> : <HomeDashboardScreen />;
+  }
+
   switch (currentScreen) {
     case 'splash':
       return <SplashScreen />;
@@ -50,7 +67,7 @@ const ScreenRouter: React.FC = () => {
     case 'forgot-password':
       return <ForgotPasswordScreen />;
     case 'home':
-      return <HomeDashboardScreen />;
+      return role === 'officer' ? <OfficerDashboardScreen /> : <HomeDashboardScreen />;
     case 'rapid-test':
       return <RapidTestScreen />;
     case 'animals':
@@ -92,7 +109,7 @@ const ScreenRouter: React.FC = () => {
     case 'officer-farm-details':
       return <FarmDetailsScreen />;
     default:
-      return <HomeDashboardScreen />;
+      return role === 'officer' ? <OfficerDashboardScreen /> : <HomeDashboardScreen />;
   }
 };
 

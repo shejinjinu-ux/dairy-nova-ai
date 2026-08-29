@@ -74,7 +74,13 @@ export const DairyNovaAIChatScreen: React.FC = () => {
     setIsThinking(true);
 
     try {
+      const historyPayload = messages.slice(-8).map((m) => ({
+        sender: m.sender as 'user' | 'ai',
+        text: m.text,
+      }));
+
       const result = await chatApi.sendMessage(text, {
+        history: historyPayload,
         language,
         sessionId,
         userId: user?.id,
@@ -83,6 +89,11 @@ export const DairyNovaAIChatScreen: React.FC = () => {
               id: activeAnimalContext.id,
               tag: activeAnimalContext.tagId,
               name: activeAnimalContext.name,
+              type: activeAnimalContext.type,
+              breed: activeAnimalContext.breed,
+              dailyMilkYieldL: activeAnimalContext.dailyMilkYieldL,
+              weightKg: activeAnimalContext.weightKg,
+              healthStatus: activeAnimalContext.healthStatus,
             }
           : undefined,
       });
