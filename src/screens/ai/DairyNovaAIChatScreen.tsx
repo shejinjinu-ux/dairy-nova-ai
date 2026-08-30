@@ -115,7 +115,7 @@ export const DairyNovaAIChatScreen: React.FC = () => {
       const errorMsg: ChatMessage = {
         id: `ai-err-${Date.now()}`,
         sender: 'ai',
-        text: err?.message || 'Connecting to Dairy Nova AI… If the AI service is waking up, please wait a moment and try again.',
+        text: err?.message || 'Unable to connect to Dairy Nova AI server. Please verify your backend connection and try again.',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, errorMsg]);

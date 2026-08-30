@@ -1,8 +1,27 @@
 // Dairy Nova API Helper & Storage Utilities
 
-export const API_BASE_URL =
-  ((import.meta as any).env && (import.meta as any).env.VITE_API_BASE_URL) ||
-  'https://dairy-ai-assistant.onrender.com/api/v1';
+const resolveApiBaseUrl = (): string => {
+  const envObj = (import.meta as any).env || {};
+  const rawUrl: string =
+    envObj.VITE_API_BASE_URL ||
+    envObj.VITE_API_URL ||
+    '';
+
+  if (rawUrl && typeof rawUrl === 'string' && rawUrl.trim()) {
+    const trimmed = rawUrl.trim().replace(/\/+$/, '');
+    if (trimmed.endsWith('/api/v1')) {
+      return trimmed;
+    }
+    if (trimmed.endsWith('/api')) {
+      return `${trimmed}/v1`;
+    }
+    return `${trimmed}/api/v1`;
+  }
+
+  return 'https://dairy-ai-assistant.onrender.com/api/v1';
+};
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 // Simulated latency for smooth UI transitions when needed
 export const delay = (ms: number = 300): Promise<void> => {
@@ -58,11 +77,22 @@ export function formatFarmerErrorMessage(error: any, status?: number): string {
     return 'AI analysis is temporarily unavailable on the server. Please try again in a few moments.';
   }
 
-  if (error instanceof TypeError && error.message.includes('fetch')) {
-    return 'Connecting to Dairy Nova AI server… The service may take a moment to wake up.';
+  if (error instanceof TypeError && (error.message.includes('fetch') || error.message.includes('Failed to fetch') || error.message.includes('NetworkError'))) {
+    return `Unable to connect to the backend server (${API_BASE_URL}). Please verify that the backend is running and reachable.`;
   }
 
   return error?.message || 'Unable to connect to the AI service. Please check your connection and try again.';
+}
+
+export function buildApiUrl(path: string): string {
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  if (cleanPath.startsWith('/api/v1') && API_BASE_URL.endsWith('/api/v1')) {
+    return `${API_BASE_URL.slice(0, -7)}${cleanPath}`;
+  }
+  return `${API_BASE_URL}${cleanPath}`;
 }
 
 // Unified API fetcher with timeout and farmer-friendly error handling
@@ -71,7 +101,7 @@ export async function apiFetch<T>(
   options: RequestInit = {},
   timeoutMs: number = 40000
 ): Promise<T> {
-  const url = path.startsWith('http') ? path : `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
+  const url = buildApiUrl(path);
   
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);

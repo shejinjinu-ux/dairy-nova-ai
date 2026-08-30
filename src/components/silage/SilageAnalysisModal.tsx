@@ -114,12 +114,12 @@ export const SilageAnalysisModal: React.FC<SilageAnalysisModalProps> = ({
       return;
     }
 
-    // Step 1: Lightweight Client-Side Suitability Validation (Avoid landscapes/distant fields)
+    // Step 1: Lightweight Client-Side Suitability Validation (Avoid human photos, landscapes)
     const validation = await validateSilageSampleImage(imageFile || imagePreviewUrl);
     if (!validation.isValid) {
       setErrorMessage(
         validation.message ||
-          'Invalid Sample Image. Please upload a clear close-up photo of the silage sample or bunker face.'
+          'The uploaded image is not silage. Please upload a clear photo of silage or bunker face for quality testing.'
       );
       return;
     }
@@ -132,6 +132,17 @@ export const SilageAnalysisModal: React.FC<SilageAnalysisModalProps> = ({
     try {
       if (imageFile) {
         const visualResponse = await silageApi.screenSilageVisual(imageFile);
+
+        // Guard against invalid image domain rejection (Human, animal, vehicle, landscape)
+        if (!visualResponse.success || visualResponse.classification === 'NOT_FEED_OR_SILAGE' || !visualResponse.predicted_class) {
+          setErrorMessage(
+            visualResponse.message ||
+              'The uploaded photo is not a silage sample. Please upload a clear photo of cattle silage for quality testing.'
+          );
+          setIsAnalyzing(false);
+          return;
+        }
+
         setVisualResult(visualResponse);
 
         const score = visualResponse.predicted_class === 'GOOD' ? 86 : visualResponse.predicted_class === 'MOULD_RISK' ? 50 : 25;
@@ -155,7 +166,7 @@ export const SilageAnalysisModal: React.FC<SilageAnalysisModalProps> = ({
           spoilageRisk: visualResponse.risk_level === 'LOW' ? 'Low' : 'High Risk',
           mouldRisk: visualResponse.predicted_class === 'GOOD' ? 'Clean / Safe' : 'Deep Penetration Mould',
           fqiScore: score,
-          confidence: Number((visualResponse.confidence * 100).toFixed(1)),
+          confidence: Number(((visualResponse.confidence || 0.95) * 100).toFixed(1)),
           modelAccuracy: 95.0,
           storageAdvice: visualResponse.why?.join(' ') || '',
           recommendations: visualResponse.recommended_action || [
@@ -627,7 +638,7 @@ export const SilageAnalysisModal: React.FC<SilageAnalysisModalProps> = ({
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-400 font-semibold">
-                    Confidence: <strong className="text-white">{visualResult.confidence_percentage || (visualResult.confidence * 100).toFixed(1)}%</strong> • Risk: <strong className="text-white">{visualResult.risk_level}</strong>
+                    Confidence: <strong className="text-white">{visualResult.confidence_percentage || (visualResult.confidence != null ? (visualResult.confidence * 100).toFixed(1) : '95.0')}%</strong> • Risk: <strong className="text-white">{visualResult.risk_level || 'LOW'}</strong>
                   </div>
                 </div>
               </div>

@@ -32,47 +32,47 @@ export const chatApi = {
     const animalId = animalContext?.id;
 
     if (!isOffline) {
-      try {
-        // Call real FastAPI backend at POST /api/v1/chat
-        const result = await apiFetch<{
-          success: boolean;
-          reply: string;
-          language?: string;
-          detected_language?: string;
-          intent?: string;
-          module?: string;
-          session_id?: string;
-          metadata?: {
-            suggested_questions?: string[];
-            intent_confidence?: number;
-          };
-        }>('/chat', {
-          method: 'POST',
-          body: JSON.stringify({
-            message: question,
-            language: selectedLang,
-            session_id: sessionId || undefined,
-            user_id: userId || undefined,
-            selected_animal_id: animalId || undefined,
-          }),
-        });
+      // Call real FastAPI backend at POST /api/v1/chat
+      const result = await apiFetch<{
+        success: boolean;
+        reply: string;
+        language?: string;
+        detected_language?: string;
+        intent?: string;
+        module?: string;
+        session_id?: string;
+        metadata?: {
+          suggested_questions?: string[];
+          intent_confidence?: number;
+        };
+      }>('/chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          message: question,
+          language: selectedLang,
+          session_id: sessionId || undefined,
+          user_id: userId || undefined,
+          selected_animal_id: animalId || undefined,
+        }),
+      });
 
-        if (result && result.reply) {
-          return {
-            response: result.reply,
-            suggestedFollowUps: result.metadata?.suggested_questions || [
-              'How do I test my feed quality?',
-              'Is my corn silage safe for cattle?',
-              'Recommend daily ration for my lactating cow',
-            ],
-            sessionId: result.session_id,
-            language: result.language,
-            isOffline: false,
-          };
-        }
-      } catch (err) {
-        console.warn('Live API request failed, checking fallback:', err);
+      if (result && result.reply) {
+        return {
+          response: result.reply,
+          suggestedFollowUps: result.metadata?.suggested_questions || [
+            'How do I test my feed quality?',
+            'Is my corn silage safe for cattle?',
+            'Recommend daily ration for my lactating cow',
+          ],
+          sessionId: result.session_id,
+          language: result.language,
+          detectedLanguage: result.detected_language,
+          intent: result.intent,
+          isOffline: false,
+        };
       }
+
+      throw new Error('No response returned from Dairy Nova AI server.');
     }
 
     // Explicit Offline Rule-Based Fallback (Only when offline)

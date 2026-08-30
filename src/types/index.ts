@@ -478,10 +478,13 @@ export interface ContaminationScreenResponse {
 // Visual Screening Responses (Method 1)
 export interface FeedVisualScreeningResponse {
   success: boolean;
-  predicted_class: 'GOOD' | 'MOULD_RISK' | 'SPOILED' | string;
-  confidence: number;
-  confidence_percentage: number;
-  risk_level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | string;
+  error_type?: string;
+  classification?: 'NOT_FEED_OR_SILAGE' | 'FEED_SAMPLE' | string;
+  message?: string;
+  predicted_class?: 'GOOD' | 'MOULD_RISK' | 'SPOILED' | string | null;
+  confidence?: number;
+  confidence_percentage?: number;
+  risk_level?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | string;
   screening_type: string;
   probabilities?: Record<string, number>;
   visual_indicators?: {
@@ -497,10 +500,13 @@ export interface FeedVisualScreeningResponse {
 
 export interface SilageVisualScreeningResponse {
   success: boolean;
-  predicted_class: 'GOOD' | 'MOULD_RISK' | 'SPOILED' | 'POOR_FERMENTATION' | string;
-  confidence: number;
-  confidence_percentage: number;
-  risk_level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | string;
+  error_type?: string;
+  classification?: 'NOT_FEED_OR_SILAGE' | 'SILAGE_SAMPLE' | string;
+  message?: string;
+  predicted_class?: 'GOOD' | 'MOULD_RISK' | 'SPOILED' | 'POOR_FERMENTATION' | string | null;
+  confidence?: number;
+  confidence_percentage?: number;
+  risk_level?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | string;
   screening_type: string;
   probabilities?: Record<string, number>;
   visual_indicators?: {

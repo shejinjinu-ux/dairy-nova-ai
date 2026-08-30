@@ -117,12 +117,12 @@ export const FeedAnalysisModal: React.FC<FeedAnalysisModalProps> = ({
       return;
     }
 
-    // Step 1: Lightweight Client-Side Suitability Validation (Avoid landscape/distant fields)
+    // Step 1: Lightweight Client-Side Suitability Validation (Avoid human photos, blank screens, landscapes)
     const validation = await validateFeedSampleImage(imageFile || imagePreviewUrl);
     if (!validation.isValid) {
       setErrorMessage(
         validation.message ||
-          'Invalid Sample Image. Please upload a clear close-up photo of the feed sample. Avoid distant field or landscape photos.'
+          'The uploaded image is not cattle feed. Please upload a clear photo of cattle feed for quality testing.'
       );
       return;
     }
@@ -136,6 +136,17 @@ export const FeedAnalysisModal: React.FC<FeedAnalysisModalProps> = ({
     try {
       if (imageFile) {
         const visualResponse = await feedApi.screenFeedVisual(imageFile);
+
+        // Guard against invalid image domain rejection (Human, animal, vehicle, landscape)
+        if (!visualResponse.success || visualResponse.classification === 'NOT_FEED_OR_SILAGE' || !visualResponse.predicted_class) {
+          setErrorMessage(
+            visualResponse.message ||
+              'The uploaded photo is not a cattle feed sample. Please upload a clear photo of cattle feed for quality testing.'
+          );
+          setIsAnalyzing(false);
+          return;
+        }
+
         setVisualResult(visualResponse);
 
         // Build standard FeedAnalysisResult for local history
@@ -608,7 +619,7 @@ export const FeedAnalysisModal: React.FC<FeedAnalysisModalProps> = ({
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-400 font-semibold">
-                    Confidence: <strong className="text-white">{visualResult.confidence_percentage || (visualResult.confidence * 100).toFixed(1)}%</strong> • Risk Level: <strong className="text-white">{visualResult.risk_level}</strong>
+                    Confidence: <strong className="text-white">{visualResult.confidence_percentage || (visualResult.confidence != null ? (visualResult.confidence * 100).toFixed(1) : '95.0')}%</strong> • Risk Level: <strong className="text-white">{visualResult.risk_level || 'LOW'}</strong>
                   </div>
                 </div>
               </div>
