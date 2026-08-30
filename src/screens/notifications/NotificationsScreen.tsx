@@ -103,7 +103,7 @@ export const NotificationsScreen: React.FC = () => {
 
                 {notif.actionRoute && (
                   <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800 text-[11px] text-teal-600 dark:text-teal-400 font-bold">
-                    <span>Tap to view details</span>
+                    <span>{t.viewAll || 'Tap to view details'}</span>
                     <ChevronRight size={14} />
                   </div>
                 )}
@@ -113,8 +113,8 @@ export const NotificationsScreen: React.FC = () => {
         ) : (
           <EmptyState
             icon={Bell}
-            title="All Caught Up!"
-            description="You have no unread notifications or urgent alerts at this time."
+            title={t.allCaughtUp || "All Caught Up!"}
+            description={t.noUnreadAlerts || "You have no unread notifications or urgent alerts at this time."}
           />
         )}
 

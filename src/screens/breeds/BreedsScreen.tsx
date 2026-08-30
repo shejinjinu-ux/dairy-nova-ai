@@ -85,7 +85,7 @@ export const BreedsScreen: React.FC = () => {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search breeds (e.g. Gir, Murrah, Sahiwal)..."
+            placeholder={t.searchBreedsPlaceholder || "Search breeds (e.g. Gir, Murrah, Sahiwal)..."}
             className="w-full pl-9 pr-3 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-dairy-500 shadow-sm"
           />
           <Search size={15} className="absolute left-3 top-3 text-slate-400" />
@@ -117,13 +117,13 @@ export const BreedsScreen: React.FC = () => {
             <SourceTag source="AI Screening" />
           </div>
           <p className="text-xs text-slate-300 leading-relaxed">
-            Upload an image to run live inference across 41 registered Indian cattle and buffalo breeds using FastAPI ConvNeXt-Tiny.
+            {t.aiBreedScreeningSubtitle || 'Upload an image to run live inference across 41 registered Indian cattle and buffalo breeds using FastAPI ConvNeXt-Tiny.'}
           </p>
           <button
             onClick={() => setShowBreedAIScreening(!showBreedAIScreening)}
             className="py-2.5 px-3 min-h-[40px] rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 active:scale-95 transition"
           >
-            {showBreedAIScreening ? 'Close AI Screening' : 'Launch AI Breed Screening'} <ArrowRight size={13} />
+            {showBreedAIScreening ? (t.cancel || 'Close AI Screening') : (t.identifyBreedFromPhoto || 'Launch AI Breed Screening')} <ArrowRight size={13} />
           </button>
         </div>
 
@@ -131,9 +131,9 @@ export const BreedsScreen: React.FC = () => {
         {showBreedAIScreening && (
           <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-800 space-y-3 animate-fadeIn text-xs">
             <div className="flex items-center justify-between">
-              <h4 className="font-extrabold text-slate-900 dark:text-white">FastAPI ConvNeXt-Tiny Breed Classifier</h4>
+              <h4 className="font-extrabold text-slate-900 dark:text-white">{t.breedClassificationModel || 'FastAPI ConvNeXt-Tiny Breed Classifier'}</h4>
               <span className="text-[10px] font-bold text-teal-600 bg-teal-50 dark:bg-teal-950 px-2 py-0.5 rounded">
-                41 Indian Breeds
+                41 {t.breeds || 'Indian Breeds'}
               </span>
             </div>
 
@@ -160,10 +160,10 @@ export const BreedsScreen: React.FC = () => {
                 <div className="text-center p-4 space-y-1 text-slate-400">
                   <Camera size={24} className="mx-auto text-teal-600" />
                   <span className="text-xs font-semibold block text-slate-600 dark:text-slate-300">
-                    No photo selected yet
+                    {t.noPhotoSelected || 'No photo selected yet'}
                   </span>
                   <span className="text-[10px] text-slate-400 block">
-                    Upload a side-profile photo of the cattle for breed classification
+                    {t.uploadBreedPhotoHint || 'Upload a side-profile photo of the cattle for breed classification'}
                   </span>
                 </div>
               )}
@@ -183,7 +183,7 @@ export const BreedsScreen: React.FC = () => {
                 onClick={() => fileInputRef.current?.click()}
                 className="py-2.5 px-3 min-h-[40px] rounded-xl bg-dairy-50 hover:bg-dairy-100 dark:bg-dairy-950/60 text-dairy-800 dark:text-dairy-200 border border-dairy-200 dark:border-dairy-800 font-bold flex items-center justify-center gap-1.5 active:scale-95 transition"
               >
-                <Upload size={14} /> Select Photo
+                <Upload size={14} /> {t.choosePhoto || 'Select Photo'}
               </button>
               <button
                 type="button"
@@ -194,11 +194,11 @@ export const BreedsScreen: React.FC = () => {
                 {isClassifying ? (
                   <>
                     <Loader2 size={14} className="animate-spin" />
-                    <span>Analyzing...</span>
+                    <span>{t.analyzing || 'Analyzing...'}</span>
                   </>
                 ) : (
                   <>
-                    <span>Identify Breed</span>
+                    <span>{t.identifyBreed || 'Identify Breed'}</span>
                     <Sparkles size={14} />
                   </>
                 )}

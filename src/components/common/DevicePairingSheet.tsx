@@ -48,14 +48,14 @@ export const DevicePairingSheet: React.FC<DevicePairingSheetProps> = ({
         {/* Honest Sensor Status Card */}
         <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2 text-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] uppercase font-bold text-slate-400">Connection Status</span>
+            <span className="text-[10px] uppercase font-bold text-slate-400">{t.connectionStatus || 'Connection Status'}</span>
             <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-md">
               {t.sensorStatusNotConnected || 'Not connected'}
             </span>
           </div>
 
           <h4 className="font-bold text-slate-900 dark:text-white text-xs">
-            Supported Hardware Sensors
+            {t.supportedHardwareSensors || 'Supported Hardware Sensors'}
           </h4>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
             {t.sensorIntegrationDesc || 'Connect supported feed/silage sensors for automated readings.'}
@@ -63,12 +63,12 @@ export const DevicePairingSheet: React.FC<DevicePairingSheetProps> = ({
 
           <div className="space-y-1.5 pt-1 text-[11px]">
             <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <span>🔬 Handheld NIR Optical Scanner (900-1700nm)</span>
-              <span className="text-[9px] text-teal-600 font-bold">Supported</span>
+              <span>🔬 {t.nirOpticalScanner || 'Handheld NIR Optical Scanner (900-1700nm)'}</span>
+              <span className="text-[9px] text-teal-600 font-bold">{t.supported || 'Supported'}</span>
             </div>
             <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <span>🌡️ Silage Pit Core pH & Temperature Probe</span>
-              <span className="text-[9px] text-teal-600 font-bold">Supported</span>
+              <span>🌡️ {t.silageCoreProbe || 'Silage Pit Core pH & Temperature Probe'}</span>
+              <span className="text-[9px] text-teal-600 font-bold">{t.supported || 'Supported'}</span>
             </div>
           </div>
         </div>
@@ -77,7 +77,7 @@ export const DevicePairingSheet: React.FC<DevicePairingSheetProps> = ({
         <div className="p-3 rounded-xl bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-[11px] text-teal-900 dark:text-teal-200 flex items-start gap-2">
           <Info size={15} className="text-teal-600 shrink-0 mt-0.5" />
           <span>
-            No physical sensor connected right now. You can continue testing using manual entry or camera sample photo.
+            {t.noSensorConnectedNotice || 'No physical sensor connected right now. You can continue testing using manual entry or camera sample photo.'}
           </span>
         </div>
 
@@ -86,7 +86,7 @@ export const DevicePairingSheet: React.FC<DevicePairingSheetProps> = ({
           onClick={onClose}
           className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/30 active:scale-95 transition"
         >
-          Continue with Manual / Camera Test
+          {t.continueManualCameraTest || 'Continue with Manual / Camera Test'}
         </button>
 
       </div>

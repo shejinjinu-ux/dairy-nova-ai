@@ -54,7 +54,7 @@ export const SettingsScreen: React.FC = () => {
         {/* Language Section */}
         <div className="space-y-2">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1">
-            Language / மொழி
+            {t.language || 'Language'}
           </h3>
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-4 flex items-center justify-between shadow-card-soft">
             <div className="flex items-center gap-3">
@@ -62,7 +62,7 @@ export const SettingsScreen: React.FC = () => {
                 <Globe size={20} />
               </div>
               <div>
-                <span className="text-[10px] text-slate-400 block font-medium">Active App Language</span>
+                <span className="text-[10px] text-slate-400 block font-medium">{t.activeAppLanguage || 'Active App Language'}</span>
                 <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">
                   {currentLang?.nativeName} ({currentLang?.name})
                 </h4>
@@ -73,7 +73,7 @@ export const SettingsScreen: React.FC = () => {
               onClick={() => navigate('language-select')}
               className="py-1.5 px-3 rounded-xl bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/80 text-teal-700 dark:text-teal-300 font-bold text-xs active:scale-95 transition"
             >
-              Change Language
+              {t.changeAppLanguage || 'Change Language'}
             </button>
           </div>
         </div>
@@ -81,7 +81,7 @@ export const SettingsScreen: React.FC = () => {
         {/* Accessibility Section */}
         <div className="space-y-2">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1">
-            Farmer Accessibility
+            {t.settings || 'Farmer Accessibility'}
           </h3>
 
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-card-soft overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/80">
@@ -93,7 +93,7 @@ export const SettingsScreen: React.FC = () => {
                 </div>
                 <div>
                   <h4 className="font-bold text-slate-900 dark:text-white">{t.largeText}</h4>
-                  <p className="text-[10px] text-slate-400">Enlarge typography for outdoor daylight reading</p>
+                  <p className="text-[10px] text-slate-400">{t.enlargeTypography || 'Enlarge typography for outdoor daylight reading'}</p>
                 </div>
               </div>
               <input
@@ -112,7 +112,7 @@ export const SettingsScreen: React.FC = () => {
                 </div>
                 <div>
                   <h4 className="font-bold text-slate-900 dark:text-white">{t.highContrast}</h4>
-                  <p className="text-[10px] text-slate-400">High contrast borders and vivid status indicators</p>
+                  <p className="text-[10px] text-slate-400">{t.highContrastDesc || 'High contrast borders and vivid status indicators'}</p>
                 </div>
               </div>
               <input
@@ -131,7 +131,7 @@ export const SettingsScreen: React.FC = () => {
                 </div>
                 <div>
                   <h4 className="font-bold text-slate-900 dark:text-white">{t.voiceInput}</h4>
-                  <p className="text-[10px] text-slate-400">Enable voice input across symptoms and milk recording</p>
+                  <p className="text-[10px] text-slate-400">{t.enableVoiceInputDesc || 'Enable voice input across symptoms and milk recording'}</p>
                 </div>
               </div>
               <input
@@ -149,8 +149,8 @@ export const SettingsScreen: React.FC = () => {
                   <Volume2 size={16} />
                 </div>
                 <div>
-                  <h4 className="font-bold text-slate-900 dark:text-white">Auto Read Aloud (TTS)</h4>
-                  <p className="text-[10px] text-slate-400">Voice assist narration for AI diagnostic results</p>
+                  <h4 className="font-bold text-slate-900 dark:text-white">{t.autoReadAloud || 'Auto Read Aloud (TTS)'}</h4>
+                  <p className="text-[10px] text-slate-400">{t.voiceAssistNarration || 'Voice assist narration for AI diagnostic results'}</p>
                 </div>
               </div>
               <input
@@ -166,16 +166,16 @@ export const SettingsScreen: React.FC = () => {
         {/* Notifications Section */}
         <div className="space-y-2">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1">
-            Notification Alert Preferences
+            {t.notifications || 'Notification Preferences'}
           </h3>
 
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-card-soft p-3.5 space-y-2.5">
             {[
-              { label: 'Vaccination Due & Overdue Alerts', checked: notifVaccinations, set: setNotifVaccinations },
-              { label: 'Health & Mastitis Diagnostic Alerts', checked: notifHealth, set: setNotifHealth },
-              { label: 'Feed Moisture & Aflatoxin Warnings', checked: notifFeed, set: setNotifFeed },
-              { label: 'Silage Spoilage & Aerobic Heat Warnings', checked: notifSilage, set: setNotifSilage },
-              { label: 'Daily Milk Collection Target Updates', checked: notifMilk, set: setNotifMilk },
+              { label: t.vaccinations || 'Vaccination Due Alerts', checked: notifVaccinations, set: setNotifVaccinations },
+              { label: t.diseaseCheck || 'Health Diagnostic Alerts', checked: notifHealth, set: setNotifHealth },
+              { label: t.feedCheck || 'Feed Quality Warnings', checked: notifFeed, set: setNotifFeed },
+              { label: t.silageCheck || 'Silage Spoilage Warnings', checked: notifSilage, set: setNotifSilage },
+              { label: t.recordMilk || 'Milk Collection Updates', checked: notifMilk, set: setNotifMilk },
             ].map((n, i) => (
               <div key={i} className="flex items-center justify-between py-1">
                 <span className="font-medium text-slate-700 dark:text-slate-300 text-xs">{n.label}</span>
@@ -193,7 +193,7 @@ export const SettingsScreen: React.FC = () => {
         {/* App & Data Sync Section */}
         <div className="space-y-2">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1">
-            App & Offline Data Sync
+            {t.offlineMode || 'App & Offline Data Sync'}
           </h3>
 
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-card-soft p-4 space-y-3">
@@ -203,8 +203,8 @@ export const SettingsScreen: React.FC = () => {
                   <WifiOff size={18} />
                 </div>
                 <div>
-                  <h4 className="font-bold text-slate-900 dark:text-white">Simulated Offline Mode</h4>
-                  <p className="text-[10px] text-slate-400">Queue actions locally without internet</p>
+                  <h4 className="font-bold text-slate-900 dark:text-white">{t.offlineModeTitle || 'Simulated Offline Mode'}</h4>
+                  <p className="text-[10px] text-slate-400">{t.offlineModeDesc || 'Queue actions locally without internet'}</p>
                 </div>
               </div>
               <input
@@ -217,9 +217,9 @@ export const SettingsScreen: React.FC = () => {
 
             <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
               <div>
-                <span className="text-slate-500 block">Pending Offline Queue:</span>
+                <span className="text-slate-500 block">{t.pendingOfflineQueue || 'Pending Offline Queue:'}</span>
                 <strong className="text-slate-900 dark:text-white">
-                  {pendingQueue.length} records waiting to sync
+                  {pendingQueue.length} {t.pendingSync || 'records waiting to sync'}
                 </strong>
               </div>
 
@@ -230,12 +230,12 @@ export const SettingsScreen: React.FC = () => {
                 className="py-1.5 px-3 rounded-xl bg-dairy-600 hover:bg-dairy-700 text-white font-bold flex items-center gap-1.5 active:scale-95 transition"
               >
                 <RefreshCw size={12} className={isSyncing ? 'animate-spin' : ''} />
-                {isSyncing ? 'Syncing...' : 'Sync Now'}
+                {isSyncing ? (t.saving || 'Syncing...') : (t.syncNow || 'Sync Now')}
               </button>
             </div>
 
             <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-              <span>Last Sync Status:</span>
+              <span>{t.lastSyncStatus || 'Last Sync Status:'}</span>
               <span className="font-semibold text-emerald-600 flex items-center gap-1">
                 <CheckCircle2 size={12} /> {lastSyncTime}
               </span>
@@ -246,14 +246,14 @@ export const SettingsScreen: React.FC = () => {
         {/* Account & Logout Section */}
         <div className="space-y-2 pt-2">
           <h3 className="text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 px-1">
-            Account Actions
+            {t.profile || 'Account Actions'}
           </h3>
 
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-rose-200 dark:border-rose-900 p-4 shadow-card-soft space-y-2">
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">{t.logout}</h4>
-                <p className="text-[11px] text-slate-500">Sign out of active dairy farmer session</p>
+                <p className="text-[11px] text-slate-500">{t.signOutActiveSession || 'Sign out of active dairy farmer session'}</p>
               </div>
 
               <button

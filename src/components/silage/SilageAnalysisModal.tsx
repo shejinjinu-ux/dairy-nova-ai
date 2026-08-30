@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { silageApi } from '../../services/api/silageApi';
 import {
   SilageAnalysisResult,

@@ -50,7 +50,7 @@ export const AnimalsScreen: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by Tag ID, Name, or Breed (e.g. Gir, TAG-101)..."
+            placeholder={t.searchCattlePlaceholder || "Search by Tag ID, Name, or Breed (e.g. Gir, TAG-101)..."}
             className="w-full pl-9 pr-3 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-dairy-500 shadow-sm"
           />
           <Search size={15} className="absolute left-3 top-3 text-slate-400" />
@@ -69,7 +69,7 @@ export const AnimalsScreen: React.FC = () => {
                   : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800'
               }`}
             >
-              {type === 'All' ? 'All Cattle' : type === 'Cow' ? '🐄 Cows' : '🐃 Buffaloes'}
+              {type === 'All' ? (t.allAnimals || 'All Cattle') : type === 'Cow' ? `🐄 ${t.cow || 'Cows'}` : `🐃 ${t.buffalo || 'Buffaloes'}`}
             </button>
           ))}
 
@@ -87,7 +87,7 @@ export const AnimalsScreen: React.FC = () => {
                     : 'bg-white dark:bg-slate-900 text-slate-500 border border-slate-200 dark:border-slate-800'
                 }`}
               >
-                {h}
+                {h === 'Healthy' ? (t.healthy || 'Healthy') : h === 'Needs Attention' ? (t.needsAttention || 'Needs Attention') : (t.criticalAlert || 'Critical Alert')}
               </button>
             );
           })}
@@ -96,7 +96,7 @@ export const AnimalsScreen: React.FC = () => {
         {/* Sorting Row & Result Count */}
         <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
           <span className="font-semibold">
-            Showing {filteredAnimals.length} of {animals.length} animals
+            {t.showingCount || 'Showing'} {filteredAnimals.length} {t.of || 'of'} {animals.length} {t.cattle || 'animals'}
           </span>
 
           <div className="flex items-center gap-1">
@@ -106,9 +106,9 @@ export const AnimalsScreen: React.FC = () => {
               onChange={(e) => setSortBy(e.target.value as any)}
               className="bg-transparent text-xs font-bold text-slate-700 dark:text-slate-300 focus:outline-none"
             >
-              <option value="tag">Sort: Tag ID</option>
-              <option value="milk">Sort: Milk Yield</option>
-              <option value="age">Sort: Age</option>
+              <option value="tag">{t.sortByTag || 'Sort: Tag ID'}</option>
+              <option value="milk">{t.sortByYield || 'Sort: Milk Yield'}</option>
+              <option value="age">{t.sortByAge || 'Sort: Age'}</option>
             </select>
           </div>
         </div>
@@ -117,9 +117,9 @@ export const AnimalsScreen: React.FC = () => {
         {animals.length === 0 ? (
           <EmptyState
             icon={Layers}
-            title="No Animals Registered Yet"
-            description="Start building your digital dairy herd by adding your first cow or buffalo."
-            actionLabel="Add First Cattle"
+            title={t.noCattleRegisteredYet || "No Animals Registered Yet"}
+            description={t.startHerdDesc || "Start building your digital dairy herd by adding your first cow or buffalo."}
+            actionLabel={t.addAnimal || "Add First Cattle"}
             onAction={() => setIsAddAnimalOpen(true)}
           />
         ) : filteredAnimals.length > 0 ? (

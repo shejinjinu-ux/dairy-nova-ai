@@ -157,21 +157,21 @@ export const AnimalDetailsScreen: React.FC = () => {
               className="py-2 px-1 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition flex flex-col items-center gap-1 text-slate-700 dark:text-slate-300 font-bold"
             >
               <Stethoscope size={16} className="text-rose-500" />
-              <span>Health Check</span>
+              <span>{t.diseaseCheck || 'Health Check'}</span>
             </button>
             <button
               onClick={() => setIsRecordMilkOpen(true)}
               className="py-2 px-1 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition flex flex-col items-center gap-1 text-slate-700 dark:text-slate-300 font-bold"
             >
               <Milk size={16} className="text-dairy-600" />
-              <span>Log Milk</span>
+              <span>{t.recordMilk || 'Log Milk'}</span>
             </button>
             <button
               onClick={() => setIsFeedCheckOpen(true)}
               className="py-2 px-1 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition flex flex-col items-center gap-1 text-slate-700 dark:text-slate-300 font-bold"
             >
               <Wheat size={16} className="text-amber-500" />
-              <span>Feed NIR</span>
+              <span>{t.feedCheck || 'Feed NIR'}</span>
             </button>
           </div>
         </div>
@@ -179,12 +179,12 @@ export const AnimalDetailsScreen: React.FC = () => {
         {/* Tab Navigation */}
         <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
           {[
-            { id: 'overview', label: 'Overview' },
-            { id: 'health', label: `Health (${animalAlerts.length})` },
-            { id: 'vaccination', label: `Vaccines (${animalVaccinations.length})` },
-            { id: 'feed', label: 'ICAR Ration Plan' },
-            { id: 'milk', label: `Milk Logs (${animalMilkRecords.length})` },
-            { id: 'history', label: 'History' },
+            { id: 'overview', label: t.breedOverview || 'Overview' },
+            { id: 'health', label: `${t.navHealth || 'Health'} (${animalAlerts.length})` },
+            { id: 'vaccination', label: `${t.vaccinations || 'Vaccines'} (${animalVaccinations.length})` },
+            { id: 'feed', label: t.feedRecommendations || 'ICAR Ration Plan' },
+            { id: 'milk', label: `${t.navMilk || 'Milk Logs'} (${animalMilkRecords.length})` },
+            { id: 'history', label: t.history || 'History' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -206,15 +206,15 @@ export const AnimalDetailsScreen: React.FC = () => {
             {/* Primary Vitals Grid */}
             <div className="grid grid-cols-2 gap-2.5">
               <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-card-soft space-y-1">
-                <span className="text-[10px] text-slate-400 block font-medium">Daily Milk Yield</span>
+                <span className="text-[10px] text-slate-400 block font-medium">{t.dailyYieldLabel || 'Daily Milk Yield'}</span>
                 <span className="text-xl font-extrabold text-dairy-600 dark:text-dairy-400">{animal.dailyMilkYieldL !== undefined ? `${animal.dailyMilkYieldL} L / day` : '—'}</span>
-                <span className="text-[10px] text-slate-400 block">Lactation: {animal.lactationStage} Stage</span>
+                <span className="text-[10px] text-slate-400 block">{t.lactationStage || 'Lactation'}: {animal.lactationStage}</span>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-card-soft space-y-1">
-                <span className="text-[10px] text-slate-400 block font-medium">Body Weight</span>
+                <span className="text-[10px] text-slate-400 block font-medium">{t.weightKgLabel || 'Body Weight'}</span>
                 <span className="text-xl font-extrabold text-slate-800 dark:text-slate-200">{animal.weightKg !== undefined ? `${animal.weightKg} kg` : '—'}</span>
-                <span className="text-[10px] text-slate-400 block">Status: {animal.pregnancyStatus}</span>
+                <span className="text-[10px] text-slate-400 block">{t.pregnancyStatus || 'Status'}: {animal.pregnancyStatus}</span>
               </div>
             </div>
 
@@ -222,22 +222,22 @@ export const AnimalDetailsScreen: React.FC = () => {
             <div className="p-4 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 text-white border border-slate-800 shadow-lg space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-teal-300 flex items-center gap-1.5">
-                  <Activity size={14} className="text-teal-400" /> Real-time Neck Collar Telemetry
+                  <Activity size={14} className="text-teal-400" /> {t.sensorIntegration || 'Real-time Telemetry'}
                 </span>
                 <SourceTag source="Sensor Reading" />
               </div>
 
               <div className="grid grid-cols-3 gap-2 text-center text-xs">
                 <div className="p-2 rounded-xl bg-white/5 border border-white/10">
-                  <span className="text-[10px] text-slate-400 block">Temperature</span>
+                  <span className="text-[10px] text-slate-400 block">{t.temperature || 'Temperature'}</span>
                   <span className="font-bold text-white text-sm">{animal.temperatureC || 38.5}°C</span>
                 </div>
                 <div className="p-2 rounded-xl bg-white/5 border border-white/10">
-                  <span className="text-[10px] text-slate-400 block">Rumination</span>
+                  <span className="text-[10px] text-slate-400 block">{t.rumination || 'Rumination'}</span>
                   <span className="font-bold text-white text-sm">{animal.ruminationMinutesPerDay || 480}m</span>
                 </div>
                 <div className="p-2 rounded-xl bg-white/5 border border-white/10">
-                  <span className="text-[10px] text-slate-400 block">Activity</span>
+                  <span className="text-[10px] text-slate-400 block">{t.activityLevel || 'Activity'}</span>
                   <span className="font-bold text-emerald-400 text-sm">{animal.activityLevel || 'Normal'}</span>
                 </div>
               </div>

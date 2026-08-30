@@ -790,7 +790,7 @@ export const VaccinationsScreen: React.FC = () => {
             
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
               <h3 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
-                <Syringe size={16} className="text-emerald-600" /> Record Vaccine Administration
+                <Syringe size={16} className="text-emerald-600" /> {t.vaccineGiven || 'Record Vaccine Administration'}
               </h3>
               <button
                 onClick={() => setSelectedVacToMark(null)}
@@ -812,7 +812,7 @@ export const VaccinationsScreen: React.FC = () => {
             <div className="space-y-3 text-xs">
               <div>
                 <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                  Date Administered *
+                  {t.dateAdministered || 'Date Administered'} *
                 </label>
                 <input
                   type="date"
@@ -824,7 +824,7 @@ export const VaccinationsScreen: React.FC = () => {
 
               <div>
                 <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                  Administering Veterinarian / Officer *
+                  {t.administeringVet || 'Administering Veterinarian / Officer'} *
                 </label>
                 <input
                   type="text"
@@ -837,7 +837,7 @@ export const VaccinationsScreen: React.FC = () => {
 
               <div>
                 <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                  Next Due / Booster Date (Optional)
+                  {t.nextBoosterDate || 'Next Due / Booster Date (Optional)'}
                 </label>
                 <input
                   type="date"
@@ -849,7 +849,7 @@ export const VaccinationsScreen: React.FC = () => {
 
               <div>
                 <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                  Clinical Notes / Vaccine Batch Number
+                  {t.clinicalNotes || 'Clinical Notes / Vaccine Batch Number'}
                 </label>
                 <textarea
                   rows={2}
@@ -867,14 +867,14 @@ export const VaccinationsScreen: React.FC = () => {
                 onClick={() => setSelectedVacToMark(null)}
                 className="py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300"
               >
-                Cancel
+                {t.cancel || 'Cancel'}
               </button>
               <button
                 type="button"
                 onClick={handleConfirmMarkVaccinated}
                 className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/30 flex items-center justify-center gap-1 active:scale-95 transition"
               >
-                <Check size={14} /> Confirm & Save to History
+                <Check size={14} /> {t.markCompletedBtn || t.confirm || 'Confirm & Save to History'}
               </button>
             </div>
 

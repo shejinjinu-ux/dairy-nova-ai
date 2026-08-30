@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAppData } from '../../contexts/AppDataContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { MobileHeader } from '../../components/common/MobileHeader';
 import { BottomNavigation } from '../../components/common/BottomNavigation';
 import { QRCodeCard } from '../../components/common/QRCodeCard';
@@ -12,12 +13,13 @@ import { QrCode, ScanLine, Plus, ShieldCheck, CheckCircle2 } from 'lucide-react'
 
 export const QRTraceabilityScreen: React.FC = () => {
   const { qrBatches, addQRBatch } = useAppData();
+  const { t } = useLanguage();
   const [isScannerOpen, setIsScannerOpen] = useState<boolean>(false);
   const [selectedBatch, setSelectedBatch] = useState<QRBatch | null>(null);
 
   return (
     <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-950">
-      <MobileHeader showBack={true} title="QR Traceability Seals" subtitle="Farm-to-Consumer Digital Verification" />
+      <MobileHeader showBack={true} title={t.qrCertificates || 'QR Traceability Seals'} subtitle={t.verifiedBatches || 'Farm-to-Consumer Digital Verification'} />
 
       <main className="p-4 sm:p-5 space-y-4 pb-20 animate-fadeIn">
         
@@ -42,7 +44,7 @@ export const QRTraceabilityScreen: React.FC = () => {
             onClick={() => setIsScannerOpen(true)}
             className="w-full py-2.5 px-3 rounded-2xl bg-teal-400 hover:bg-teal-300 text-slate-950 font-bold text-xs shadow-md shadow-teal-400/20 flex items-center justify-center gap-1.5 active:scale-95 transition"
           >
-            <ScanLine size={16} /> Open QR Batch Scanner
+            <ScanLine size={16} /> {t.scanSample || 'Open QR Batch Scanner'}
           </button>
         </div>
 
@@ -50,9 +52,9 @@ export const QRTraceabilityScreen: React.FC = () => {
         <div className="space-y-3 pt-1">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Verified Dairy Batches ({qrBatches.length})
+              {t.verifiedBatches || 'Verified Dairy Batches'} ({qrBatches.length})
             </h3>
-            <span className="text-xs text-teal-600 font-semibold">Tap to view full QR label</span>
+            <span className="text-xs text-teal-600 font-semibold">{t.viewAll || 'Tap to view full QR label'}</span>
           </div>
 
           <div className="space-y-3">
@@ -76,7 +78,7 @@ export const QRTraceabilityScreen: React.FC = () => {
                 </div>
 
                 <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                  <span className="text-slate-500">Quality: <strong className="text-slate-800 dark:text-slate-200">{batch.qualityGrade}</strong></span>
+                  <span className="text-slate-500">{t.qualityGrade || 'Quality:'} <strong className="text-slate-800 dark:text-slate-200">{batch.qualityGrade}</strong></span>
                   <SourceTag source={batch.dataSource} />
                 </div>
               </div>

@@ -146,10 +146,10 @@ export const DiseaseScreeningModal: React.FC<DiseaseScreeningModalProps> = ({
             </div>
             <div>
               <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                🩺 AI HEALTH & DISEASE SCREENING
+                🩺 {t.aiHealthDiseaseScreening || 'AI HEALTH & DISEASE SCREENING'}
               </h3>
               <span className="text-[10px] text-teal-600 dark:text-teal-400 font-semibold block">
-                Visual Lesion & Clinical Symptom Engine
+                {t.visualLesionEngine || 'Visual Lesion & Clinical Symptom Engine'}
               </span>
             </div>
           </div>
@@ -173,13 +173,13 @@ export const DiseaseScreeningModal: React.FC<DiseaseScreeningModalProps> = ({
             {/* Preliminary Safe Advisory when Model is Offline/Fails */}
             <div className="mt-2 pt-2 border-t border-rose-200 dark:border-rose-800/60 text-[11px] space-y-1 text-slate-700 dark:text-slate-300">
               <strong className="block text-slate-900 dark:text-white font-bold flex items-center gap-1">
-                <ShieldCheck size={13} className="text-emerald-500" /> Immediate Biosecurity Steps:
+                <ShieldCheck size={13} className="text-emerald-500" /> {t.immediateBiosecuritySteps || 'Immediate Biosecurity Steps:'}
               </strong>
               <ul className="list-disc pl-4 space-y-0.5 text-[10px] text-slate-600 dark:text-slate-400">
-                <li>Isolate the cattle in a clean, shaded, well-ventilated stall</li>
-                <li>Provide clean ad-libitum drinking water and soft green fodder</li>
-                <li>Avoid moving animals between herds to prevent potential contagion</li>
-                <li>Contact your local government veterinary dispensary for clinical diagnosis</li>
+                <li>{t.biosecurityStep1 || 'Isolate the cattle in a clean, shaded, well-ventilated stall'}</li>
+                <li>{t.biosecurityStep2 || 'Provide clean ad-libitum drinking water and soft green fodder'}</li>
+                <li>{t.biosecurityStep3 || 'Avoid moving animals between herds to prevent potential contagion'}</li>
+                <li>{t.biosecurityStep4 || 'Contact your local government veterinary dispensary for clinical diagnosis'}</li>
               </ul>
             </div>
           </div>

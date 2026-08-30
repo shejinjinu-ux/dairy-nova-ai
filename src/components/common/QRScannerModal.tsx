@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { QRBatch } from '../../types';
 import { qrApi } from '../../services/api/qrApi';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { QRCodeCard } from './QRCodeCard';
 import { X, ScanLine, Camera, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
 
@@ -15,6 +16,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
   onClose,
   onScanned,
 }) => {
+  const { t } = useLanguage();
   const [isScanning, setIsScanning] = useState<boolean>(true);
   const [isLookingUp, setIsLookingUp] = useState<boolean>(false);
   const [scannedBatch, setScannedBatch] = useState<QRBatch | null>(null);
@@ -53,8 +55,8 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
               <ScanLine size={18} />
             </div>
             <div>
-              <h3 className="font-bold text-sm text-slate-900 dark:text-white">QR Batch Scanner</h3>
-              <p className="text-[10px] text-slate-500">Scan Dairy Traceability Label</p>
+              <h3 className="font-bold text-sm text-slate-900 dark:text-white">{t.qrTraceability || 'QR Batch Scanner'}</h3>
+              <p className="text-[10px] text-slate-500">{t.qrCertificates || 'Scan Dairy Traceability Label'}</p>
             </div>
           </div>
           <button
@@ -70,14 +72,14 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
           <div className="space-y-3">
             <div className="bg-emerald-50 dark:bg-emerald-950/60 p-3 rounded-2xl border border-emerald-200 dark:border-emerald-800 flex items-center gap-2 text-emerald-800 dark:text-emerald-300 text-xs font-semibold">
               <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-              Batch Verified & Traceability Audit Loaded!
+              {t.verifiedBatches || 'Batch Verified & Traceability Audit Loaded!'}
             </div>
             <QRCodeCard batch={scannedBatch} />
             <button
               onClick={handleReset}
               className="w-full py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 active:scale-95 transition"
             >
-              Scan Another Code
+              {t.scanSample || 'Scan Another Code'}
             </button>
           </div>
         ) : (
@@ -99,12 +101,12 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
               {isLookingUp ? (
                 <div className="flex flex-col items-center gap-2 text-teal-400 z-10">
                   <Loader2 size={32} className="animate-spin" />
-                  <span className="text-xs font-semibold">Decoding Dairy Seal...</span>
+                  <span className="text-xs font-semibold">{t.decodingSeal || 'Decoding Dairy Seal...'}</span>
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-1 text-slate-400 z-10">
                   <Camera size={28} className="text-slate-500 animate-pulse" />
-                  <span className="text-[11px] font-medium text-slate-300">Align QR code inside box</span>
+                  <span className="text-[11px] font-medium text-slate-300">{t.alignQrCode || 'Align QR code inside box'}</span>
                 </div>
               )}
             </div>
@@ -112,7 +114,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
             {/* Quick Demo Scan Buttons */}
             <div className="space-y-2">
               <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider block text-center">
-                Tap to Simulate Live QR Scan
+                {t.qrCertificates || 'Simulate Live QR Scan'}
               </span>
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -120,7 +122,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                   disabled={isLookingUp}
                   className="p-2.5 rounded-xl bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/60 dark:hover:bg-teal-900 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-300 text-xs font-semibold text-left active:scale-95 transition"
                 >
-                  <span className="block font-bold">🌿 Feed Batch #884</span>
+                  <span className="block font-bold">🌿 {t.dryFeed || 'Feed Batch'} #884</span>
                   <span className="text-[10px] text-teal-600 dark:text-teal-400">Super Napier CO-5</span>
                 </button>
 
@@ -129,7 +131,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                   disabled={isLookingUp}
                   className="p-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-semibold text-left active:scale-95 transition"
                 >
-                  <span className="block font-bold">🌽 Silage Pit M01</span>
+                  <span className="block font-bold">🌽 {t.silageSample || 'Silage Pit'} M01</span>
                   <span className="text-[10px] text-emerald-600 dark:text-emerald-400">Corn Silage Pit #441</span>
                 </button>
               </div>
@@ -140,7 +142,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
               <div className="flex gap-1.5">
                 <input
                   type="text"
-                  placeholder="Or enter Batch ID manually..."
+                  placeholder={t.searchFeedTestsPlaceholder || "Or enter Batch ID manually..."}
                   value={manualCode}
                   onChange={(e) => setManualCode(e.target.value)}
                   className="flex-1 px-3 py-2 text-xs rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500"

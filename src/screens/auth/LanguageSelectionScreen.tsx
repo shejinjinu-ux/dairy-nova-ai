@@ -12,21 +12,34 @@ import { setStoredItem } from '../../services/api/apiHelper';
 export const LanguageSelectionScreen: React.FC = () => {
   const { language, setLanguage, t } = useLanguage();
   const { navigate, goBack, screenHistory } = useAppData();
-  const { isAuthenticated, updateProfile } = useAuth();
+  const { user, isAuthenticated, updateProfile } = useAuth();
   const [selected, setSelected] = useState<string>(language);
 
   const canGoBack = screenHistory.length > 1;
+
+  const handleSelectLanguage = (langCode: string) => {
+    setSelected(langCode);
+    setLanguage(langCode as Language);
+  };
 
   const handleContinue = async () => {
     const chosenLang = selected as Language;
     setLanguage(chosenLang);
     setStoredItem('has_selected_initial_language', true);
 
-    if (isAuthenticated) {
-      await updateProfile({ language: chosenLang });
+    if (canGoBack) {
+      if (isAuthenticated) {
+        await updateProfile({ language: chosenLang });
+      }
       goBack();
+      return;
+    }
+
+    if (isAuthenticated && user && user.isOnboarded !== false) {
+      await updateProfile({ language: chosenLang });
+      navigate(user.role === 'officer' ? 'officer-dashboard' : 'home');
     } else {
-      navigate('splash');
+      navigate('login');
     }
   };
 
@@ -52,7 +65,7 @@ export const LanguageSelectionScreen: React.FC = () => {
           <AnimatedLogo size="sm" showText={true} />
 
           <span className="text-[10px] font-bold uppercase tracking-wider text-teal-600 bg-teal-50 dark:bg-teal-950/80 px-2 py-0.5 rounded-md">
-            20+ Languages
+            {t.languagesCount || '20+ Languages'}
           </span>
         </div>
 
@@ -75,7 +88,7 @@ export const LanguageSelectionScreen: React.FC = () => {
               <button
                 key={lang.code}
                 type="button"
-                onClick={() => setSelected(lang.code)}
+                onClick={() => handleSelectLanguage(lang.code)}
                 className={`p-3 rounded-2xl border text-left transition-all duration-200 active:scale-95 flex flex-col justify-between relative overflow-hidden ${
                   isSelected
                     ? 'bg-gradient-to-br from-dairy-50 to-teal-50 dark:from-dairy-950/80 dark:to-teal-950/80 border-dairy-600 dark:border-dairy-500 shadow-md ring-2 ring-dairy-500/30'

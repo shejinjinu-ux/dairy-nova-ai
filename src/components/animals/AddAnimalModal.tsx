@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Animal, AnimalType, LactationStage, PregnancyStatus } from '../../types';
 import { ALL_INDIAN_COW_BREEDS, ALL_INDIAN_BUFFALO_BREEDS } from '../../mocks/mockData';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { X, ArrowRight, ArrowLeft, Check, Sparkles, Loader2 } from 'lucide-react';
 
 interface AddAnimalModalProps {
@@ -14,6 +15,7 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
   onClose,
   onAnimalAdded,
 }) => {
+  const { t } = useLanguage();
   const [step, setStep] = useState<number>(1);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
@@ -131,13 +133,13 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
         <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-              Step {step} of 4
+              {t.stepOf || 'Step'} {step} / 4
             </span>
             <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
-              {step === 1 && 'Basic Information'}
-              {step === 2 && 'Animal Details'}
-              {step === 3 && 'Health & Reproduction'}
-              {step === 4 && 'Review & Save'}
+              {step === 1 && (t.basicInfo || 'Basic Information')}
+              {step === 2 && (t.animalDetails || 'Animal Details')}
+              {step === 3 && (t.healthReproduction || 'Health & Reproduction')}
+              {step === 4 && (t.reviewSave || 'Review & Save')}
             </h3>
           </div>
           <button
@@ -173,7 +175,7 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
           <div className="space-y-3 animate-fadeIn">
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Animal Tag ID *
+                {t.tagIdLabel || 'Animal Tag ID'} *
               </label>
               <input
                 type="text"
@@ -186,7 +188,7 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
 
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Animal Name / Calling Name
+                {t.animalNameLabel || 'Animal Name / Calling Name'}
               </label>
               <input
                 type="text"
@@ -199,25 +201,25 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
 
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Animal Type *
+                {t.animalType || 'Animal Type'} *
               </label>
               <div className="grid grid-cols-2 gap-2">
-                {(['Cow', 'Buffalo'] as AnimalType[]).map((t) => (
+                {(['Cow', 'Buffalo'] as AnimalType[]).map((animalChoice) => (
                   <button
-                    key={t}
+                    key={animalChoice}
                     type="button"
                     onClick={() => {
-                      setType(t);
-                      if (t === 'Buffalo') setBreed('Murrah');
+                      setType(animalChoice);
+                      if (animalChoice === 'Buffalo') setBreed('Murrah');
                       else setBreed('Gir');
                     }}
                     className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition active:scale-95 ${
-                      type === t
+                      type === animalChoice
                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/30'
                         : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
                     }`}
                   >
-                    {t === 'Cow' ? '🐄 Cow' : '🐃 Buffalo'}
+                    {animalChoice === 'Cow' ? (t.cowOption || '🐄 Cow') : (t.buffaloOption || '🐃 Buffalo')}
                   </button>
                 ))}
               </div>
@@ -274,7 +276,7 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                  Age (Years)
+                  {t.ageYears || 'Age (Years)'}
                 </label>
                 <input
                   type="number"
@@ -287,7 +289,7 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                  Age (Months)
+                  {t.ageMonths || 'Age (Months)'}
                 </label>
                 <input
                   type="number"
@@ -302,7 +304,7 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
 
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Measured Weight (kg)
+                {t.weightKgLabel || 'Measured Weight (kg)'}
               </label>
               <input
                 type="number"
@@ -310,14 +312,14 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
                 max="1200"
                 value={weightKg}
                 onChange={(e) => setWeightKg(e.target.value)}
-                placeholder="Enter cattle weight in kg (e.g. 380)"
+                placeholder={t.weightKgPlaceholder || 'e.g. 380'}
                 className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white placeholder-slate-400"
               />
             </div>
 
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Sex
+                {t.gender || 'Sex'}
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {(['Female', 'Male'] as const).map((s) => (
@@ -344,7 +346,7 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
           <div className="space-y-3 animate-fadeIn">
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Lactation Stage
+                {t.lactationStage || 'Lactation Stage'}
               </label>
               <select
                 value={lactationStage}
@@ -360,7 +362,7 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
 
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Pregnancy Status
+                {t.pregnancyStatus || 'Pregnancy Status'}
               </label>
               <select
                 value={pregnancyStatus}
@@ -375,7 +377,7 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
 
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Daily Milk Yield (Liters/day)
+                {t.dailyYieldLabel || 'Daily Milk Yield (Liters/day)'}
               </label>
               <input
                 type="number"
@@ -384,7 +386,7 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
                 max="60"
                 value={dailyMilkYieldL}
                 onChange={(e) => setDailyMilkYieldL(e.target.value)}
-                placeholder="Enter daily milk production in liters (e.g. 12.5)"
+                placeholder={t.dailyYieldPlaceholder || 'e.g. 12.5'}
                 className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white placeholder-slate-400"
               />
             </div>
@@ -396,34 +398,34 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
           <div className="space-y-3 animate-fadeIn text-xs">
             <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2">
               <div className="flex justify-between">
-                <span className="text-slate-400">Tag & Name:</span>
+                <span className="text-slate-400">{t.tagIdLabel || 'Tag ID'}:</span>
                 <strong className="text-slate-900 dark:text-white">
                   {tagId} — {name || 'Unnamed'}
                 </strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Type & Breed:</span>
+                <span className="text-slate-400">{t.breed || 'Breed'}:</span>
                 <strong className="text-slate-900 dark:text-white">
                   {type} • {breed === 'Other' ? (customBreedName.trim() || 'Other Breed') : breed}
                 </strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Age & Weight:</span>
+                <span className="text-slate-400">{t.ageYears || 'Age'}:</span>
                 <strong className="text-slate-900 dark:text-white">
                   {ageYears}y {ageMonths}m • {weightKg.trim() !== '' ? `${weightKg.trim()} kg` : 'Not specified'}
                 </strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Lactation & Yield:</span>
+                <span className="text-slate-400">{t.lactationStage || 'Lactation'}:</span>
                 <strong className="text-emerald-600 dark:text-emerald-400">
-                  {lactationStage} {dailyMilkYieldL.trim() !== '' ? `(${dailyMilkYieldL.trim()} L/day)` : '(Unrecorded)'}
+                  {lactationStage} {dailyMilkYieldL.trim() !== '' ? `(${dailyMilkYieldL.trim()} L/day)` : ''}
                 </strong>
               </div>
             </div>
 
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Special Notes (Optional)
+                {t.clinicalNotes || 'Special Notes'}
               </label>
               <textarea
                 rows={2}
@@ -445,7 +447,7 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
               disabled={isSaving}
               className="py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1 active:scale-95 transition"
             >
-              <ArrowLeft size={14} /> Back
+              <ArrowLeft size={14} /> {t.backBtn || 'Back'}
             </button>
           ) : (
             <div />
@@ -457,7 +459,7 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
               onClick={handleNext}
               className="py-2.5 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/30 flex items-center gap-1 active:scale-95 transition"
             >
-              Next <ArrowRight size={14} />
+              {t.continueBtn || 'Next'} <ArrowRight size={14} />
             </button>
           ) : (
             <button
@@ -468,14 +470,14 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
             >
               {isSaving ? (
                 <>
-                  <Loader2 size={14} className="animate-spin" /> Saving...
+                  <Loader2 size={14} className="animate-spin" /> {t.analyzingAI || 'Saving...'}
                 </>
               ) : isSuccess ? (
                 <>
-                  <Check size={14} /> Saved
+                  <Check size={14} /> {t.save || 'Saved'}
                 </>
               ) : (
-                'Save Cattle'
+                (t.save || 'Save Cattle')
               )}
             </button>
           )}

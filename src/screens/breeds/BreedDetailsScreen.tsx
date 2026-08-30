@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAppData } from '../../contexts/AppDataContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { BREEDS_DATA } from '../../mocks/mockData';
 import { MobileHeader } from '../../components/common/MobileHeader';
 import { SourceTag } from '../../components/common/SourceTag';
@@ -8,6 +9,7 @@ import { MapPin, Milk, Wheat, ShieldCheck, Sparkles, CheckCircle2, ShieldAlert }
 
 export const BreedDetailsScreen: React.FC = () => {
   const { selectedBreedId } = useAppData();
+  const { t } = useLanguage();
   const breed = BREEDS_DATA.find((b) => b.id === selectedBreedId) || BREEDS_DATA[0];
 
   return (
@@ -32,7 +34,7 @@ export const BreedDetailsScreen: React.FC = () => {
         {/* Description & Read Aloud */}
         <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-card-soft space-y-2 text-xs">
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-slate-900 dark:text-white">Breed Overview</h3>
+            <h3 className="font-bold text-slate-900 dark:text-white">{t.breedOverview || 'Breed Overview'}</h3>
             <ReadAloudButton textToRead={`${breed.name}. ${breed.description}`} size="sm" />
           </div>
           <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-[11px]">
@@ -43,31 +45,31 @@ export const BreedDetailsScreen: React.FC = () => {
         {/* Vital Parameters */}
         <div className="grid grid-cols-2 gap-2.5 text-xs">
           <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-1">
-            <span className="text-[10px] text-slate-400 block font-medium">Daily Milk Potential</span>
+            <span className="text-[10px] text-slate-400 block font-medium">{t.dailyMilkPotential || 'Daily Milk Potential'}</span>
             <span className="text-sm font-extrabold text-dairy-600 dark:text-dairy-400 flex items-center gap-1">
               <Milk size={13} /> {breed.avgDailyMilkYield}
             </span>
           </div>
 
           <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-1">
-            <span className="text-[10px] text-slate-400 block font-medium">Fat Content</span>
+            <span className="text-[10px] text-slate-400 block font-medium">{t.fatContent || 'Fat Content'}</span>
             <span className="text-sm font-extrabold text-teal-600 dark:text-teal-400">{breed.fatPercentageRange}</span>
           </div>
 
           <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-1 col-span-2">
-            <span className="text-[10px] text-slate-400 block font-medium">Feed & Ration Requirement</span>
+            <span className="text-[10px] text-slate-400 block font-medium">{t.feedRationRequirement || 'Feed & Ration Requirement'}</span>
             <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block">{breed.feedRequirement}</span>
           </div>
 
           <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-1 col-span-2">
-            <span className="text-[10px] text-slate-400 block font-medium">Climate & Heat Tolerance</span>
+            <span className="text-[10px] text-slate-400 block font-medium">{t.climateTolerance || 'Climate & Heat Tolerance'}</span>
             <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block">{breed.climateTolerance}</span>
           </div>
         </div>
 
         {/* Characteristics */}
         <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-card-soft space-y-2 text-xs">
-          <h3 className="font-bold text-slate-900 dark:text-white">Breed Characteristics</h3>
+          <h3 className="font-bold text-slate-900 dark:text-white">{t.breedCharacteristics || 'Breed Characteristics'}</h3>
           <ul className="space-y-1.5 text-slate-600 dark:text-slate-300 text-[11px]">
             {breed.characteristics.map((c, i) => (
               <li key={i} className="flex items-start gap-1.5">
@@ -81,7 +83,7 @@ export const BreedDetailsScreen: React.FC = () => {
         {/* Best Management Practices */}
         <div className="p-4 rounded-3xl bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-xs space-y-2">
           <h3 className="font-bold text-teal-900 dark:text-teal-200 flex items-center gap-1.5">
-            <Sparkles size={14} className="text-teal-600" /> Best Management Practices
+            <Sparkles size={14} className="text-teal-600" /> {t.recommendedAction || 'Best Management Practices'}
           </h3>
           <ul className="space-y-1 text-teal-800 dark:text-teal-300 text-[11px]">
             {breed.bestPractices.map((bp, i) => (
@@ -94,7 +96,7 @@ export const BreedDetailsScreen: React.FC = () => {
         <div className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] flex items-start gap-1.5">
           <ShieldAlert size={14} className="shrink-0 text-amber-500 mt-0.5" />
           <span>
-            <strong>AI Screening & Guidance Label:</strong> Milk yield potentials are estimated averages based on optimal nutrition and management.
+            {t.aiSafetyDisclaimer || 'Milk yield potentials are estimated averages based on optimal nutrition and management.'}
           </span>
         </div>
       </main>

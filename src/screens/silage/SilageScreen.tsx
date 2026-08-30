@@ -36,7 +36,7 @@ export const SilageScreen: React.FC = () => {
       <MobileHeader
         showBack={true}
         title={t.silageCheck || 'Silage Quality Testing'}
-        subtitle="AI-Enabled Rapid Fermentation & Spoilage Screening"
+        subtitle={t.isSilageGood || 'AI-Enabled Rapid Fermentation & Spoilage Screening'}
       />
 
       <main className="p-4 sm:p-5 space-y-4 pb-20 animate-fadeIn">
@@ -46,17 +46,17 @@ export const SilageScreen: React.FC = () => {
           <div className="flex items-center justify-between">
             <span className="text-xs font-black uppercase tracking-wider text-teal-300 flex items-center gap-1.5">
               <Sparkles size={14} className="text-teal-400" />
-              Core AI Module
+              Dairy Nova AI
             </span>
             <SourceTag source="AI Screening" className="bg-teal-950 text-teal-200 border-teal-700" />
           </div>
 
           <div>
             <h2 className="text-lg font-black text-white leading-tight">
-              Rapid Silage Quality Testing
+              {t.rapidSilageTest || 'Rapid Silage Quality Testing'}
             </h2>
             <p className="text-xs text-teal-100/90 leading-relaxed mt-1">
-              Verify if your pit or bunker silage has optimal lactic fermentation, safe pH, and zero clostridial/butyric spoilage.
+              {t.isSilageGood || 'Verify if your pit or bunker silage has optimal fermentation and safety.'}
             </p>
           </div>
 
@@ -167,19 +167,19 @@ export const SilageScreen: React.FC = () => {
                     {/* Metrics Snapshot */}
                     <div className="grid grid-cols-4 gap-1.5 text-center text-xs">
                       <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
-                        <span className="text-[9px] text-slate-400 block">Acidity</span>
+                        <span className="text-[9px] text-slate-400 block">{t.acidityPH || 'Acidity'}</span>
                         <span className="font-extrabold text-teal-600 dark:text-teal-400">{silage.phValue} pH</span>
                       </div>
                       <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
-                        <span className="text-[9px] text-slate-400 block">FQI Score</span>
+                        <span className="text-[9px] text-slate-400 block">{t.fqi || 'FQI Score'}</span>
                         <span className="font-extrabold text-slate-800 dark:text-slate-200">{silage.fqiScore || '84.5'}</span>
                       </div>
                       <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
-                        <span className="text-[9px] text-slate-400 block">Moisture</span>
+                        <span className="text-[9px] text-slate-400 block">{t.moisture || 'Moisture'}</span>
                         <span className="font-bold text-slate-700 dark:text-slate-300">{silage.moisturePercent}%</span>
                       </div>
                       <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
-                        <span className="text-[9px] text-slate-400 block">Core Temp</span>
+                        <span className="text-[9px] text-slate-400 block">{t.pitCoreTemp || 'Core Temp'}</span>
                         <span className="font-bold text-slate-700 dark:text-slate-300">{silage.internalTemperatureC}°C</span>
                       </div>
                     </div>
@@ -189,22 +189,22 @@ export const SilageScreen: React.FC = () => {
                       <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2 text-xs animate-fadeIn">
                         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 text-[11px] space-y-1">
                           <div className="flex justify-between">
-                            <span className="text-slate-500">Fermentation State:</span>
+                            <span className="text-slate-500">{t.fermentationState || 'Fermentation State:'}</span>
                             <span className="font-bold text-teal-600">{silage.fermentationStatus}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-slate-500">Spoilage Risk:</span>
+                            <span className="text-slate-500">{t.spoilageRisk || 'Spoilage Risk:'}</span>
                             <span className="font-bold text-slate-700 dark:text-slate-300">{silage.spoilageRisk}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-slate-500">Mould Risk:</span>
+                            <span className="text-slate-500">{t.mouldRisk || 'Mould Risk:'}</span>
                             <span className="font-bold text-slate-700 dark:text-slate-300">{silage.mouldRisk}</span>
                           </div>
                         </div>
 
                         {silage.recommendations && silage.recommendations.length > 0 && (
                           <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 text-[11px] space-y-1">
-                            <strong className="text-slate-700 dark:text-slate-300 block font-semibold">Recommendations:</strong>
+                            <strong className="text-slate-700 dark:text-slate-300 block font-semibold">{t.recommendationsLabel || 'Recommendations:'}</strong>
                             {silage.recommendations.map((rec, i) => (
                               <p key={i} className="text-slate-600 dark:text-slate-400">• {rec}</p>
                             ))}
@@ -220,7 +220,7 @@ export const SilageScreen: React.FC = () => {
                         onClick={() => setExpandedSilageId(isExpanded ? null : silage.id)}
                         className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-semibold flex items-center gap-1 text-[11px]"
                       >
-                        {isExpanded ? 'Hide details' : 'View detailed fermentation'}
+                        {isExpanded ? (t.hideDetails || 'Hide details') : (t.viewDetailedNIR || 'View detailed fermentation')}
                         {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                       </button>
 
@@ -228,7 +228,7 @@ export const SilageScreen: React.FC = () => {
                         onClick={() => setActiveQRBatchId(silage.batchId)}
                         className="py-1 px-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1"
                       >
-                        <QrCode size={13} /> View QR Seal
+                        <QrCode size={13} /> {t.viewQRSeal || 'View QR Seal'}
                       </button>
                     </div>
 

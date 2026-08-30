@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Animal, LactationStage, PregnancyStatus, HealthStatus } from '../../types';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { X, Save, AlertCircle } from 'lucide-react';
 import { ConfirmationDialog } from '../common/ConfirmationDialog';
 
@@ -16,6 +17,7 @@ export const EditAnimalModal: React.FC<EditAnimalModalProps> = ({
   onClose,
   onAnimalUpdated,
 }) => {
+  const { t } = useLanguage();
   const [name, setName] = useState<string>(animal.name);
   const [weightKg, setWeightKg] = useState<string>(animal.weightKg !== undefined ? String(animal.weightKg) : '');
   const [lactationStage, setLactationStage] = useState<LactationStage>(animal.lactationStage);

@@ -98,7 +98,7 @@ export const HealthDashboardScreen: React.FC = () => {
             <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-600 flex items-center justify-center">
               <Syringe size={16} />
             </div>
-            <span>Vaccinations Schedule</span>
+            <span>{t.vaccinations || 'Vaccinations Schedule'}</span>
           </button>
 
           <button
@@ -108,7 +108,7 @@ export const HealthDashboardScreen: React.FC = () => {
             <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
               <History size={16} />
             </div>
-            <span>Health History Log</span>
+            <span>{t.history || 'Health History Log'}</span>
           </button>
         </div>
 
@@ -116,9 +116,9 @@ export const HealthDashboardScreen: React.FC = () => {
         <div className="space-y-3 pt-1">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Health & Pathology Alerts
+              {t.diseaseCheck || 'Health & Pathology Alerts'}
             </h3>
-            <span className="text-xs font-semibold text-slate-400">{filteredAlerts.length} records</span>
+            <span className="text-xs font-semibold text-slate-400">{filteredAlerts.length} {t.testsCount || 'records'}</span>
           </div>
 
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
@@ -128,11 +128,11 @@ export const HealthDashboardScreen: React.FC = () => {
                 onClick={() => setFilterSeverity(filter)}
                 className={`px-3 py-1 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
                   filterSeverity === filter
-                    ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-sm'
-                    : 'bg-white dark:bg-slate-900 text-slate-500 border border-slate-200 dark:border-slate-800'
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200/80 dark:border-slate-800'
                 }`}
               >
-                {filter === 'All' ? 'All Alerts' : filter.charAt(0).toUpperCase() + filter.slice(1)}
+                {filter === 'All' ? (t.allAnimals || 'All') : filter === 'active' ? (t.criticalAlert || 'Active') : filter === 'critical' ? (t.criticalAlert || 'Critical') : (t.resolveAlert || 'Resolved')}
               </button>
             ))}
           </div>

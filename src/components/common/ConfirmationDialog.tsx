@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertCircle, Loader2 } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface ConfirmationDialogProps {
   isOpen: boolean;
@@ -17,13 +18,16 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   isOpen,
   title,
   message,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   isDestructive = false,
   isLoading = false,
   onConfirm,
   onCancel,
 }) => {
+  const { t } = useLanguage();
+  const effectiveConfirm = confirmLabel || t.continueBtn || 'Confirm';
+  const effectiveCancel = cancelLabel || t.cancelBtn || 'Cancel';
   if (!isOpen) return null;
 
   return (
@@ -48,7 +52,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
             disabled={isLoading}
             className="w-full py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition"
           >
-            {cancelLabel}
+            {effectiveCancel}
           </button>
 
           <button
@@ -62,7 +66,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
             }`}
           >
             {isLoading && <Loader2 size={14} className="animate-spin" />}
-            {isLoading ? 'Processing...' : confirmLabel}
+            {isLoading ? (t.analyzingAI || 'Processing...') : effectiveConfirm}
           </button>
         </div>
 

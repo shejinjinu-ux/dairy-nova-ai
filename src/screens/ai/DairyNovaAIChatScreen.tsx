@@ -268,7 +268,7 @@ export const DairyNovaAIChatScreen: React.FC = () => {
                   handleSendMessage();
                 }
               }}
-              placeholder="Ask Dairy Nova AI about animals, feed, milk..."
+              placeholder={t.chatPlaceholder || "Ask Dairy Nova AI about animals, feed, milk..."}
               className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
           </div>

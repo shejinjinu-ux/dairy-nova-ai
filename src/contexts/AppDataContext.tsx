@@ -421,7 +421,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setSelectedBreedId(null);
     setSelectedFarmId(null);
     setChatAnimalContext(null);
-    const targetScreen: ScreenType = 'login';
+    const targetScreen: ScreenType = 'language-select';
     setScreenHistory([targetScreen]);
     setCurrentScreen(targetScreen);
     window.history.replaceState({ screen: targetScreen }, '', window.location.pathname);

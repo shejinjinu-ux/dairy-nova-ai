@@ -137,11 +137,11 @@ export const ProfileScreen: React.FC = () => {
           {/* Quick Herd Snapshot */}
           <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
             <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
-              <span className="text-[10px] text-slate-400 block">Registered Animals</span>
-              <span className="font-bold text-slate-900 dark:text-white">{animals.length} Cattle</span>
+              <span className="text-[10px] text-slate-400 block">{t.registeredAnimals || 'Registered Animals'}</span>
+              <span className="font-bold text-slate-900 dark:text-white">{animals.length} {t.cattle || 'Cattle'}</span>
             </div>
             <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
-              <span className="text-[10px] text-slate-400 block">Interface Language</span>
+              <span className="text-[10px] text-slate-400 block">{t.interfaceLanguage || 'Interface Language'}</span>
               <span className="font-bold text-teal-600 dark:text-teal-400">{currentLangName}</span>
             </div>
           </div>
@@ -150,7 +150,7 @@ export const ProfileScreen: React.FC = () => {
         {/* Profile Details / Edit Form */}
         <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-card-soft space-y-3.5 text-xs">
           <h4 className="font-bold text-slate-900 dark:text-white text-xs uppercase tracking-wider">
-            Farmer & Farm Location
+            {t.farmerDetailsTitle || 'Farmer & Farm Location'}
           </h4>
 
           {isEditing ? (
@@ -158,7 +158,7 @@ export const ProfileScreen: React.FC = () => {
               {/* Profile Image Picker */}
               <div>
                 <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1">
-                  Profile Picture
+                  {t.choosePhoto || 'Profile Picture'}
                 </label>
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
@@ -170,7 +170,7 @@ export const ProfileScreen: React.FC = () => {
                   </div>
                   <label className="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-xs text-slate-700 dark:text-slate-300 cursor-pointer flex items-center gap-1.5 active:scale-95 transition">
                     <Camera size={14} className="text-emerald-600" />
-                    <span>Choose Photo</span>
+                    <span>{t.choosePhoto || 'Choose Photo'}</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -193,7 +193,7 @@ export const ProfileScreen: React.FC = () => {
                       onClick={() => setAvatarUrl('')}
                       className="text-xs text-rose-500 hover:underline"
                     >
-                      Remove
+                      {t.removePhoto || 'Remove'}
                     </button>
                   )}
                 </div>
@@ -201,7 +201,7 @@ export const ProfileScreen: React.FC = () => {
 
               <div>
                 <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1">
-                  Full Name
+                  {t.farmerName || 'Full Name'}
                 </label>
                 <input
                   type="text"
@@ -213,7 +213,7 @@ export const ProfileScreen: React.FC = () => {
 
               <div>
                 <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1">
-                  Farm Name
+                  {t.farmName || 'Farm Name'}
                 </label>
                 <input
                   type="text"
@@ -227,7 +227,7 @@ export const ProfileScreen: React.FC = () => {
               <div className="space-y-2 pt-1 border-t border-slate-100 dark:border-slate-800">
                 <div className="flex items-center justify-between">
                   <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
-                    Farm Location (India)
+                    {t.farmLocation || 'Farm Location'}
                   </label>
                   <button
                     type="button"
@@ -236,13 +236,13 @@ export const ProfileScreen: React.FC = () => {
                     className="text-[10px] font-bold text-emerald-600 hover:underline flex items-center gap-1"
                   >
                     {isDetectingLocation ? <Loader2 size={10} className="animate-spin" /> : <Compass size={10} />}
-                    <span>GPS Auto-Detect</span>
+                    <span>{t.gpsAutoDetect || 'GPS Auto-Detect'}</span>
                   </button>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[10px] text-slate-400 block mb-0.5">State</label>
+                    <label className="text-[10px] text-slate-400 block mb-0.5">{t.state || 'State'}</label>
                     <select
                       value={selectedState}
                       onChange={(e) => {
@@ -262,7 +262,7 @@ export const ProfileScreen: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="text-[10px] text-slate-400 block mb-0.5">District</label>
+                    <label className="text-[10px] text-slate-400 block mb-0.5">{t.district || 'District'}</label>
                     <select
                       value={selectedDistrict}
                       onChange={(e) => setSelectedDistrict(e.target.value)}
@@ -278,7 +278,7 @@ export const ProfileScreen: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-slate-400 block mb-0.5">Village / Town</label>
+                  <label className="text-[10px] text-slate-400 block mb-0.5">{t.villageTown || 'Village / Town'}</label>
                   <input
                     type="text"
                     value={villageTown}
@@ -323,7 +323,7 @@ export const ProfileScreen: React.FC = () => {
               <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
                 <Phone size={15} className="text-slate-400 shrink-0" />
                 <div>
-                  <span className="text-[10px] text-slate-400 block">Mobile Contact</span>
+                  <span className="text-[10px] text-slate-400 block">{t.mobileContact || 'Mobile Contact'}</span>
                   <span className="font-semibold text-slate-800 dark:text-slate-200">{user?.mobile || mobile || '—'}</span>
                 </div>
               </div>
@@ -331,7 +331,7 @@ export const ProfileScreen: React.FC = () => {
               <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
                 <MapPin size={15} className="text-slate-400 shrink-0" />
                 <div>
-                  <span className="text-[10px] text-slate-400 block">Location</span>
+                  <span className="text-[10px] text-slate-400 block">{t.locationLabel || 'Location'}</span>
                   <span className="font-semibold text-slate-800 dark:text-slate-200">{user?.farmLocation || 'Tamil Nadu, India'}</span>
                 </div>
               </div>
@@ -339,7 +339,7 @@ export const ProfileScreen: React.FC = () => {
               <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
                 <Globe size={15} className="text-slate-400 shrink-0" />
                 <div>
-                  <span className="text-[10px] text-slate-400 block">Preferred Language</span>
+                  <span className="text-[10px] text-slate-400 block">{t.preferredLanguage || 'Preferred Language'}</span>
                   <span className="font-semibold text-slate-800 dark:text-slate-200">{currentLangName}</span>
                 </div>
               </div>
@@ -355,7 +355,7 @@ export const ProfileScreen: React.FC = () => {
           >
             <div className="flex items-center gap-2">
               <Globe size={16} className="text-teal-600" />
-              <span>Change Application Language</span>
+              <span>{t.changeAppLanguage || 'Change Application Language'}</span>
             </div>
             <span className="text-emerald-600 font-bold">{currentLangName}</span>
           </button>
@@ -364,7 +364,7 @@ export const ProfileScreen: React.FC = () => {
             onClick={() => setShowLogoutModal(true)}
             className="w-full py-3 px-4 min-h-[44px] rounded-2xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-98"
           >
-            <LogOut size={16} /> Sign Out of Dairy Nova
+            <LogOut size={16} /> {t.logout || 'Sign Out of Dairy Nova'}
           </button>
         </div>
 

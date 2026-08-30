@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Language } from '../types';
 import { TRANSLATIONS, TranslationDictionary, LANGUAGE_OPTIONS } from '../i18n/translations';
+import { LanguageConfig } from '../config/languageConfig';
 import { getStoredItem, setStoredItem } from '../services/api/apiHelper';
 
 interface LanguageContextType {
@@ -8,7 +9,7 @@ interface LanguageContextType {
   setLanguage: (lang: Language) => void;
   hasCompletedLanguageOnboarding: boolean;
   t: TranslationDictionary;
-  languageOptions: typeof LANGUAGE_OPTIONS;
+  languageOptions: LanguageConfig[];
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);

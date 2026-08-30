@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { MobileHeader } from '../../components/common/MobileHeader';
 import { BottomNavigation } from '../../components/common/BottomNavigation';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -99,9 +99,9 @@ export const ByProductsScreen: React.FC = () => {
         {/* Banner */}
         <div className="p-4 rounded-3xl bg-gradient-to-r from-emerald-800 to-teal-900 text-white shadow-md space-y-1.5">
           <div className="flex items-center gap-1.5 text-emerald-300 text-xs font-bold">
-            <Sparkles size={14} /> Zero Waste Dairy Farming
+            <Sparkles size={14} /> {t.byProducts || 'Zero Waste Dairy Farming'}
           </div>
-          <h3 className="font-extrabold text-sm">Monetize Dung, Urine & Bio-Slurry</h3>
+          <h3 className="font-extrabold text-sm">{t.monetizeByproducts || 'Monetize Dung, Urine & Bio-Slurry'}</h3>
           <p className="text-[11px] text-emerald-100 leading-relaxed">
             Transform animal waste into high-value organic fertilizers, cooking gas, and bio-pesticides.
           </p>

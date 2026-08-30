@@ -1,4 +1,4 @@
-import { defineConfig, Plugin } from 'vite';
+import { defineConfig, loadEnv, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
@@ -177,6 +177,7 @@ CRITICAL RESPONSE GUIDELINES:
           });
           return;
         }
+
         next();
       });
     },
@@ -184,15 +185,21 @@ CRITICAL RESPONSE GUIDELINES:
 }
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react(), geminiDevServerPlugin()],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  // Load server-side environment variables into process.env for local development middleware
+  Object.assign(process.env, env);
+
+  return {
+    plugins: [react(), geminiDevServerPlugin()],
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+      },
     },
-  },
-  server: {
-    port: 3000,
-    open: true,
-  },
+    server: {
+      port: 3000,
+      open: true,
+    },
+  };
 });

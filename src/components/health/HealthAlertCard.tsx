@@ -1,5 +1,6 @@
 import React from 'react';
 import { HealthAlert } from '../../types';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { StatusBadge } from '../common/StatusBadge';
 import { SourceTag } from '../common/SourceTag';
 import { ReadAloudButton } from '../common/ReadAloudButton';
@@ -19,6 +20,7 @@ export const HealthAlertCard: React.FC<HealthAlertCardProps> = ({
   onAskAI,
   onScreening,
 }) => {
+  const { t } = useLanguage();
   const isCritical = alert.severity === 'critical';
   const isResolved = alert.status === 'resolved';
 
@@ -80,13 +82,13 @@ export const HealthAlertCard: React.FC<HealthAlertCardProps> = ({
         </div>
 
         <p className="text-slate-600 dark:text-slate-400 text-[11px]">
-          <strong className="text-slate-700 dark:text-slate-300">Guidance:</strong> {alert.preliminaryGuidance}
+          <strong className="text-slate-700 dark:text-slate-300">{t.recommendations || 'Guidance'}:</strong> {alert.preliminaryGuidance}
         </p>
 
         <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200/60 dark:border-amber-900/40 text-amber-900 dark:text-amber-200 flex items-start gap-1.5">
           <Stethoscope size={13} className="shrink-0 mt-0.5 text-amber-600" />
           <span className="text-[10px] font-medium leading-tight">
-            <strong>Vet Advice:</strong> {alert.veterinaryAdvice}
+            <strong>{t.recommendedAction || 'Vet Advice'}:</strong> {alert.veterinaryAdvice}
           </span>
         </div>
       </div>
@@ -105,17 +107,17 @@ export const HealthAlertCard: React.FC<HealthAlertCardProps> = ({
               onClick={() => onAskAI(alert)}
               className="px-2.5 py-1 rounded-xl bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-bold text-[11px] flex items-center gap-1 active:scale-95 transition"
             >
-              <Sparkles size={11} /> Ask AI
+              <Sparkles size={11} /> {t.navAskAi || 'Ask AI'}
             </button>
           )}
 
-          {!isResolved && onResolve && (
+          {onResolve && !isResolved && (
             <button
               type="button"
               onClick={() => onResolve(alert.id)}
-              className="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-[11px] flex items-center gap-1 active:scale-95 transition"
+              className="px-2.5 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold text-[11px] flex items-center gap-1 active:scale-95 transition"
             >
-              <CheckCircle2 size={11} className="text-emerald-500" /> Mark Resolved
+              <CheckCircle2 size={11} /> {t.resolveAlert || 'Resolve'}
             </button>
           )}
         </div>

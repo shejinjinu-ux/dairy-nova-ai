@@ -5,6 +5,7 @@ import { MobileHeader } from '../../components/common/MobileHeader';
 import { BottomNavigation } from '../../components/common/BottomNavigation';
 import { MetricCard } from '../../components/common/MetricCard';
 import { SourceTag } from '../../components/common/SourceTag';
+import { EmptyState } from '../../components/common/FeedbackStates';
 import { RecordMilkModal } from '../../components/milk/RecordMilkModal';
 import { milkApi } from '../../services/api/milkApi';
 import { ContaminationScreenResponse } from '../../types';
@@ -194,10 +195,10 @@ export const MilkScreen: React.FC = () => {
             <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-card-soft space-y-3 text-xs">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-extrabold text-slate-900 dark:text-white">Herd Production Trend</h4>
-                  <p className="text-[10px] text-slate-400">Daily recorded milk volume</p>
+                  <h4 className="font-extrabold text-slate-900 dark:text-white">{t.herdProductionTrend || 'Herd Production Trend'}</h4>
+                  <p className="text-[10px] text-slate-400">{t.dailyRecordedVolume || 'Daily recorded milk volume'}</p>
                 </div>
-                <span className="text-[10px] font-bold text-emerald-600">Last 7 Days</span>
+                <span className="text-[10px] font-bold text-emerald-600">{t.last7Days || 'Last 7 Days'}</span>
               </div>
 
               {/* Dynamic Bar visualization */}
@@ -234,7 +235,7 @@ export const MilkScreen: React.FC = () => {
             <div className="space-y-3 pt-1">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  Recorded Logs ({filteredRecords.length})
+                  {t.history || 'Recorded Logs'} ({filteredRecords.length})
                 </h3>
                 {animals.length > 0 && (
                   <select
@@ -242,7 +243,7 @@ export const MilkScreen: React.FC = () => {
                     onChange={(e) => setSelectedAnimalFilter(e.target.value)}
                     className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300"
                   >
-                    <option value="All">All Animals</option>
+                    <option value="All">{t.allAnimals || 'All Animals'}</option>
                     {animals.map((a) => (
                       <option key={a.id} value={a.id}>
                         {a.tagId} • {a.name}
@@ -253,46 +254,52 @@ export const MilkScreen: React.FC = () => {
               </div>
 
               {filteredRecords.length === 0 ? (
-                <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-center space-y-2.5 shadow-card-soft">
-                  <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center mx-auto">
-                    <Milk size={20} />
-                  </div>
-                  <div>
-                    <h4 className="font-extrabold text-xs text-slate-900 dark:text-white">
-                      {t.noMilkRecordsYet || 'No milk records yet'}
-                    </h4>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      Log today's morning or evening milk yield to track herd productivity.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsRecordModalOpen(true)}
-                    className="py-2 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm inline-flex items-center gap-1 active:scale-95 transition"
-                  >
-                    <Plus size={14} /> {t.addTodaysCollection || 'Log Today\'s Milk'}
-                  </button>
-                </div>
+                <EmptyState
+                  icon={Milk}
+                  title={t.noMilkRecordsYet || "No Milk Collections Logged"}
+                  description={t.addTodaysCollection || "Record morning and evening milking shift yields."}
+                  actionLabel={t.recordMilk || "Record First Shift"}
+                  onAction={() => setIsRecordModalOpen(true)}
+                />
               ) : (
                 <div className="space-y-2">
-                  {filteredRecords.map((rec) => (
+                  {filteredRecords.map((record) => (
                     <div
-                      key={rec.id}
-                      className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs"
+                      key={record.id}
+                      className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-card-soft flex items-center justify-between"
                     >
-                      <div>
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className="font-mono text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-1.5 py-0.5 rounded">
-                            {rec.animalTag}
-                          </span>
-                          <span className="font-bold text-slate-900 dark:text-white">{rec.animalName}</span>
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-xs ${
+                            record.shift === 'Morning'
+                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                              : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
+                          }`}
+                        >
+                          {record.shift === 'Morning' ? '🌅' : '🌙'}
                         </div>
-                        <span className="text-[11px] text-slate-400">{rec.shift} Shift • {formatDate(rec.date)}</span>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-extrabold text-xs text-slate-900 dark:text-white">
+                              {record.animalName || record.animalTag}
+                            </h4>
+                            <span className="text-[10px] text-slate-400">
+                              {record.shift === 'Morning' ? (t.morningShift || 'Morning') : (t.eveningShift || 'Evening')}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-400 block">
+                            {formatDate(record.date)}
+                            {record.fatPercent ? ` • Fat: ${record.fatPercent}%` : ''}
+                            {record.snfPercent ? ` • SNF: ${record.snfPercent}%` : ''}
+                          </span>
+                        </div>
                       </div>
 
                       <div className="text-right">
-                        <span className="text-sm font-black text-emerald-600 dark:text-emerald-400 block">{rec.quantityLiters} L</span>
-                        {rec.fatPercent && <span className="text-[10px] text-slate-400">Fat {rec.fatPercent}% • SNF {rec.snfPercent}%</span>}
+                        <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
+                          {record.quantityLiters} L
+                        </span>
+                        <SourceTag source="Manual Entry" />
                       </div>
                     </div>
                   ))}
@@ -309,7 +316,7 @@ export const MilkScreen: React.FC = () => {
             {/* Proximate Milk Solids Grid */}
             <div className="grid grid-cols-2 gap-2">
               <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-1">
-                <span className="text-[10px] text-slate-400 block font-medium">Butterfat (Fat %)</span>
+                <span className="text-[10px] text-slate-400 block font-medium">{t.butterfat || 'Butterfat (Fat %)'}</span>
                 <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">
                   {milkRecords.length > 0 && milkRecords[0].fatPercent ? `${milkRecords[0].fatPercent}%` : '4.5%'}
                 </span>
@@ -317,23 +324,23 @@ export const MilkScreen: React.FC = () => {
               </div>
 
               <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-1">
-                <span className="text-[10px] text-slate-400 block font-medium">Solids Not Fat (SNF %)</span>
+                <span className="text-[10px] text-slate-400 block font-medium">{t.snf || 'Solids Not Fat (SNF %)'}</span>
                 <span className="text-lg font-black text-slate-800 dark:text-slate-200">
                   {milkRecords.length > 0 && milkRecords[0].snfPercent ? `${milkRecords[0].snfPercent}%` : '8.8%'}
                 </span>
-                <span className="text-[10px] text-emerald-600 font-semibold block">✓ Standard Compliant</span>
+                <span className="text-[10px] text-emerald-600 font-semibold block">✓ {t.standardCompliant || 'Standard Compliant'}</span>
               </div>
 
               <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-1">
-                <span className="text-[10px] text-slate-400 block font-medium">Protein Solids</span>
+                <span className="text-[10px] text-slate-400 block font-medium">{t.proteinSolids || 'Protein Solids'}</span>
                 <span className="text-lg font-black text-slate-800 dark:text-slate-200">3.4%</span>
                 <span className="text-[10px] text-slate-400 block">Casein & Whey Profile</span>
               </div>
 
               <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-1">
-                <span className="text-[10px] text-slate-400 block font-medium">Acidity (pH)</span>
+                <span className="text-[10px] text-slate-400 block font-medium">{t.acidityPH || 'Acidity (pH)'}</span>
                 <span className="text-lg font-black text-teal-600 dark:text-teal-400">6.65 pH</span>
-                <span className="text-[10px] text-emerald-600 font-semibold block">✓ Fresh Udder Range</span>
+                <span className="text-[10px] text-emerald-600 font-semibold block">✓ {t.freshUdderRange || 'Fresh Udder Range'}</span>
               </div>
             </div>
           </div>

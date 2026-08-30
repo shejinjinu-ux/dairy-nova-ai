@@ -233,7 +233,7 @@ export const HistoryScreen: React.FC = () => {
               className="py-2.5 px-4 rounded-xl bg-emerald-600 text-white font-bold text-xs shadow-sm inline-flex items-center gap-1.5 active:scale-95 transition"
             >
               <Plus size={14} />
-              <span>Test Feed or Silage Now</span>
+              <span>{t.testFeedQuality || 'Test Feed or Silage Now'}</span>
             </button>
           </div>
         )}

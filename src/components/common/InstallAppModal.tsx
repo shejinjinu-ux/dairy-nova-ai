@@ -92,15 +92,15 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({ isOpen, onClos
         <div className="space-y-2 py-1 text-xs">
           <div className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300">
             <Zap size={16} className="text-amber-500 shrink-0" />
-            <span>Instant 1-tap launch from your home screen</span>
+            <span>{t.installBenefit1 || 'Instant 1-tap launch from your home screen'}</span>
           </div>
           <div className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300">
             <WifiOff size={16} className="text-teal-500 shrink-0" />
-            <span>Works offline & queues data for sync</span>
+            <span>{t.installBenefit2 || 'Works offline & queues data for sync'}</span>
           </div>
           <div className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300">
             <Sparkles size={16} className="text-dairy-500 shrink-0" />
-            <span>Full-screen view with zero browser address bar</span>
+            <span>{t.installBenefit3 || 'Full-screen view with zero browser address bar'}</span>
           </div>
         </div>
 
@@ -108,7 +108,7 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({ isOpen, onClos
         {isInstalled ? (
           <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-300 font-bold">
             <CheckCircle2 size={18} />
-            <span>Dairy Nova AI is already installed on this device!</span>
+            <span>{t.installAlreadyInstalled || 'Dairy Nova AI is already installed on this device!'}</span>
           </div>
         ) : deferredPrompt ? (
           <button
@@ -117,22 +117,22 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({ isOpen, onClos
             className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-dairy-600 to-teal-600 hover:from-dairy-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-dairy-600/30 flex items-center justify-center gap-2 active:scale-95 transition-all"
           >
             <Download size={16} />
-            <span>Install App Now</span>
+            <span>{t.installNow || 'Install App Now'}</span>
           </button>
         ) : isIOS ? (
           <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs space-y-2 text-slate-700 dark:text-slate-300">
-            <span className="font-bold block text-slate-900 dark:text-white">To install on iPhone / iPad:</span>
+            <span className="font-bold block text-slate-900 dark:text-white">{t.installIOSHeading || 'To install on iPhone / iPad:'}</span>
             <ol className="list-decimal pl-4 space-y-1 text-[11px]">
-              <li>Tap the <Share2 size={12} className="inline mx-0.5 text-blue-500" /> <b>Share</b> icon in Safari</li>
-              <li>Scroll down and select <PlusSquare size={12} className="inline mx-0.5" /> <b>Add to Home Screen</b></li>
-              <li>Tap <b>Add</b> in the top-right corner</li>
+              <li>{t.installIOSStep1 || 'Tap the Share icon in Safari'}</li>
+              <li>{t.installIOSStep2 || 'Scroll down and select Add to Home Screen'}</li>
+              <li>{t.installIOSStep3 || 'Tap Add in the top-right corner'}</li>
             </ol>
           </div>
         ) : (
           <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs space-y-1.5 text-slate-700 dark:text-slate-300">
-            <span className="font-bold block text-slate-900 dark:text-white">To install on Android / Chrome:</span>
+            <span className="font-bold block text-slate-900 dark:text-white">{t.installAndroidHeading || 'To install on Android / Chrome:'}</span>
             <p className="text-[11px]">
-              Tap the browser menu <b>(⋮)</b> and choose <b>"Install app"</b> or <b>"Add to Home screen"</b>.
+              {t.installAndroidInstructions || 'Tap the browser menu (⋮) and choose "Install app" or "Add to Home screen".'}
             </p>
           </div>
         )}
@@ -142,7 +142,7 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({ isOpen, onClos
           onClick={onClose}
           className="w-full py-2 text-center text-xs font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
         >
-          Close
+          {t.cancel || 'Close'}
         </button>
 
       </div>

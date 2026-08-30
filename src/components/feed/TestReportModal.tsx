@@ -159,25 +159,25 @@ export const TestReportModal: React.FC<TestReportModalProps> = ({
           {/* Sample & Farmer Meta */}
           <div className="grid grid-cols-2 gap-2 text-[11px] p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
             <div>
-              <span className="text-slate-400 text-[10px] block">Sample Type:</span>
+              <span className="text-slate-400 text-[10px] block">{t.sampleType || 'Sample Type:'}</span>
               <strong className="text-slate-800 dark:text-slate-200 font-bold">
                 {isFeed ? feedData?.feedName : silageData?.silageType}
               </strong>
             </div>
             <div>
-              <span className="text-slate-400 text-[10px] block">Test Date:</span>
+              <span className="text-slate-400 text-[10px] block">{t.testDate || 'Test Date:'}</span>
               <strong className="text-slate-800 dark:text-slate-200 font-bold">
                 {formatDate(result.date)}
               </strong>
             </div>
             <div>
-              <span className="text-slate-400 text-[10px] block">Sample Weight:</span>
+              <span className="text-slate-400 text-[10px] block">{t.sampleWeightLabel || 'Sample Weight:'}</span>
               <strong className="text-slate-800 dark:text-slate-200 font-bold">
                 {result.sampleAmount ? `${result.sampleAmount} ${result.sampleAmountUnit || 'kg'}` : '—'}
               </strong>
             </div>
             <div>
-              <span className="text-slate-400 text-[10px] block">Testing Method:</span>
+              <span className="text-slate-400 text-[10px] block">{t.testingMethod || 'Testing Method:'}</span>
               <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
                 {result.inputSource || 'Rapid NIR / Biochemical AI'}
               </strong>
@@ -225,7 +225,7 @@ export const TestReportModal: React.FC<TestReportModalProps> = ({
               <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
                 <span className="text-slate-400 block">{t.qualityRisk || 'Quality Risk'}</span>
                 <span className={`font-bold ${status === 'Good' ? 'text-emerald-600' : 'text-amber-600'}`}>
-                  {status === 'Good' ? 'Low Risk' : status === 'Moderate' ? 'Medium' : 'High'}
+                  {status === 'Good' ? (t.goodStatusTag || 'Low Risk') : status === 'Moderate' ? (t.cautionStatusTag || 'Medium') : (t.highRiskStatusTag || 'High')}
                 </span>
               </div>
             </div>
@@ -234,38 +234,38 @@ export const TestReportModal: React.FC<TestReportModalProps> = ({
           {/* Key Parameters Table */}
           <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-2">
             <h4 className="font-extrabold text-[11px] uppercase tracking-wider text-slate-700 dark:text-slate-300">
-              Tested Parameters & Biomarkers
+              {t.technicalNutrients || 'Tested Parameters & Biomarkers'}
             </h4>
             <div className="divide-y divide-slate-100 dark:divide-slate-700/60 text-[11px]">
               {isFeed ? (
                 <>
                   <div className="flex justify-between py-1.5">
-                    <span className="text-slate-500">Crude Protein (CP)</span>
+                    <span className="text-slate-500">{t.crudeProtein || 'Crude Protein (CP)'}</span>
                     <span className="font-bold text-emerald-600 dark:text-emerald-400">
                       {feedData?.crudeProteinPercent}%
                     </span>
                   </div>
                   <div className="flex justify-between py-1.5">
-                    <span className="text-slate-500">Dry Matter (DM)</span>
+                    <span className="text-slate-500">{t.dryMatter || 'Dry Matter (DM)'}</span>
                     <span className="font-bold text-slate-800 dark:text-slate-200">
                       {feedData?.dryMatterPercent}%
                     </span>
                   </div>
                   <div className="flex justify-between py-1.5">
-                    <span className="text-slate-500">Moisture Content</span>
+                    <span className="text-slate-500">{t.moisture || 'Moisture Content'}</span>
                     <span className="font-bold text-slate-800 dark:text-slate-200">
                       {feedData?.moisturePercent}%
                     </span>
                   </div>
                   <div className="flex justify-between py-1.5">
-                    <span className="text-slate-500">Crude Fiber</span>
+                    <span className="text-slate-500">{t.crudeFibre || 'Crude Fiber'}</span>
                     <span className="font-bold text-slate-800 dark:text-slate-200">
                       {feedData?.crudeFiberPercent}%
                     </span>
                   </div>
                   {feedData?.ndfPercent && (
                     <div className="flex justify-between py-1.5">
-                      <span className="text-slate-500">NDF Fiber</span>
+                      <span className="text-slate-500">{t.ndf || 'NDF Fiber'}</span>
                       <span className="font-bold text-slate-800 dark:text-slate-200">
                         {feedData.ndfPercent}%
                       </span>
@@ -273,7 +273,7 @@ export const TestReportModal: React.FC<TestReportModalProps> = ({
                   )}
                   {feedData?.starchPercent && (
                     <div className="flex justify-between py-1.5">
-                      <span className="text-slate-500">Starch</span>
+                      <span className="text-slate-500">{t.starch || 'Starch'}</span>
                       <span className="font-bold text-slate-800 dark:text-slate-200">
                         {feedData.starchPercent}%
                       </span>
@@ -283,31 +283,31 @@ export const TestReportModal: React.FC<TestReportModalProps> = ({
               ) : (
                 <>
                   <div className="flex justify-between py-1.5">
-                    <span className="text-slate-500">Silage Acidity (pH)</span>
+                    <span className="text-slate-500">{t.silagePH || 'Silage Acidity (pH)'}</span>
                     <span className="font-bold text-teal-600 dark:text-teal-400">
                       {silageData?.phValue} pH
                     </span>
                   </div>
                   <div className="flex justify-between py-1.5">
-                    <span className="text-slate-500">Fermentation Quality Index (FQI)</span>
+                    <span className="text-slate-500">{t.fqi || 'Fermentation Quality Index (FQI)'}</span>
                     <span className="font-bold text-slate-800 dark:text-slate-200">
                       {silageData?.fqiScore || '84.5'}/100
                     </span>
                   </div>
                   <div className="flex justify-between py-1.5">
-                    <span className="text-slate-500">Moisture Percentage</span>
+                    <span className="text-slate-500">{t.moisture || 'Moisture Percentage'}</span>
                     <span className="font-bold text-slate-800 dark:text-slate-200">
                       {silageData?.moisturePercent}%
                     </span>
                   </div>
                   <div className="flex justify-between py-1.5">
-                    <span className="text-slate-500">Core Pit Temperature</span>
+                    <span className="text-slate-500">{t.pitCoreTemp || 'Core Pit Temperature'}</span>
                     <span className="font-bold text-slate-800 dark:text-slate-200">
                       {silageData?.internalTemperatureC}°C
                     </span>
                   </div>
                   <div className="flex justify-between py-1.5">
-                    <span className="text-slate-500">Fermentation Acid Profile</span>
+                    <span className="text-slate-500">{t.fermentationState || 'Fermentation Acid Profile'}</span>
                     <span className="font-bold text-slate-800 dark:text-slate-200">
                       {silageData?.fermentationStatus}
                     </span>

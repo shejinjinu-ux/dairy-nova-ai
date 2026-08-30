@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAppData } from '../../contexts/AppDataContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { FarmCard } from '../../components/officer/FarmCard';
 import { QRScannerModal } from '../../components/common/QRScannerModal';
 import { QRCodeCard } from '../../components/common/QRCodeCard';
@@ -26,6 +27,7 @@ import {
 export const OfficerDashboardScreen: React.FC = () => {
   const { officerFarms, contaminationAlerts, resolveContaminationAlert, navigate } = useAppData();
   const { user, setShowLogoutModal } = useAuth();
+  const { t } = useLanguage();
 
   const [activeTab, setActiveTab] = useState<'farms' | 'contamination' | 'traceability'>('farms');
   const [searchFarm, setSearchFarm] = useState<string>('');
@@ -86,19 +88,19 @@ export const OfficerDashboardScreen: React.FC = () => {
         {/* Cooperative Overview KPI Ribbon */}
         <div className="grid grid-cols-3 gap-2 text-center">
           <div className="p-3 rounded-2xl bg-slate-900 text-white border border-slate-800 space-y-0.5">
-            <span className="text-[10px] text-slate-400 block font-medium">Affiliated Farms</span>
+            <span className="text-[10px] text-slate-400 block font-medium">{t.affiliatedFarms || 'Affiliated Farms'}</span>
             <span className="text-base font-black text-amber-400">{officerFarms.length} Units</span>
           </div>
 
           <div className="p-3 rounded-2xl bg-slate-900 text-white border border-slate-800 space-y-0.5">
-            <span className="text-[10px] text-slate-400 block font-medium">Union Intake</span>
+            <span className="text-[10px] text-slate-400 block font-medium">{t.unionIntake || 'Union Intake'}</span>
             <span className="text-base font-black text-dairy-400">{todayTotalUnionMilk.toFixed(0)} L</span>
           </div>
 
           <div className="p-3 rounded-2xl bg-slate-900 text-white border border-slate-800 space-y-0.5">
-            <span className="text-[10px] text-slate-400 block font-medium">Active Flags</span>
+            <span className="text-[10px] text-slate-400 block font-medium">{t.activeFlags || 'Active Flags'}</span>
             <span className={`text-base font-black ${activeContamAlerts.length > 0 ? 'text-rose-400 animate-pulse' : 'text-emerald-400'}`}>
-              {activeContamAlerts.length} Alerts
+              {activeContamAlerts.length} {t.alertsCount || 'Alerts'}
             </span>
           </div>
         </div>
@@ -113,7 +115,7 @@ export const OfficerDashboardScreen: React.FC = () => {
                 : 'text-slate-600 dark:text-slate-400'
             }`}
           >
-            Farms ({officerFarms.length})
+            {t.affiliatedFarms || 'Farms'} ({officerFarms.length})
           </button>
 
           <button
@@ -125,7 +127,7 @@ export const OfficerDashboardScreen: React.FC = () => {
             }`}
           >
             <AlertTriangle size={12} className="text-rose-500" />
-            Contamination
+            {t.criticalAlert || 'Contamination'}
           </button>
 
           <button
@@ -137,7 +139,7 @@ export const OfficerDashboardScreen: React.FC = () => {
             }`}
           >
             <ScanLine size={12} />
-            Traceability
+            {t.qrTraceability || 'Traceability'}
           </button>
         </div>
 
@@ -150,13 +152,13 @@ export const OfficerDashboardScreen: React.FC = () => {
                 type="text"
                 value={searchFarm}
                 onChange={(e) => setSearchFarm(e.target.value)}
-                placeholder="Search farms by village or farmer name..."
+                placeholder={t.searchFarmsPlaceholder || "Search farms by village or farmer name..."}
                 className="w-full pl-9 pr-3 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-amber-500"
               />
               <Search size={15} className="absolute left-3 top-3 text-slate-400" />
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {filteredFarms.map((farm) => (
                 <FarmCard
                   key={farm.id}
@@ -168,40 +170,39 @@ export const OfficerDashboardScreen: React.FC = () => {
           </div>
         )}
 
-        {/* Tab 2: Contamination Monitoring */}
+        {/* Tab 2: Contamination & Adulteration Flags */}
         {activeTab === 'contamination' && (
           <div className="space-y-3 animate-fadeIn">
-            <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-900 dark:text-rose-200 space-y-1">
-              <h4 className="font-extrabold flex items-center gap-1.5">
-                <AlertTriangle size={15} className="text-rose-600" /> Cooperative Contamination Radar
-              </h4>
-              <p className="text-[11px] leading-relaxed">
-                Screening for Aflatoxin M1, veterinary antibiotic residues, and water adulteration across chilling centers.
-              </p>
-            </div>
+            {activeContamAlerts.length === 0 && (
+              <div className="p-5 rounded-3xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center space-y-1.5">
+                <CheckCircle2 size={24} className="mx-auto text-emerald-600" />
+                <h4 className="font-extrabold text-emerald-900 dark:text-emerald-200">Zero Active Contamination Flags</h4>
+                <p className="text-[11px] text-emerald-700 dark:text-emerald-300">
+                  All collection routes passed proximate aflatoxin and chemical adulteration tests.
+                </p>
+              </div>
+            )}
 
             <div className="space-y-3">
-              {contaminationAlerts.map((alert) => (
+              {activeContamAlerts.map((alert) => (
                 <div
                   key={alert.id}
-                  className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/80 shadow-card-soft space-y-2.5"
+                  className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/60 shadow-card-soft space-y-2.5"
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <span className="font-mono text-[10px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-950 px-2 py-0.5 rounded-md">
-                        {alert.batchId}
-                      </span>
-                      <h4 className="font-extrabold text-sm text-slate-900 dark:text-white mt-1">
-                        {alert.farmName}
-                      </h4>
-                      <p className="text-[11px] text-slate-500">Flagged: {alert.substance} ({alert.affectedLiters} Liters)</p>
+                      <div className="flex items-center gap-1.5">
+                        <AlertTriangle size={15} className="text-rose-600" />
+                        <span className="font-extrabold text-slate-900 dark:text-white">{alert.farmName}</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400">{alert.substance} • {alert.detectedDate}</span>
                     </div>
 
                     <StatusBadge status={alert.severity === 'Severe Hazard' ? 'Critical Alert' : 'Needs Attention'} size="sm" />
                   </div>
 
                   <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 text-[11px] space-y-1">
-                    <strong className="text-slate-800 dark:text-slate-200 block">Action Enforcement:</strong>
+                    <strong className="text-slate-800 dark:text-slate-200 block">{t.actionEnforcement || 'Action Enforcement:'}</strong>
                     <p className="text-slate-600 dark:text-slate-400 leading-tight">{alert.actionTaken}</p>
                   </div>
 
@@ -224,7 +225,7 @@ export const OfficerDashboardScreen: React.FC = () => {
           <div className="space-y-3.5 animate-fadeIn">
             <div className="p-4 rounded-3xl bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-900 dark:text-teal-200 space-y-2">
               <h4 className="font-extrabold flex items-center gap-1.5">
-                <ScanLine size={16} className="text-teal-600" /> Digital Batch Verification
+                <ScanLine size={16} className="text-teal-600" /> {t.qrCertificates || 'Digital Batch Verification'}
               </h4>
               <p className="text-[11px] leading-relaxed">
                 Scan physical delivery cans or enter milk vat batch ID to verify pure origin and chilling temperature logs.
@@ -233,13 +234,13 @@ export const OfficerDashboardScreen: React.FC = () => {
                 onClick={() => setIsQRScannerOpen(true)}
                 className="py-2.5 px-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition"
               >
-                <ScanLine size={14} /> Launch Inspector Scanner
+                <ScanLine size={14} /> {t.scanSample || 'Launch Inspector Scanner'}
               </button>
             </div>
 
             {inspectedQRBatch && (
               <div className="space-y-2">
-                <h4 className="font-bold text-slate-900 dark:text-white">Inspection Audit Certificate:</h4>
+                <h4 className="font-bold text-slate-900 dark:text-white">{t.inspectionCertificate || 'Inspection Audit Certificate:'}</h4>
                 <QRCodeCard batch={inspectedQRBatch} />
               </div>
             )}

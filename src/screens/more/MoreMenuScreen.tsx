@@ -73,9 +73,9 @@ export const MoreMenuScreen: React.FC = () => {
             </div>
             <div>
               <span className="text-[10px] font-bold uppercase tracking-wider text-teal-200">
-                PWA / Offline Ready
+                {t.offlineMode || 'PWA / Offline Ready'}
               </span>
-              <h4 className="font-extrabold text-sm text-white">Install Dairy Nova on Phone</h4>
+              <h4 className="font-extrabold text-sm text-white">{t.installNow || 'Install Dairy Nova on Phone'}</h4>
             </div>
           </div>
           <ChevronRight size={18} className="text-teal-200" />
@@ -92,9 +92,9 @@ export const MoreMenuScreen: React.FC = () => {
             </div>
             <div>
               <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">
-                Supervisor Mode
+                {t.supervisorMode || 'Supervisor Mode'}
               </span>
-              <h4 className="font-extrabold text-sm text-white">Field Officer & Cooperative View</h4>
+              <h4 className="font-extrabold text-sm text-white">{t.fieldOfficerCooperativeView || 'Field Officer & Cooperative View'}</h4>
             </div>
           </div>
           <ChevronRight size={18} className="text-slate-400" />

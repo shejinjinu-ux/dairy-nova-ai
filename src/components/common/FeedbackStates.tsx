@@ -1,5 +1,6 @@
 import React from 'react';
 import { LucideIcon, Inbox, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface EmptyStateProps {
   icon?: LucideIcon;
@@ -40,36 +41,40 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 };
 
 export const LoadingState: React.FC<{ message?: string; className?: string }> = ({
-  message = 'Loading data...',
+  message,
   className = '',
 }) => {
+  const { t } = useLanguage();
+  const displayMsg = message || t.analyzingAI || 'Loading data...';
   return (
     <div className={`p-10 flex flex-col items-center justify-center space-y-3 ${className}`}>
       <div className="relative">
         <div className="w-10 h-10 rounded-full border-2 border-dairy-200 border-t-dairy-600 animate-spin" />
       </div>
-      <p className="text-xs font-medium text-slate-500 animate-pulse">{message}</p>
+      <p className="text-xs font-medium text-slate-500 animate-pulse">{displayMsg}</p>
     </div>
   );
 };
 
 export const ErrorState: React.FC<{ message?: string; onRetry?: () => void; className?: string }> = ({
-  message = 'Something went wrong. Please try again.',
+  message,
   onRetry,
   className = '',
 }) => {
+  const { t } = useLanguage();
+  const displayMsg = message || t.somethingWentWrong || 'Something went wrong. Please try again.';
   return (
     <div className={`p-6 text-center flex flex-col items-center justify-center space-y-3 bg-rose-50/50 dark:bg-rose-950/20 rounded-3xl border border-rose-200 dark:border-rose-900 ${className}`}>
       <div className="w-10 h-10 rounded-2xl bg-rose-100 dark:bg-rose-900/60 text-rose-600 dark:text-rose-400 flex items-center justify-center">
         <AlertCircle size={22} />
       </div>
-      <p className="text-xs font-semibold text-rose-800 dark:text-rose-300 max-w-xs">{message}</p>
+      <p className="text-xs font-semibold text-rose-800 dark:text-rose-300 max-w-xs">{displayMsg}</p>
       {onRetry && (
         <button
           onClick={onRetry}
           className="py-1.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition"
         >
-          <RefreshCw size={12} /> Retry
+          <RefreshCw size={12} /> {t.retry || 'Retry'}
         </button>
       )}
     </div>

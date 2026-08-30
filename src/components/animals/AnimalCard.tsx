@@ -1,5 +1,6 @@
 import React from 'react';
 import { Animal } from '../../types';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { StatusBadge } from '../common/StatusBadge';
 import { Milk, Sparkles, ChevronRight, Activity, Thermometer, Trash2 } from 'lucide-react';
 
@@ -16,6 +17,7 @@ export const AnimalCard: React.FC<AnimalCardProps> = ({
   onAskAI,
   onDelete,
 }) => {
+  const { t } = useLanguage();
   return (
     <div
       onClick={onClick}
@@ -74,21 +76,21 @@ export const AnimalCard: React.FC<AnimalCardProps> = ({
       {/* Metrics Row */}
       <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 grid grid-cols-3 gap-2 text-center text-xs">
         <div className="bg-slate-50 dark:bg-slate-950/50 p-2 rounded-xl">
-          <span className="text-[10px] text-slate-400 block font-medium">Daily Milk</span>
+          <span className="text-[10px] text-slate-400 block font-medium">{t.dailyYield || 'Daily Milk'}</span>
           <span className="font-bold text-dairy-600 dark:text-dairy-400 flex items-center justify-center gap-0.5">
             <Milk size={11} /> {animal.dailyMilkYieldL !== undefined ? `${animal.dailyMilkYieldL} L` : '—'}
           </span>
         </div>
 
         <div className="bg-slate-50 dark:bg-slate-950/50 p-2 rounded-xl">
-          <span className="text-[10px] text-slate-400 block font-medium">Stage</span>
+          <span className="text-[10px] text-slate-400 block font-medium">{t.lactationStage || 'Stage'}</span>
           <span className="font-semibold text-slate-700 dark:text-slate-300 truncate block">
             {animal.lactationStage}
           </span>
         </div>
 
         <div className="bg-slate-50 dark:bg-slate-950/50 p-2 rounded-xl">
-          <span className="text-[10px] text-slate-400 block font-medium">Body Temp</span>
+          <span className="text-[10px] text-slate-400 block font-medium">{t.temperature || 'Body Temp'}</span>
           <span className={`font-semibold flex items-center justify-center gap-0.5 ${
             animal.temperatureC > 39.2 ? 'text-rose-500 font-bold' : 'text-slate-700 dark:text-slate-300'
           }`}>
@@ -114,7 +116,7 @@ export const AnimalCard: React.FC<AnimalCardProps> = ({
               }}
               className="px-2 py-1 rounded-xl bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/80 text-teal-700 dark:text-teal-300 text-[11px] font-bold flex items-center gap-1 active:scale-95 transition"
             >
-              <Sparkles size={11} /> Ask AI
+              <Sparkles size={11} /> {t.askGeminiAdvisor || 'Ask AI'}
             </button>
           )}
           <ChevronRight size={16} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />

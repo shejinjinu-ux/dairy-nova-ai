@@ -78,7 +78,7 @@ export const HomeDashboardScreen: React.FC = () => {
               DAIRY NOVA AI
             </h1>
             <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-500 text-slate-950 shadow-sm">
-              RAPID TESTING
+              {t.rapidTesting || 'RAPID TESTING'}
             </span>
           </div>
           <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
@@ -212,7 +212,7 @@ export const HomeDashboardScreen: React.FC = () => {
                       ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
                       : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
                   }`}>
-                    {latestTest.isGood === 'Good' ? '🟢 GOOD' : latestTest.isGood === 'Moderate' ? '🟡 CAUTION' : '🔴 HIGH RISK'}
+                    {latestTest.isGood === 'Good' ? ('🟢 ' + (t.goodStatusTag || 'GOOD')) : latestTest.isGood === 'Moderate' ? ('🟡 ' + (t.cautionStatusTag || 'CAUTION')) : ('🔴 ' + (t.highRiskStatusTag || 'HIGH RISK'))}
                   </span>
                 </div>
               </div>
@@ -236,10 +236,10 @@ export const HomeDashboardScreen: React.FC = () => {
             <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-center space-y-2">
               <span className="text-2xl block">🔬</span>
               <h4 className="font-extrabold text-xs text-slate-900 dark:text-white">
-                No Quality Tests Recorded Yet
+                {t.noQualityTestsYet || 'No Quality Tests Recorded Yet'}
               </h4>
               <p className="text-[11px] text-slate-400 max-w-xs mx-auto">
-                Tap TEST FEED or TEST SILAGE above to run your first rapid quality analysis.
+                {t.noQualityTestsYetDesc || 'Tap TEST FEED or TEST SILAGE above to run your first rapid quality analysis.'}
               </p>
             </div>
           )}
@@ -266,7 +266,7 @@ export const HomeDashboardScreen: React.FC = () => {
               <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                 {t.navAnimals || 'My Cattle'}
               </span>
-              <span className="text-[10px] text-slate-400 font-semibold">{animals.length} Cows</span>
+              <span className="text-[10px] text-slate-400 font-semibold">{animals.length} {t.cattle || 'Cows'}</span>
             </button>
 
             {/* Tool 2: Milk Yield */}
@@ -296,7 +296,7 @@ export const HomeDashboardScreen: React.FC = () => {
               <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                 {t.navHealth || 'Health AI'}
               </span>
-              <span className="text-[10px] text-slate-400 font-semibold">{healthAlerts.length} Alerts</span>
+              <span className="text-[10px] text-slate-400 font-semibold">{healthAlerts.length} {t.alertsCount || 'Alerts'}</span>
             </button>
 
             {/* Tool 4: Vaccination */}
@@ -326,7 +326,7 @@ export const HomeDashboardScreen: React.FC = () => {
               <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                 {t.breedCatalog || 'Breeds'}
               </span>
-              <span className="text-[10px] text-slate-400 font-semibold">41 Breeds</span>
+              <span className="text-[10px] text-slate-400 font-semibold">41 {t.breedsCount || 'Breeds'}</span>
             </button>
 
             {/* Tool 6: AI Chat Assistant */}
@@ -341,7 +341,7 @@ export const HomeDashboardScreen: React.FC = () => {
               <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                 {t.askAI || 'AI Chat'}
               </span>
-              <span className="text-[10px] text-emerald-600 font-semibold">24/7 Live</span>
+              <span className="text-[10px] text-emerald-600 font-semibold">{t.liveSupport || '24/7 Live'}</span>
             </button>
           </div>
         </div>

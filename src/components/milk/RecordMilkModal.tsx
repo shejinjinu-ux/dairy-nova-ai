@@ -127,7 +127,7 @@ export const RecordMilkModal: React.FC<RecordMilkModalProps> = ({
                   : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
               }`}
             >
-              <Sun size={15} /> Morning Shift
+              <Sun size={15} /> {t.morningShift || 'Morning Shift'}
             </button>
             <button
               type="button"
@@ -138,7 +138,7 @@ export const RecordMilkModal: React.FC<RecordMilkModalProps> = ({
                   : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
               }`}
             >
-              <Moon size={15} /> Evening Shift
+              <Moon size={15} /> {t.eveningShift || 'Evening Shift'}
             </button>
           </div>
         </div>
@@ -147,7 +147,7 @@ export const RecordMilkModal: React.FC<RecordMilkModalProps> = ({
         <div>
           <div className="flex justify-between items-center mb-1">
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Yield Quantity (Liters)
+              {t.dailyYield || 'Yield Quantity'} (L)
             </label>
             <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
               {quantityLiters.toFixed(1)} L
@@ -168,7 +168,7 @@ export const RecordMilkModal: React.FC<RecordMilkModalProps> = ({
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-              Fat % (Optional)
+              {t.fatPercent || 'Fat %'}
             </label>
             <input
               type="number"
@@ -180,7 +180,7 @@ export const RecordMilkModal: React.FC<RecordMilkModalProps> = ({
           </div>
           <div>
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-              SNF % (Optional)
+              {t.snfPercent || 'SNF %'}
             </label>
             <input
               type="number"
@@ -196,7 +196,7 @@ export const RecordMilkModal: React.FC<RecordMilkModalProps> = ({
         <div>
           <div className="flex justify-between items-center mb-1">
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Milking Notes (Optional)
+              {t.clinicalNotes || 'Milking Notes'}
             </label>
             <VoiceInput onTranscript={(text: string) => setNotes((prev) => `${prev} ${text}`.trim())} />
           </div>
@@ -223,11 +223,11 @@ export const RecordMilkModal: React.FC<RecordMilkModalProps> = ({
           >
             {isSaved ? (
               <>
-                <Check size={16} /> Logged Successfully
+                <Check size={16} /> {t.saved || 'Logged Successfully'}
               </>
             ) : (
               <>
-                <Save size={16} /> Save Milk Record
+                <Save size={16} /> {t.save || 'Save Milk Record'}
               </>
             )}
           </button>

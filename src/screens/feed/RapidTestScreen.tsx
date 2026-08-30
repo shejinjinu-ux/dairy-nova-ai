@@ -278,7 +278,7 @@ export const RapidTestScreen: React.FC = () => {
                 onClick={handleLaunchTest}
                 className="py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-1.5 active:scale-95 transition"
               >
-                <span>Proceed to Test</span>
+                <span>{t.continueBtn || 'Proceed to Test'}</span>
                 <ArrowRight size={14} />
               </button>
             </div>

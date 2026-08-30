@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { feedApi } from '../../services/api/feedApi';
 import {
   FeedAnalysisResult,

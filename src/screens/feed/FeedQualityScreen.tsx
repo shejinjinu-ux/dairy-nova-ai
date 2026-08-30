@@ -35,7 +35,7 @@ export const FeedQualityScreen: React.FC = () => {
       <MobileHeader
         showBack={true}
         title={t.feedCheck || 'Feed Quality Testing'}
-        subtitle="AI-Enabled Rapid Nutritional & Safety Screening"
+        subtitle={t.isFeedGoodForCattle || 'AI-Enabled Rapid Nutritional & Safety Screening'}
       />
 
       <main className="p-4 sm:p-5 space-y-4 pb-20 animate-fadeIn">
@@ -45,17 +45,17 @@ export const FeedQualityScreen: React.FC = () => {
           <div className="flex items-center justify-between">
             <span className="text-xs font-black uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
               <Sparkles size={14} className="text-emerald-400" />
-              Core AI Module
+              Dairy Nova AI
             </span>
             <SourceTag source="AI Screening" className="bg-emerald-950 text-emerald-200 border-emerald-700" />
           </div>
 
           <div>
             <h2 className="text-lg font-black text-white leading-tight">
-              Rapid Feed Quality Testing
+              {t.rapidFeedTest || 'Rapid Feed Quality Testing'}
             </h2>
             <p className="text-xs text-emerald-100/90 leading-relaxed mt-1">
-              Verify if your green fodder, straw, or concentrate is good for cattle nutrition, milk yield, and health.
+              {t.isFeedGoodForCattle || 'Verify if your green fodder, straw, or concentrate is good for cattle nutrition.'}
             </p>
           </div>
 
@@ -162,19 +162,19 @@ export const FeedQualityScreen: React.FC = () => {
                     {/* Nutrients Snapshot */}
                     <div className="grid grid-cols-4 gap-1.5 text-center text-xs">
                       <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
-                        <span className="text-[9px] text-slate-400 block">Dry Matter</span>
+                        <span className="text-[9px] text-slate-400 block">{t.dryMatter || 'Dry Matter'}</span>
                         <span className="font-extrabold text-slate-800 dark:text-slate-200">{feed.dryMatterPercent}%</span>
                       </div>
                       <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
-                        <span className="text-[9px] text-slate-400 block">Protein</span>
+                        <span className="text-[9px] text-slate-400 block">{t.protein || 'Protein'}</span>
                         <span className="font-extrabold text-emerald-600 dark:text-emerald-400">{feed.crudeProteinPercent}%</span>
                       </div>
                       <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
-                        <span className="text-[9px] text-slate-400 block">Fiber</span>
+                        <span className="text-[9px] text-slate-400 block">{t.fiber || 'Fiber'}</span>
                         <span className="font-bold text-slate-700 dark:text-slate-300">{feed.crudeFiberPercent}%</span>
                       </div>
                       <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
-                        <span className="text-[9px] text-slate-400 block">TDN Energy</span>
+                        <span className="text-[9px] text-slate-400 block">{t.tdnEnergy || 'TDN Energy'}</span>
                         <span className="font-bold text-slate-700 dark:text-slate-300">{feed.tdnEnergyPercent}%</span>
                       </div>
                     </div>
@@ -184,22 +184,22 @@ export const FeedQualityScreen: React.FC = () => {
                       <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2 text-xs animate-fadeIn">
                         <div className="grid grid-cols-3 gap-1.5 text-center">
                           <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60">
-                            <span className="text-[9px] text-slate-400 block">NDF Fiber</span>
+                            <span className="text-[9px] text-slate-400 block">{t.ndf || 'NDF Fiber'}</span>
                             <span className="font-bold text-slate-800 dark:text-slate-200">{feed.ndfPercent || '48.2'}%</span>
                           </div>
                           <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60">
-                            <span className="text-[9px] text-slate-400 block">Starch</span>
+                            <span className="text-[9px] text-slate-400 block">{t.starch || 'Starch'}</span>
                             <span className="font-bold text-slate-800 dark:text-slate-200">{feed.starchPercent || '2.3'}%</span>
                           </div>
                           <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60">
-                            <span className="text-[9px] text-slate-400 block">Moisture</span>
+                            <span className="text-[9px] text-slate-400 block">{t.moisture || 'Moisture'}</span>
                             <span className="font-bold text-slate-800 dark:text-slate-200">{feed.moisturePercent}%</span>
                           </div>
                         </div>
 
                         {feed.recommendations && feed.recommendations.length > 0 && (
                           <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 text-[11px] space-y-1">
-                            <strong className="text-slate-700 dark:text-slate-300 block font-semibold">Recommendations:</strong>
+                            <strong className="text-slate-700 dark:text-slate-300 block font-semibold">{t.recommendationsLabel || 'Recommendations:'}</strong>
                             {feed.recommendations.map((rec, i) => (
                               <p key={i} className="text-slate-600 dark:text-slate-400">• {rec}</p>
                             ))}
@@ -215,7 +215,7 @@ export const FeedQualityScreen: React.FC = () => {
                         onClick={() => setExpandedFeedId(isExpanded ? null : feed.id)}
                         className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-semibold flex items-center gap-1 text-[11px]"
                       >
-                        {isExpanded ? 'Hide details' : 'View detailed NIR'}
+                        {isExpanded ? (t.hideDetails || 'Hide details') : (t.viewDetailedNIR || 'View detailed NIR')}
                         {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                       </button>
 
@@ -223,7 +223,7 @@ export const FeedQualityScreen: React.FC = () => {
                         onClick={() => setActiveQRBatchId(feed.batchId)}
                         className="py-1 px-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1"
                       >
-                        <QrCode size={13} /> View QR Seal
+                        <QrCode size={13} /> {t.viewQRSeal || 'View QR Seal'}
                       </button>
                     </div>
 

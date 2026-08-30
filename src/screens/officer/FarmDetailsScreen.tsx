@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAppData } from '../../contexts/AppDataContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { MobileHeader } from '../../components/common/MobileHeader';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { SourceTag } from '../../components/common/SourceTag';
@@ -19,6 +20,7 @@ import {
 
 export const FarmDetailsScreen: React.FC = () => {
   const { officerFarms, selectedFarmId, goBack } = useAppData();
+  const { t } = useLanguage();
 
   const farm = officerFarms.find((f) => f.id === selectedFarmId) || officerFarms[0];
 
@@ -41,7 +43,7 @@ export const FarmDetailsScreen: React.FC = () => {
           <div className="flex items-start justify-between">
             <div>
               <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block mb-1">
-                Cooperative Member Dairy Unit
+                {t.affiliatedFarms || 'Cooperative Member Dairy Unit'}
               </span>
               <h2 className="text-lg font-extrabold text-white">{farm.farmName}</h2>
               <p className="text-xs text-slate-300">{farm.farmerName} • <span className="font-mono text-amber-400">{farm.contactNumber}</span></p>
@@ -51,17 +53,17 @@ export const FarmDetailsScreen: React.FC = () => {
 
           <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-slate-800">
             <div className="p-2.5 rounded-2xl bg-white/5 border border-white/10">
-              <span className="text-[10px] text-slate-400 block font-medium">Total Cattle</span>
+              <span className="text-[10px] text-slate-400 block font-medium">{t.registeredAnimals || 'Total Cattle'}</span>
               <span className="text-sm font-extrabold text-white">{farm.totalCattle} ({farm.cowsCount}C / {farm.buffaloesCount}B)</span>
             </div>
 
             <div className="p-2.5 rounded-2xl bg-white/5 border border-white/10">
-              <span className="text-[10px] text-slate-400 block font-medium">Daily Milk</span>
+              <span className="text-[10px] text-slate-400 block font-medium">{t.dailyYieldLabel || 'Daily Milk'}</span>
               <span className="text-sm font-extrabold text-dairy-400">{farm.todayMilkCollectionL} L</span>
             </div>
 
             <div className="p-2.5 rounded-2xl bg-white/5 border border-white/10">
-              <span className="text-[10px] text-slate-400 block font-medium">Fat / SNF</span>
+              <span className="text-[10px] text-slate-400 block font-medium">{t.fatContent || 'Fat / SNF'}</span>
               <span className="text-sm font-extrabold text-amber-400">{farm.avgMilkFat}% / {farm.avgMilkSnf}%</span>
             </div>
           </div>
@@ -70,7 +72,7 @@ export const FarmDetailsScreen: React.FC = () => {
         {/* Quality Diagnostics Summary */}
         <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-card-soft space-y-3">
           <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
-            Quality Audits & Feed Inspections
+            {t.qualityDiagnosticsSummary || 'Quality Audits & Feed Inspections'}
           </h3>
 
           <div className="space-y-2 text-[11px]">
@@ -78,7 +80,7 @@ export const FarmDetailsScreen: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Wheat size={16} className="text-amber-600" />
                 <div>
-                  <span className="font-bold text-slate-800 dark:text-slate-200 block">Recent Feed Quality</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200 block">{t.feedCheck || 'Recent Feed Quality'}</span>
                   <span className="text-slate-400">{farm.recentFeedGrade}</span>
                 </div>
               </div>
@@ -89,7 +91,7 @@ export const FarmDetailsScreen: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Activity size={16} className="text-teal-600" />
                 <div>
-                  <span className="font-bold text-slate-800 dark:text-slate-200 block">Recent Silage Quality</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200 block">{t.silageCheck || 'Recent Silage Quality'}</span>
                   <span className="text-slate-400">{farm.recentSilageGrade}</span>
                 </div>
               </div>
@@ -100,11 +102,11 @@ export const FarmDetailsScreen: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Calendar size={16} className="text-dairy-600" />
                 <div>
-                  <span className="font-bold text-slate-800 dark:text-slate-200 block">Last Veterinary Visit</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200 block">{t.lastVeterinaryVisit || 'Last Veterinary Visit'}</span>
                   <span className="text-slate-400">{farm.lastInspectionDate}</span>
                 </div>
               </div>
-              <span className="text-[10px] font-bold text-emerald-600">● Certified Routine</span>
+              <span className="text-[10px] font-bold text-emerald-600">● {t.certifiedRoutine || 'Certified Routine'}</span>
             </div>
           </div>
         </div>
@@ -112,7 +114,7 @@ export const FarmDetailsScreen: React.FC = () => {
         {/* Officer Action Log */}
         <div className="p-4 rounded-3xl bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 space-y-2">
           <h4 className="font-bold text-teal-900 dark:text-teal-200 flex items-center gap-1.5">
-            <ShieldCheck size={16} className="text-teal-600" /> Field Officer Observations
+            <ShieldCheck size={16} className="text-teal-600" /> {t.officerActionLog || 'Field Officer Observations'}
           </h4>
           <p className="text-[11px] text-teal-800 dark:text-teal-300 leading-relaxed">
             Farm maintains consistent sanitary milking hygiene. Somatic cell counts remain below cooperative threshold limits. Transition feed supplementation active for pregnant cattle.
