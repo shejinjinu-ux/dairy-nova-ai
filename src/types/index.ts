@@ -1,3 +1,5 @@
+import { VaccinePriceDetail } from './cattle';
+
 export type Language =
   | 'en'
   | 'ta'
@@ -75,10 +77,12 @@ export interface Animal {
   lactationStage: LactationStage;
   pregnancyStatus: PregnancyStatus;
   calvingDate?: string;
+  lactationStartDate?: string;
+  parity?: number;
+  daysInMilk?: number;
   dailyMilkYieldL?: number;
   healthStatus: HealthStatus;
   imageUrl: string;
-  temperatureC: number;
   ruminationMinutesPerDay: number;
   activityLevel: 'Normal' | 'Restless' | 'Sluggish' | 'High Activity (Estrus)';
   notes?: string;
@@ -406,6 +410,19 @@ export interface DiseasePredictionResponse {
   model_version: string;
   device_used: string;
   disclaimer: string;
+  explanation?: string | null;
+  recommended_vaccine?: string | null;
+  vaccination_timing?: string | null;
+  estimated_cost?: string | null;
+  procurement_cost_display?: string | null;
+  retail_price_display?: string | null;
+  farmer_cost_display?: string | null;
+  price_type?: string | null;
+  source_name?: string | null;
+  source_url?: string | null;
+  source_date?: string | null;
+  eligibility_notes?: string | null;
+  price_detail?: VaccinePriceDetail | null;
 }
 
 // Breed Prediction Schemas
@@ -433,7 +450,6 @@ export interface MilkProductionInput {
   Body_Weight_kg?: number;
   Feed_Intake_kg_day?: number;
   Rumination_Time_min_day?: number;
-  Temperature_C?: number;
   Humidity_percent?: number;
   Breed?: string;
   Cattle_ID?: string;
@@ -674,3 +690,4 @@ export interface ChatResponsePayload {
   } | null;
 }
 
+export * from './cattle';

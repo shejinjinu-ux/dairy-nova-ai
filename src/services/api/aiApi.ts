@@ -17,6 +17,18 @@ export interface DiseaseScreeningOutput {
   veterinaryAdvice: string;
   symptomsDetected: string[];
   preventionTips: string[];
+  recommendedVaccine?: string | null;
+  vaccinationTiming?: string | null;
+  estimatedCost?: string | null;
+  farmerCostDisplay?: string | null;
+  procurementCostDisplay?: string | null;
+  retailPriceDisplay?: string | null;
+  priceType?: string | null;
+  sourceName?: string | null;
+  sourceUrl?: string | null;
+  sourceDate?: string | null;
+  eligibilityNotes?: string | null;
+  priceDetail?: any;
   disclaimer: string;
   rawResponse?: DiseasePredictionResponse;
 }
@@ -126,10 +138,22 @@ export const aiApi = {
       possibleConcern: result.disease_name_full || (result.is_disease_detected ? result.predicted_class : 'Healthy Phenotype'),
       severity,
       confidenceScore: Math.round(result.confidence_percentage ?? (result.confidence * 100)),
-      preliminaryGuidance,
+      preliminaryGuidance: result.explanation || preliminaryGuidance,
       veterinaryAdvice,
       symptomsDetected,
       preventionTips,
+      recommendedVaccine: result.recommended_vaccine || (result.predicted_class === 'FMD' ? 'FMD Trivalent (O, A, Asia-1)' : result.predicted_class === 'LSD' ? 'Goat Pox Vaccine / Raksha-LSD' : null),
+      vaccinationTiming: result.vaccination_timing || (result.predicted_class === 'FMD' ? 'Every 6 months (Pre-monsoon & Post-monsoon)' : result.predicted_class === 'LSD' ? 'Annual booster' : null),
+      estimatedCost: result.estimated_cost,
+      farmerCostDisplay: result.farmer_cost_display,
+      procurementCostDisplay: result.procurement_cost_display,
+      retailPriceDisplay: result.retail_price_display,
+      priceType: result.price_type,
+      sourceName: result.source_name,
+      sourceUrl: result.source_url,
+      sourceDate: result.source_date,
+      eligibilityNotes: result.eligibility_notes,
+      priceDetail: result.price_detail,
       disclaimer: result.disclaimer || 'This is an AI screening result, not a confirmed veterinary diagnosis. Consult a qualified veterinarian.',
       rawResponse: result,
     };

@@ -88,21 +88,24 @@ export const MilkScreen: React.FC = () => {
     selectedAnimalFilter === 'All' ? true : r.animalId === selectedAnimalFilter
   );
 
-  // Fetch live AI yield prediction from FastAPI backend
+  // Fetch live AI yield prediction from FastAPI backend for selected animal
   useEffect(() => {
     if (animals.length > 0) {
       setIsPredictingYield(true);
-      const firstCow = animals[0];
+      const targetCow =
+        (selectedAnimalFilter !== 'All'
+          ? animals.find((a) => a.id === selectedAnimalFilter || a.tagId === selectedAnimalFilter)
+          : null) || animals[0];
+
       milkApi
         .predictMilkYield({
-          Lactation_Stage: firstCow.lactationStage || 'Early',
-          Body_Weight_kg: firstCow.weightKg || 420.0,
+          Lactation_Stage: targetCow.lactationStage || 'Early',
+          Body_Weight_kg: targetCow.weightKg || 420.0,
           Feed_Intake_kg_day: 14.5,
-          Rumination_Time_min_day: firstCow.ruminationMinutesPerDay || 480.0,
-          Temperature_C: firstCow.temperatureC || 38.5,
+          Rumination_Time_min_day: targetCow.ruminationMinutesPerDay || 480.0,
           Humidity_percent: 65.0,
-          Breed: firstCow.breed || 'Gir',
-          Cattle_ID: firstCow.tagId || 'HERD_AVG',
+          Breed: targetCow.breed || 'Gir',
+          Cattle_ID: targetCow.tagId || 'HERD_AVG',
           Farm_ID: 'FARM_01',
         })
         .then((res) => {
@@ -114,7 +117,7 @@ export const MilkScreen: React.FC = () => {
           setIsPredictingYield(false);
         });
     }
-  }, [animals.length, milkRecords.length]);
+  }, [animals.length, milkRecords.length, selectedAnimalFilter]);
 
   return (
     <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-950">

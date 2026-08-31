@@ -10,8 +10,13 @@ import { DiseaseScreeningModal } from '../../components/health/DiseaseScreeningM
 import { RecordMilkModal } from '../../components/milk/RecordMilkModal';
 import { FeedAnalysisModal } from '../../components/feed/FeedAnalysisModal';
 import { feedApi } from '../../services/api/feedApi';
-import { NutritionRecommendationResponse } from '../../types';
-import { formatDate } from '../../utils/formatters';
+import { cattleApi } from '../../services/api/cattleApi';
+import {
+  NutritionRecommendationResponse,
+  VaccinationRecommendation,
+  MilkHistoryResponse,
+} from '../../types';
+import { formatDate, formatAnimalAge, getLactationDisplay } from '../../utils/formatters';
 import {
   Sparkles,
   Milk,
@@ -23,13 +28,18 @@ import {
   Trash2,
   Activity,
   Heart,
-  Thermometer,
   Layers,
   History,
   CheckCircle2,
   Clock,
   AlertTriangle,
   Loader2,
+  ExternalLink,
+  Info,
+  TrendingUp,
+  Award,
+  RefreshCw,
+  Plus,
 } from 'lucide-react';
 
 export const AnimalDetailsScreen: React.FC = () => {
@@ -39,7 +49,6 @@ export const AnimalDetailsScreen: React.FC = () => {
     healthAlerts,
     vaccinations,
     milkRecords,
-    feedAnalyses,
     navigate,
     updateAnimal,
     deleteAnimal,
@@ -47,6 +56,7 @@ export const AnimalDetailsScreen: React.FC = () => {
     recordMilk,
     addFeedAnalysis,
     addQRBatch,
+    recordCalving,
   } = useAppData();
   const { t } = useLanguage();
 
@@ -56,14 +66,78 @@ export const AnimalDetailsScreen: React.FC = () => {
   const [isDiseaseCheckOpen, setIsDiseaseCheckOpen] = useState<boolean>(false);
   const [isRecordMilkOpen, setIsRecordMilkOpen] = useState<boolean>(false);
   const [isFeedCheckOpen, setIsFeedCheckOpen] = useState<boolean>(false);
+  const [isCalvingModalOpen, setIsCalvingModalOpen] = useState<boolean>(false);
+
+  // Calving form states
+  const [newCalvingDate, setNewCalvingDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [newParity, setNewParity] = useState<number>(2);
+
+  // Backend recommendations & history states
+  const [backendVaccinations, setBackendVaccinations] = useState<VaccinationRecommendation[]>([]);
+  const [isVaccinationsLoading, setIsVaccinationsLoading] = useState<boolean>(false);
+  const [backendMilkHistory, setBackendMilkHistory] = useState<MilkHistoryResponse | null>(null);
 
   // Nutrition / Ration Formulation State
   const [rationData, setRationData] = useState<NutritionRecommendationResponse | null>(null);
   const [isRationLoading, setIsRationLoading] = useState<boolean>(false);
   const [rationError, setRationError] = useState<string>('');
 
-  const animal = animals.find((a) => a.id === selectedAnimalId) || animals[0];
+  const animal = animals.find((a) => a.id === selectedAnimalId || a.tagId === selectedAnimalId) || animals[0];
 
+  // Dynamic Lactation & DIM Calculation
+  const calvingDateObj = animal?.calvingDate ? new Date(animal.calvingDate) : null;
+  const calculatedDIM = animal?.daysInMilk !== undefined
+    ? animal.daysInMilk
+    : calvingDateObj
+    ? Math.max(0, Math.floor((new Date().getTime() - calvingDateObj.getTime()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
+  const currentStage = animal?.lactationStage === 'Dry'
+    ? 'Dry'
+    : calculatedDIM <= 100
+    ? 'Early'
+    : calculatedDIM <= 200
+    ? 'Mid'
+    : calculatedDIM <= 305
+    ? 'Late'
+    : 'Dry';
+
+  // Fetch backend vaccinations
+  useEffect(() => {
+    if (activeTab === 'vaccination' && animal?.tagId) {
+      setIsVaccinationsLoading(true);
+      cattleApi
+        .getVaccinations(animal.tagId)
+        .then((res) => {
+          if (res && Array.isArray(res)) {
+            setBackendVaccinations(res);
+          }
+          setIsVaccinationsLoading(false);
+        })
+        .catch((err) => {
+          console.warn('Could not fetch backend vaccination recommendations:', err);
+          setIsVaccinationsLoading(false);
+        });
+    }
+  }, [activeTab, animal?.tagId]);
+
+  // Fetch backend milk history
+  useEffect(() => {
+    if (activeTab === 'milk' && animal?.tagId) {
+      cattleApi
+        .getMilkHistory(animal.tagId)
+        .then((res) => {
+          if (res && res.records) {
+            setBackendMilkHistory(res);
+          }
+        })
+        .catch((err) => {
+          console.warn('Could not fetch backend milk history:', err);
+        });
+    }
+  }, [activeTab, animal?.tagId, milkRecords.length]);
+
+  // Fetch ration
   useEffect(() => {
     if (activeTab === 'feed' && animal) {
       setIsRationLoading(true);
@@ -97,10 +171,14 @@ export const AnimalDetailsScreen: React.FC = () => {
     );
   }
 
-  // Related data
   const animalAlerts = healthAlerts.filter((h) => h.animalId === animal.id || h.animalTag === animal.tagId);
   const animalVaccinations = vaccinations.filter((v) => v.animalId === animal.id || v.animalTag === animal.tagId);
   const animalMilkRecords = milkRecords.filter((m) => m.animalId === animal.id || m.animalTag === animal.tagId);
+
+  const handleRecordCalvingSubmit = () => {
+    recordCalving(animal.tagId, newCalvingDate, newParity);
+    setIsCalvingModalOpen(false);
+  };
 
   return (
     <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-950">
@@ -143,7 +221,7 @@ export const AnimalDetailsScreen: React.FC = () => {
                   <StatusBadge status={animal.healthStatus} size="sm" />
                 </div>
                 <p className="text-xs text-slate-200 font-medium">
-                  {animal.breed} • {animal.ageYears} Years {animal.ageMonths} Months {animal.weightKg !== undefined ? `• ${animal.weightKg} kg` : ''}
+                  {animal.breed} • {formatAnimalAge(animal, true)} {animal.weightKg !== undefined ? `• ${animal.weightKg} kg` : ''}
                 </p>
               </div>
 
@@ -181,7 +259,7 @@ export const AnimalDetailsScreen: React.FC = () => {
           {[
             { id: 'overview', label: t.breedOverview || 'Overview' },
             { id: 'health', label: `${t.navHealth || 'Health'} (${animalAlerts.length})` },
-            { id: 'vaccination', label: `${t.vaccinations || 'Vaccines'} (${animalVaccinations.length})` },
+            { id: 'vaccination', label: `${t.vaccinations || 'Vaccines'} (${backendVaccinations.length || animalVaccinations.length})` },
             { id: 'feed', label: t.feedRecommendations || 'ICAR Ration Plan' },
             { id: 'milk', label: `${t.navMilk || 'Milk Logs'} (${animalMilkRecords.length})` },
             { id: 'history', label: t.history || 'History' },
@@ -192,7 +270,7 @@ export const AnimalDetailsScreen: React.FC = () => {
               className={`py-2 px-3.5 rounded-2xl font-bold whitespace-nowrap transition active:scale-95 ${
                 activeTab === tab.id
                   ? 'bg-dairy-600 text-white shadow-md shadow-dairy-600/30'
-                  : 'bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-600 dark:text-slate-400'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200/80 dark:border-slate-800'
               }`}
             >
               {tab.label}
@@ -200,15 +278,17 @@ export const AnimalDetailsScreen: React.FC = () => {
           ))}
         </div>
 
-        {/* Tab 1: Overview */}
+        {/* Tab 1: OVERVIEW */}
         {activeTab === 'overview' && (
-          <div className="space-y-3.5 animate-fadeIn text-xs">
-            {/* Primary Vitals Grid */}
-            <div className="grid grid-cols-2 gap-2.5">
+          <div className="space-y-3.5 animate-fadeIn">
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-2 gap-2">
               <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-card-soft space-y-1">
-                <span className="text-[10px] text-slate-400 block font-medium">{t.dailyYieldLabel || 'Daily Milk Yield'}</span>
-                <span className="text-xl font-extrabold text-dairy-600 dark:text-dairy-400">{animal.dailyMilkYieldL !== undefined ? `${animal.dailyMilkYieldL} L / day` : '—'}</span>
-                <span className="text-[10px] text-slate-400 block">{t.lactationStage || 'Lactation'}: {animal.lactationStage}</span>
+                <span className="text-[10px] text-slate-400 block font-medium">{t.dailyYield || 'Daily Milk Yield'}</span>
+                <span className="text-xl font-extrabold text-dairy-600 dark:text-dairy-400">
+                  {getLactationDisplay(animal).isLactating && animal.dailyMilkYieldL !== undefined ? `${animal.dailyMilkYieldL} L` : '—'}
+                </span>
+                <span className="text-[10px] text-slate-400 block">Lactation: {getLactationDisplay(animal).stageBadge}</span>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-card-soft space-y-1">
@@ -218,7 +298,78 @@ export const AnimalDetailsScreen: React.FC = () => {
               </div>
             </div>
 
-            {/* IoT Telemetry Strip */}
+            {/* 🥛🐄 Lactation & Days in Milk (DIM) Tracking Card */}
+            {(() => {
+              const lactInfo = getLactationDisplay(animal);
+              return (
+                <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-card-soft space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 flex items-center justify-center font-bold">
+                        🥛
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">Lactation & Calving Timeline</h3>
+                        <span className="text-[10px] text-slate-400">Parity: {animal.parity || 1} • Calving: {animal.calvingDate || 'Not specified'}</span>
+                      </div>
+                    </div>
+                    {lactInfo.stageBadge !== 'Calf' && animal.sex !== 'Male' && (
+                      <button
+                        type="button"
+                        onClick={() => setIsCalvingModalOpen(true)}
+                        className="px-2.5 py-1.5 rounded-xl bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 font-bold text-[11px] border border-teal-200 dark:border-teal-800 flex items-center gap-1 active:scale-95 transition"
+                      >
+                        <Plus size={12} /> Record Calving
+                      </button>
+                    )}
+                  </div>
+
+                  {/* DIM Metric & Stage Progress Bar */}
+                  <div className="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl">
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-medium block">Days in Milk (DIM)</span>
+                      <span className="text-2xl font-black text-teal-600 dark:text-teal-400">
+                        {lactInfo.dimValue !== null ? `${lactInfo.dimValue}` : '—'} {lactInfo.dimValue !== null && <span className="text-xs font-bold text-slate-400">Days</span>}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] text-slate-400 font-medium block">Current Stage</span>
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-black uppercase mt-1 ${
+                        lactInfo.stageBadge === 'Early'
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                          : lactInfo.stageBadge === 'Mid'
+                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                          : lactInfo.stageBadge === 'Late'
+                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                          : 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-300'
+                      }`}>
+                        {lactInfo.statusText}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Timeline Progress Bar (0 to 305 days) */}
+                  {lactInfo.isLactating && lactInfo.dimValue !== null && (
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[10px] text-slate-400 font-semibold">
+                        <span>Early (0-100d)</span>
+                        <span>Mid (101-200d)</span>
+                        <span>Late (201-305d)</span>
+                        <span>Dry (&gt;305d)</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden relative">
+                        <div
+                          className="h-full bg-gradient-to-r from-teal-500 to-emerald-500 rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min(100, Math.max(5, (lactInfo.dimValue / 305) * 100))}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* IoT Telemetry Strip (Rumination & Activity without body temperature) */}
             <div className="p-4 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 text-white border border-slate-800 shadow-lg space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-teal-300 flex items-center gap-1.5">
@@ -227,18 +378,14 @@ export const AnimalDetailsScreen: React.FC = () => {
                 <SourceTag source="Sensor Reading" />
               </div>
 
-              <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                <div className="p-2 rounded-xl bg-white/5 border border-white/10">
-                  <span className="text-[10px] text-slate-400 block">{t.temperature || 'Temperature'}</span>
-                  <span className="font-bold text-white text-sm">{animal.temperatureC || 38.5}°C</span>
-                </div>
-                <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+              <div className="grid grid-cols-2 gap-2 text-center text-xs">
+                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
                   <span className="text-[10px] text-slate-400 block">{t.rumination || 'Rumination'}</span>
-                  <span className="font-bold text-white text-sm">{animal.ruminationMinutesPerDay || 480}m</span>
+                  <span className="font-bold text-white text-base">{animal.ruminationMinutesPerDay || 480} min / day</span>
                 </div>
-                <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
                   <span className="text-[10px] text-slate-400 block">{t.activityLevel || 'Activity'}</span>
-                  <span className="font-bold text-emerald-400 text-sm">{animal.activityLevel || 'Normal'}</span>
+                  <span className="font-bold text-emerald-400 text-base">{animal.activityLevel || 'Normal'}</span>
                 </div>
               </div>
             </div>
@@ -277,10 +424,103 @@ export const AnimalDetailsScreen: React.FC = () => {
           </div>
         )}
 
-        {/* Tab 3: Vaccination */}
+        {/* Tab 3: Vaccination with 3-Tier Source-Backed Pricing */}
         {activeTab === 'vaccination' && (
-          <div className="space-y-2.5 animate-fadeIn text-xs">
-            {animalVaccinations.length > 0 ? (
+          <div className="space-y-3 animate-fadeIn text-xs">
+            {isVaccinationsLoading ? (
+              <div className="p-8 text-center rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
+                <Loader2 size={24} className="animate-spin text-emerald-600 mx-auto" />
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Fetching personalized vaccine schedule with 3-tier price breakdown...
+                </p>
+              </div>
+            ) : backendVaccinations.length > 0 ? (
+              backendVaccinations.map((vac, idx) => (
+                <div
+                  key={idx}
+                  className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-card-soft space-y-3"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-black text-slate-900 dark:text-white">{vac.disease_target}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          vac.status === 'OVERDUE'
+                            ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                            : vac.status === 'DUE'
+                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                            : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                        }`}>
+                          {vac.status}
+                        </span>
+                      </div>
+                      <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 block mt-0.5">
+                        {vac.recommended_vaccine}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block">
+                        Schedule: {vac.recommended_timing} • Next Due: {vac.next_due_date}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 3-Tier Source-Backed Pricing Box */}
+                  <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/80 dark:border-slate-800 space-y-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+                      3-Tier Pricing & Government Scheme
+                    </span>
+
+                    {/* Tier 1: Farmer Cost */}
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-700 dark:text-slate-300">Government Programme / Farmer Cost:</span>
+                      <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
+                        {vac.farmer_cost_display || vac.price_detail?.farmer_cost_display || '₹0 (Free under NADCP)'}
+                      </span>
+                    </div>
+
+                    {/* Tier 2: Procurement Price */}
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-600 dark:text-slate-400">Government Procurement Price:</span>
+                      <span className="font-semibold text-slate-900 dark:text-white">
+                        {vac.procurement_cost_display || vac.price_detail?.procurement_cost_display || '₹18.00 / dose'}
+                      </span>
+                    </div>
+
+                    {/* Tier 3: Retail Price */}
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-600 dark:text-slate-400">Private Retail Price:</span>
+                      <span className="font-semibold text-slate-700 dark:text-slate-300 text-right text-[11px]">
+                        {vac.retail_price_display || vac.price_detail?.retail_price_display || 'Retail price unavailable — check local veterinary pharmacy / Animal Husbandry Department.'}
+                      </span>
+                    </div>
+
+                    {/* Source Citation & Link */}
+                    {(vac.source_name || vac.price_detail?.source_name) && (
+                      <div className="pt-1.5 border-t border-slate-200/60 dark:border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500">
+                        <span>
+                          Source: {vac.source_name || vac.price_detail?.source_name} ({vac.source_date || vac.price_detail?.source_date || '2024-2025'})
+                        </span>
+                        {(vac.source_url || vac.price_detail?.source_url) && (
+                          <a
+                            href={vac.source_url || vac.price_detail?.source_url || '#'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-0.5 font-bold"
+                          >
+                            <span>Verify Source</span>
+                            <ExternalLink size={10} />
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Mandatory Veterinary Disclaimer */}
+                  <p className="text-[10px] text-slate-400 italic">
+                    {vac.disclaimer || 'Estimated information only. Consult a qualified veterinarian for diagnosis and vaccination decisions.'}
+                  </p>
+                </div>
+              ))
+            ) : animalVaccinations.length > 0 ? (
               animalVaccinations.map((vac) => (
                 <div
                   key={vac.id}
@@ -302,9 +542,39 @@ export const AnimalDetailsScreen: React.FC = () => {
           </div>
         )}
 
-        {/* Tab 4: Milk Logs */}
+        {/* Tab 4: Persistent Milk History & Logs */}
         {activeTab === 'milk' && (
-          <div className="space-y-2.5 animate-fadeIn text-xs">
+          <div className="space-y-3 animate-fadeIn text-xs">
+            {/* Backend Summary Box */}
+            {backendMilkHistory && (
+              <div className="p-4 rounded-3xl bg-gradient-to-br from-dairy-700 to-teal-800 text-white shadow-md space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-dairy-200">
+                    Persistent Milk Production Record
+                  </span>
+                  <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-bold">
+                    {backendMilkHistory.total_records} Logs Recorded
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 text-center pt-1">
+                  <div className="p-2 rounded-xl bg-white/10">
+                    <span className="text-[9px] text-dairy-100 block">Average Yield</span>
+                    <span className="text-base font-black">{backendMilkHistory.average_daily_yield_litres.toFixed(1)} L</span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-white/10">
+                    <span className="text-[9px] text-dairy-100 block">Highest Recorded</span>
+                    <span className="text-base font-black">{backendMilkHistory.highest_recorded_yield_litres.toFixed(1)} L</span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-white/10">
+                    <span className="text-[9px] text-dairy-100 block">Lowest Recorded</span>
+                    <span className="text-base font-black">{backendMilkHistory.lowest_recorded_yield_litres.toFixed(1)} L</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Individual Records */}
             {animalMilkRecords.length > 0 ? (
               animalMilkRecords.map((m) => (
                 <div
@@ -479,6 +749,73 @@ export const AnimalDetailsScreen: React.FC = () => {
         )}
 
       </main>
+
+      {/* Record New Calving Modal */}
+      {isCalvingModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 max-w-sm w-full shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="font-extrabold text-base text-slate-900 dark:text-white">Record Calving Event</h3>
+              <button
+                type="button"
+                onClick={() => setIsCalvingModalOpen(false)}
+                className="w-7 h-7 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Recording a new calving event will recalculate Days in Milk (DIM = 0) and transition {animal.name} into Early Lactation.
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  Calving Date *
+                </label>
+                <input
+                  type="date"
+                  value={newCalvingDate}
+                  onChange={(e) => setNewCalvingDate(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  Parity (Calving Number) *
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="15"
+                  value={newParity}
+                  onChange={(e) => setNewParity(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsCalvingModalOpen(false)}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleRecordCalvingSubmit}
+                className="flex-1 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-md shadow-teal-600/30"
+              >
+                Confirm Calving
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modals */}
       <EditAnimalModal

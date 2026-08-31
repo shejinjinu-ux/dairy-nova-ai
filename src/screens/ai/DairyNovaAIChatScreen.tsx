@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 
 export const DairyNovaAIChatScreen: React.FC = () => {
-  const { goBack, chatAnimalContext } = useAppData();
+  const { goBack, chatAnimalContext, animals } = useAppData();
   const { language, t } = useLanguage();
   const { user } = useAuth();
 
@@ -247,6 +247,29 @@ export const DairyNovaAIChatScreen: React.FC = () => {
         <ShieldAlert size={12} className="text-amber-500" />
         <span>{t.aiSafetyDisclaimer}</span>
       </div>
+
+      {/* Tag ID Quick Context Chips */}
+      {animals.length > 0 && (
+        <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-900 border-t border-slate-200/80 dark:border-slate-800 flex items-center gap-1.5 overflow-x-auto custom-scrollbar shrink-0">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
+            Herd Tags:
+          </span>
+          {animals.slice(0, 5).map((a) => (
+            <button
+              key={a.id}
+              type="button"
+              onClick={() => {
+                setActiveAnimalContext(a);
+                handleSendMessage(`Tell me about ${a.name} (${a.tagId}) - show health, milk yield, and vaccination history`);
+              }}
+              className="px-2.5 py-1 rounded-xl bg-teal-50 hover:bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 text-[11px] font-bold border border-teal-200 dark:border-teal-800 whitespace-nowrap active:scale-95 transition flex items-center gap-1"
+            >
+              <span>🐄 {a.tagId}</span>
+              <span className="text-[9px] text-teal-600 font-normal">({a.name})</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Chat Input Bar */}
       <div className="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0">

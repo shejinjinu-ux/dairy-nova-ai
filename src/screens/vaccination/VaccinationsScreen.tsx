@@ -23,6 +23,7 @@ import {
   Trash2,
   AlertTriangle,
   Info,
+  ExternalLink,
 } from 'lucide-react';
 
 const COMMON_VACCINES = [
@@ -353,6 +354,47 @@ export const VaccinationsScreen: React.FC = () => {
               <X size={14} />
             </button>
           )}
+        </div>
+
+        {/* 3-Tier Pricing Guide Box */}
+        <div className="p-4 rounded-3xl bg-gradient-to-br from-emerald-800 via-teal-900 to-slate-900 text-white shadow-lg border border-emerald-500/30 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">💉</span>
+              <div>
+                <h3 className="font-extrabold text-xs text-white">Government Programme & Vaccine Price Guide</h3>
+                <span className="text-[10px] text-emerald-200">DAHD NADCP & State Animal Husbandry Schemes</span>
+              </div>
+            </div>
+            <a
+              href="https://dahd.nic.in/schemes/programmes/national-animal-disease-control-programme"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10px] font-bold text-emerald-300 hover:text-white flex items-center gap-1 bg-white/10 px-2 py-1 rounded-lg"
+            >
+              <span>DAHD Portal</span>
+              <ExternalLink size={10} />
+            </a>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
+            <div className="p-2.5 rounded-2xl bg-white/10 space-y-1">
+              <span className="font-bold text-emerald-300 text-[11px] block">FMD & Brucellosis (NADCP)</span>
+              <p className="text-[10px] text-slate-200 leading-tight">
+                <strong>Farmer Cost: ₹0</strong> • 100% centrally funded free ring vaccination & ear-tagging across all Indian states.
+              </p>
+            </div>
+            <div className="p-2.5 rounded-2xl bg-white/10 space-y-1">
+              <span className="font-bold text-teal-300 text-[11px] block">HS, BQ & Anthrax (State Subsidy)</span>
+              <p className="text-[10px] text-slate-200 leading-tight">
+                <strong>Farmer Cost: ₹0</strong> • Free pre-monsoon bi-annual camps conducted by State Veterinary Dispensaries.
+              </p>
+            </div>
+          </div>
+
+          <p className="text-[10px] text-emerald-100/70 italic pt-0.5">
+            Estimated information only. Consult a qualified veterinarian for diagnosis and vaccination decisions.
+          </p>
         </div>
 
         {/* Status Filter Tabs */}

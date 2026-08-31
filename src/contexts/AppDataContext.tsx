@@ -11,7 +11,10 @@ import {
   NotificationItem,
   OfficerFarm,
   ContaminationAlert,
+  LactationStage,
 } from '../types';
+import { cattleApi } from '../services/api/cattleApi';
+import { animalsApi } from '../services/api/animalsApi';
 import {
   DEMO_HERD_ANIMALS,
   DEMO_HEALTH_ALERTS,
@@ -133,12 +136,50 @@ interface AppDataContextType {
   addQRBatch: (batch: QRBatch) => void;
   markAllNotificationsRead: () => void;
   resolveContaminationAlert: (id: string, note: string) => void;
+  recordCalving: (tagId: string, calvingDate: string, parity?: number) => void;
   unreadNotificationsCount: number;
   seedNewUserHerd: (initialAnimal?: Omit<Animal, 'id' | 'createdDate' | 'lastCheckDate'>) => void;
   loadDemoHerd: () => void;
   clearUserData: () => void;
   resetOnLogout: () => void;
 }
+
+const sanitizeAndMigrateAnimals = (rawAnimals: any[]): Animal[] => {
+  if (!Array.isArray(rawAnimals)) return [];
+  return rawAnimals.map((a: any) => {
+    const { temperatureC, bodyTemperature, body_temperature, ...cleanAnimal } = a;
+    return cleanAnimal as Animal;
+  });
+};
+
+// Safe and idempotent localStorage migration function
+const runLocalStorageMigration = () => {
+  try {
+    const keysToCheck = ['animals_demo', 'animals'];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('animals_') || keysToCheck.includes(key))) {
+        const itemStr = localStorage.getItem(key);
+        if (itemStr) {
+          try {
+            const parsed = JSON.parse(itemStr);
+            if (Array.isArray(parsed)) {
+              const cleaned = sanitizeAndMigrateAnimals(parsed);
+              localStorage.setItem(key, JSON.stringify(cleaned));
+            }
+          } catch {
+            // ignore non-json
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('LocalStorage migration note:', err);
+  }
+};
+
+// Run migration immediately on module evaluation
+runLocalStorageMigration();
 
 const AppDataContext = createContext<AppDataContextType | undefined>(undefined);
 
@@ -157,9 +198,11 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const user = getStoredItem<any>('active_user', null);
     if (!user) return [];
     if (user.id === 'farmer-demo') {
-      return getStoredItem('animals_demo', DEMO_HERD_ANIMALS);
+      const rawDemo = getStoredItem('animals_demo', DEMO_HERD_ANIMALS);
+      return sanitizeAndMigrateAnimals(rawDemo);
     }
-    return getStoredItem(`animals_${user.id}`, getStoredItem('animals', []));
+    const rawUserAnimals = getStoredItem(`animals_${user.id}`, getStoredItem('animals', []));
+    return sanitizeAndMigrateAnimals(rawUserAnimals);
   };
 
   const [animals, setAnimals] = useState<Animal[]>(getInitialAnimals);
@@ -221,7 +264,27 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
   const [chatAnimalContext, setChatAnimalContext] = useState<Animal | null>(null);
 
-  // Sync user state reactively on login and logout
+  // Live cattle sync from FastAPI backend (Primary Source of Truth)
+  const refreshLiveCattleFromBackend = async (targetUserId?: string) => {
+    try {
+      const mappedAnimals = await animalsApi.getAnimals();
+      if (Array.isArray(mappedAnimals) && mappedAnimals.length > 0) {
+        setAnimals(mappedAnimals);
+        const uid = targetUserId || user?.id;
+        if (uid && uid !== 'farmer-demo') {
+          setStoredItem(`animals_${uid}`, mappedAnimals);
+        } else if (uid === 'farmer-demo') {
+          setStoredItem('animals_demo', mappedAnimals);
+        }
+        setStoredItem('animals', mappedAnimals);
+      }
+    } catch (err) {
+      console.warn('Backend live cattle sync fallback (offline/unavailable):', err);
+      // If network fails or backend is unreachable, preserve existing cached data as fallback
+    }
+  };
+
+  // Sync user state reactively on login, logout, and app mount
   useEffect(() => {
     if (!isAuthenticated) {
       // Clear user scoped state
@@ -243,9 +306,9 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setScreenHistory([targetScreen]);
       }
     } else if (user) {
-      // Load datasets specifically scoped to this authenticated user
+      // Load fallback cached datasets scoped to this authenticated user
       const userAnimals = getStoredItem(`animals_${user.id}`, getStoredItem('animals', []));
-      setAnimals(userAnimals);
+      setAnimals(sanitizeAndMigrateAnimals(userAnimals));
       setHealthAlerts(getStoredItem(`health_alerts_${user.id}`, []));
       setVaccinations(getStoredItem(`vaccinations_${user.id}`, getStoredItem('vaccinations', [])));
       setFeedAnalyses(getStoredItem(`feed_analyses_${user.id}`, getStoredItem('feed_analyses', [])));
@@ -253,6 +316,9 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setMilkRecords(getStoredItem(`milk_records_${user.id}`, []));
       setNotifications(getStoredItem(`notifications_${user.id}`, []));
       setQrBatches(getStoredItem(`qr_batches_${user.id}`, []));
+
+      // Asynchronously fetch fresh live cattle from backend as source of truth
+      refreshLiveCattleFromBackend(user.id);
     }
   }, [isAuthenticated, user?.id]);
 
@@ -428,16 +494,52 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const addAnimal = (animalData: Omit<Animal, 'id' | 'createdDate' | 'lastCheckDate'>) => {
+    const normTag = animalData.tagId.trim();
+    let dim: number | undefined = undefined;
+    let stage: LactationStage = animalData.lactationStage;
+    if (animalData.calvingDate) {
+      const diffMs = new Date().getTime() - new Date(animalData.calvingDate).getTime();
+      dim = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+      if (stage !== 'Dry') {
+        if (dim <= 100) stage = 'Early';
+        else if (dim <= 200) stage = 'Mid';
+        else if (dim <= 305) stage = 'Late';
+        else stage = 'Dry';
+      }
+    }
+
     const newAnimal: Animal = {
       ...animalData,
+      tagId: normTag,
+      daysInMilk: dim,
+      lactationStage: stage,
       id: `ani-${Date.now()}`,
       createdDate: new Date().toISOString().split('T')[0],
       lastCheckDate: new Date().toISOString().split('T')[0],
     };
-    const updated = [newAnimal, ...animals];
+    const updated = [newAnimal, ...animals.filter((a) => a.tagId.toUpperCase() !== normTag.toUpperCase())];
     setAnimals(updated);
     setStoredItem(getUserKey('animals'), updated);
     setStoredItem('animals', updated);
+
+    if (navigator.onLine) {
+      cattleApi.registerCattle({
+        tag_id: normTag,
+        name: newAnimal.name,
+        species: newAnimal.type,
+        breed: newAnimal.breed,
+        gender: newAnimal.sex,
+        age_months: (newAnimal.ageYears || 0) * 12 + (newAnimal.ageMonths || 0),
+        body_weight_kg: newAnimal.weightKg,
+        calving_date: newAnimal.calvingDate,
+        parity: newAnimal.parity || 1,
+        current_lactation_status: newAnimal.lactationStage === 'Dry' ? 'Dry' : 'Lactating',
+        daily_milk_yield_litres: newAnimal.dailyMilkYieldL,
+        pregnancy_status: newAnimal.pregnancyStatus === 'Pregnant',
+      }).catch((err) => {
+        console.warn('Backend registerCattle sync:', err);
+      });
+    }
 
     if (isOffline) {
       addToQueue('animal_add', newAnimal);
@@ -456,10 +558,15 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const deleteAnimal = (id: string) => {
+    const target = animals.find((a) => a.id === id);
     const updated = animals.filter((a) => a.id !== id);
     setAnimals(updated);
     setStoredItem(getUserKey('animals'), updated);
     setStoredItem('animals', updated);
+
+    if (navigator.onLine && target?.tagId) {
+      cattleApi.deleteCattle(target.tagId).catch((e) => console.warn('Backend deleteCattle:', e));
+    }
   };
 
   const recordMilk = (record: Omit<MilkRecord, 'id' | 'isSynced'>) => {
@@ -471,6 +578,37 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const updated = [newRecord, ...milkRecords];
     setMilkRecords(updated);
     setStoredItem(getUserKey('milk_records'), updated);
+
+    if (record.animalTag || record.animalId) {
+      const matchTag = (record.animalTag || '').trim().toUpperCase();
+      const updatedAnimals = animals.map((a) => {
+        if (a.tagId.toUpperCase() === matchTag || a.id === record.animalId) {
+          return {
+            ...a,
+            dailyMilkYieldL: record.quantityLiters,
+            lastCheckDate: new Date().toISOString().split('T')[0],
+          };
+        }
+        return a;
+      });
+      setAnimals(updatedAnimals);
+      setStoredItem(getUserKey('animals'), updatedAnimals);
+      setStoredItem('animals', updatedAnimals);
+
+      if (navigator.onLine && record.animalTag) {
+        const isMorning = record.shift === 'Morning';
+        cattleApi.recordMilk(record.animalTag, {
+          date: record.date,
+          morning_yield_litres: isMorning ? record.quantityLiters : 0,
+          evening_yield_litres: !isMorning ? record.quantityLiters : 0,
+          fat_percentage: record.fatPercent,
+          snf_percentage: record.snfPercent,
+          notes: record.notes,
+        }).catch((err) => {
+          console.warn('Backend recordMilk sync:', err);
+        });
+      }
+    }
 
     if (isOffline) {
       addToQueue('milk_record', newRecord);
@@ -584,6 +722,34 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const unreadNotificationsCount = notifications.filter((n) => !n.isRead).length;
 
+  const recordCalving = (tagId: string, calvingDate: string, parity?: number) => {
+    const updated = animals.map((a) => {
+      if (a.tagId === tagId || a.id === tagId) {
+        const newParity = parity !== undefined ? parity : ((a.parity || 1) + 1);
+        return {
+          ...a,
+          calvingDate,
+          lactationStartDate: calvingDate,
+          parity: newParity,
+          lactationStage: 'Early' as const,
+          pregnancyStatus: 'Non-Pregnant' as const,
+          daysInMilk: 0,
+          lastCheckDate: new Date().toISOString().split('T')[0],
+        };
+      }
+      return a;
+    });
+    setAnimals(updated);
+    setStoredItem(getUserKey('animals'), updated);
+    setStoredItem('animals', updated);
+
+    if (navigator.onLine) {
+      cattleApi.recordCalving(tagId, { calving_date: calvingDate, parity }).catch((err) => {
+        console.warn('Backend recordCalving sync:', err);
+      });
+    }
+  };
+
   const value: AppDataContextType = {
     animals,
     healthAlerts,
@@ -619,6 +785,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     addQRBatch,
     markAllNotificationsRead,
     resolveContaminationAlert,
+    recordCalving,
     unreadNotificationsCount,
     seedNewUserHerd,
     loadDemoHerd,

@@ -1,4 +1,4 @@
-﻿import { delay, getStoredItem, setStoredItem, apiFetch } from './apiHelper';
+import { delay, getStoredItem, setStoredItem, apiFetch } from './apiHelper';
 import {
   MilkRecord,
   MilkQualitySummary,
@@ -8,26 +8,46 @@ import {
   ContaminationScreenResponse,
 } from '../../types';
 import { INITIAL_MILK_RECORDS, MILK_QUALITY_SUMMARY } from '../../mocks/mockData';
+import { cattleApi } from './cattleApi';
 
 export const milkApi = {
   async getMilkRecords(): Promise<MilkRecord[]> {
-    await delay(200);
+    await delay(150);
     return getStoredItem<MilkRecord[]>('milk_records', INITIAL_MILK_RECORDS);
   },
 
   async getMilkQualitySummary(): Promise<MilkQualitySummary> {
-    await delay(200);
+    await delay(150);
     return getStoredItem<MilkQualitySummary>('milk_quality', MILK_QUALITY_SUMMARY);
   },
 
+  /**
+   * Records milk production. Automatically persists into backend Milk History when online.
+   */
   async recordMilk(record: Omit<MilkRecord, 'id' | 'isSynced'>): Promise<MilkRecord> {
-    await delay(300);
     const records = getStoredItem<MilkRecord[]>('milk_records', INITIAL_MILK_RECORDS);
     const newRecord: MilkRecord = {
       ...record,
       id: `rec-${Date.now()}`,
-      isSynced: true,
+      isSynced: navigator.onLine,
     };
+
+    if (navigator.onLine && record.animalTag) {
+      try {
+        const isMorning = record.shift === 'Morning';
+        await cattleApi.recordMilk(record.animalTag, {
+          date: record.date,
+          morning_yield_litres: isMorning ? record.quantityLiters : 0,
+          evening_yield_litres: !isMorning ? record.quantityLiters : 0,
+          fat_percentage: record.fatPercent,
+          snf_percentage: record.snfPercent,
+          notes: record.notes,
+        });
+      } catch (e) {
+        console.warn('Backend recordMilk fallback to local sync:', e);
+      }
+    }
+
     const updated = [newRecord, ...records];
     setStoredItem('milk_records', updated);
     return newRecord;
@@ -38,9 +58,14 @@ export const milkApi = {
    * POST /api/v1/predict/milk-production
    */
   async predictMilkYield(input: MilkProductionInput): Promise<MilkProductionPredictionResponse> {
+    // Ensure no body temperature field is passed
+    const cleanInput = { ...input };
+    delete (cleanInput as any).Temperature_C;
+    delete (cleanInput as any).temperatureC;
+
     return await apiFetch<MilkProductionPredictionResponse>('/predict/milk-production', {
       method: 'POST',
-      body: JSON.stringify(input),
+      body: JSON.stringify(cleanInput),
     });
   },
 

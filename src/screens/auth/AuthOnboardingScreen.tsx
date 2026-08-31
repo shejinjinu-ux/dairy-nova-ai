@@ -198,7 +198,6 @@ export const AuthOnboardingScreen: React.FC<AuthOnboardingScreenProps> = ({
         pregnancyStatus: 'Non-Pregnant',
         dailyMilkYieldL: parsedYield,
         healthStatus: 'Healthy',
-        temperatureC: 38.5,
         ruminationMinutesPerDay: 460,
         activityLevel: 'Normal',
         imageUrl: '',

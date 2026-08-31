@@ -23,6 +23,8 @@ import {
   ShieldCheck,
   RefreshCw,
   PhoneCall,
+  Syringe,
+  ExternalLink,
 } from 'lucide-react';
 
 interface DiseaseScreeningModalProps {
@@ -408,6 +410,77 @@ export const DiseaseScreeningModal: React.FC<DiseaseScreeningModalProps> = ({
               </div>
               <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
                 {result.veterinaryAdvice}
+              </p>
+            </div>
+
+            {/* 💉 Recommended Vaccine, Timing & 3-Tier Pricing */}
+            <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-emerald-500/40 shadow-sm space-y-2.5">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 flex items-center justify-center">
+                  <Syringe size={14} />
+                </div>
+                <div>
+                  <h5 className="font-extrabold text-slate-900 dark:text-white text-xs">
+                    Recommended Vaccine & Timing
+                  </h5>
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                    {result.recommendedVaccine || 'Consult a veterinarian for the appropriate vaccine.'}
+                  </span>
+                </div>
+              </div>
+
+              {result.vaccinationTiming && (
+                <div className="text-[11px] text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900 p-2 rounded-xl">
+                  <strong>Recommended Timing:</strong> {result.vaccinationTiming}
+                </div>
+              )}
+
+              {/* 3-Tier Price Breakdown */}
+              <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-700 space-y-1.5 text-[11px]">
+                <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 block">
+                  3-Tier Source-Backed Price Breakdown
+                </span>
+
+                <div className="flex justify-between">
+                  <span className="font-bold text-slate-700 dark:text-slate-300">Government Programme / Farmer Cost:</span>
+                  <span className="font-black text-emerald-600 dark:text-emerald-400">
+                    {result.farmerCostDisplay || '₹0 (Free under NADCP)'}
+                  </span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span className="text-slate-500 dark:text-slate-400">Government Procurement Price:</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {result.procurementCostDisplay || '₹18.00 / dose'}
+                  </span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span className="text-slate-500 dark:text-slate-400">Private Retail Price:</span>
+                  <span className="font-semibold text-slate-600 dark:text-slate-400 text-right text-[10px] max-w-[200px]">
+                    {result.retailPriceDisplay || 'Retail price unavailable — check local veterinary pharmacy / Animal Husbandry Department.'}
+                  </span>
+                </div>
+
+                {result.sourceName && (
+                  <div className="pt-1 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between text-[9px] text-slate-400">
+                    <span>Source: {result.sourceName} ({result.sourceDate || '2024-2025'})</span>
+                    {result.sourceUrl && (
+                      <a
+                        href={result.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline flex items-center gap-0.5"
+                      >
+                        Verify <ExternalLink size={8} />
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <p className="text-[10px] text-slate-400 italic">
+                Estimated information only. Consult a qualified veterinarian for diagnosis and vaccination decisions.
               </p>
             </div>
 

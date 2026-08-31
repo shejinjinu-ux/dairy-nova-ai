@@ -2,7 +2,8 @@ import React from 'react';
 import { Animal } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { StatusBadge } from '../common/StatusBadge';
-import { Milk, Sparkles, ChevronRight, Activity, Thermometer, Trash2 } from 'lucide-react';
+import { Milk, Sparkles, ChevronRight, Activity, Trash2 } from 'lucide-react';
+import { formatAnimalAge, getLactationDisplay } from '../../utils/formatters';
 
 interface AnimalCardProps {
   animal: Animal;
@@ -18,6 +19,9 @@ export const AnimalCard: React.FC<AnimalCardProps> = ({
   onDelete,
 }) => {
   const { t } = useLanguage();
+  const lactationInfo = getLactationDisplay(animal);
+  const ageDisplay = formatAnimalAge(animal, true);
+
   return (
     <div
       onClick={onClick}
@@ -68,7 +72,7 @@ export const AnimalCard: React.FC<AnimalCardProps> = ({
           </h3>
 
           <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-            {animal.breed} • {animal.ageYears}y {animal.ageMonths}m
+            {animal.breed} • {ageDisplay}
           </p>
         </div>
       </div>
@@ -78,23 +82,21 @@ export const AnimalCard: React.FC<AnimalCardProps> = ({
         <div className="bg-slate-50 dark:bg-slate-950/50 p-2 rounded-xl">
           <span className="text-[10px] text-slate-400 block font-medium">{t.dailyYield || 'Daily Milk'}</span>
           <span className="font-bold text-dairy-600 dark:text-dairy-400 flex items-center justify-center gap-0.5">
-            <Milk size={11} /> {animal.dailyMilkYieldL !== undefined ? `${animal.dailyMilkYieldL} L` : '—'}
+            <Milk size={11} /> {lactationInfo.isLactating && animal.dailyMilkYieldL !== undefined ? `${animal.dailyMilkYieldL} L` : '—'}
           </span>
         </div>
 
         <div className="bg-slate-50 dark:bg-slate-950/50 p-2 rounded-xl">
           <span className="text-[10px] text-slate-400 block font-medium">{t.lactationStage || 'Stage'}</span>
           <span className="font-semibold text-slate-700 dark:text-slate-300 truncate block">
-            {animal.lactationStage}
+            {lactationInfo.stageBadge}
           </span>
         </div>
 
         <div className="bg-slate-50 dark:bg-slate-950/50 p-2 rounded-xl">
-          <span className="text-[10px] text-slate-400 block font-medium">{t.temperature || 'Body Temp'}</span>
-          <span className={`font-semibold flex items-center justify-center gap-0.5 ${
-            animal.temperatureC > 39.2 ? 'text-rose-500 font-bold' : 'text-slate-700 dark:text-slate-300'
-          }`}>
-            <Thermometer size={11} /> {animal.temperatureC}°C
+          <span className="text-[10px] text-slate-400 block font-medium">Days in Milk</span>
+          <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-0.5">
+            {lactationInfo.dimText}
           </span>
         </div>
       </div>

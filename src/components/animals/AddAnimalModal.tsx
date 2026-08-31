@@ -94,9 +94,11 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
           ? Number(dailyMilkYieldL)
           : undefined;
 
+      const normTag = tagId.trim();
+
       const animalData: Omit<Animal, 'id' | 'createdDate' | 'lastCheckDate'> = {
-        tagId,
-        name: name || `${finalBreed} #${tagId}`,
+        tagId: normTag,
+        name: name || `${finalBreed} #${normTag}`,
         type,
         breed: finalBreed,
         ageYears,
@@ -105,24 +107,30 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
         weightKg: parsedWeight,
         lactationStage,
         pregnancyStatus,
-        calvingDate,
+        calvingDate: calvingDate || undefined,
+        lactationStartDate: calvingDate || undefined,
+        parity: 1,
         dailyMilkYieldL: parsedYield,
         healthStatus: 'Healthy',
-        temperatureC: 38.5,
         ruminationMinutesPerDay: 480,
         activityLevel: 'Normal',
         imageUrl: '',
         notes,
       };
 
-      setTimeout(() => {
+      try {
         onAnimalAdded(animalData);
-        onClose();
-        // Reset state
-        setStep(1);
+        setTimeout(() => {
+          onClose();
+          setStep(1);
+          setIsSuccess(false);
+        }, 600);
+      } catch (err: any) {
+        setIsSaving(false);
         setIsSuccess(false);
-      }, 800);
-    }, 600);
+        setValidationError(err?.message || 'Failed to save cattle. Please check Tag ID uniqueness.');
+      }
+    }, 400);
   };
 
   return (
@@ -412,7 +420,7 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
               <div className="flex justify-between">
                 <span className="text-slate-400">{t.ageYears || 'Age'}:</span>
                 <strong className="text-slate-900 dark:text-white">
-                  {ageYears}y {ageMonths}m • {weightKg.trim() !== '' ? `${weightKg.trim()} kg` : 'Not specified'}
+                  {ageYears <= 0 ? 'Calf' : `${ageYears} ${ageYears === 1 ? 'year' : 'years'}`} • {weightKg.trim() !== '' ? `${weightKg.trim()} kg` : 'Not specified'}
                 </strong>
               </div>
               <div className="flex justify-between">

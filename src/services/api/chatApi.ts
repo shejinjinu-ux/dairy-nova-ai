@@ -52,7 +52,7 @@ export const chatApi = {
           language: selectedLang,
           session_id: sessionId || undefined,
           user_id: userId || undefined,
-          selected_animal_id: animalId || undefined,
+          selected_animal_id: animalId || animalContext?.tag || undefined,
         }),
       });
 

@@ -87,7 +87,7 @@ export const AI_CHAT_RESPONSES = [
   {
     match: (q: string) => q.includes('health') || q.includes('check') || q.includes('fever') || q.includes('sick'),
     response: `Based on your herd telemetry, 10 out of 12 animals are in prime health. However:
-1. **TAG-106 (Daisy)** has a Critical Alert with 40.2°C temperature and mastitis signs.
+1. **TAG-106 (Daisy)** has a Critical Alert with acute milk reduction and mastitis signs.
 2. **TAG-103 (Kaali)** requires udder monitoring before evening milking.
 3. **TAG-110 (Yamuna)** is in active estrus (standing heat) and ready for Artificial Insemination.
 
