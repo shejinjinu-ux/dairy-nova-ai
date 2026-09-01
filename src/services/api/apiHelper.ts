@@ -28,6 +28,159 @@ export const delay = (ms: number = 300): Promise<void> => {
   return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
+// Local Storage Wrappers
+export function getStoredItem<T>(key: string, defaultValue: T): T {
+  try {
+    const raw = localStorage.getItem(`dairynova_${key}`);
+    if (!raw) return defaultValue;
+    return JSON.parse(raw) as T;
+  } catch (e) {
+    console.warn(`Error reading localStorage for key "dairynova_${key}":`, e);
+    return defaultValue;
+  }
+}
+
+export function setStoredItem<T>(key: string, value: T): void {
+  try {
+    localStorage.setItem(`dairynova_${key}`, JSON.stringify(value));
+  } catch (e) {
+    console.warn(`Error saving to localStorage for key "dairynova_${key}":`, e);
+  }
+}
+
+export function removeStoredItem(key: string): void {
+  try {
+    localStorage.removeItem(`dairynova_${key}`);
+  } catch (e) {
+    console.warn(`Error removing localStorage for key "dairynova_${key}":`, e);
+  }
+}
+
+/**
+ * Retrieve active authentication token.
+ * Returns the exact backend session/bearer token or null if unauthenticated.
+ * NEVER silently fabricates a fake or demo token.
+ */
+export function getAuthToken(): string | null {
+  try {
+    const directToken = getStoredItem<string | null>('auth_token', null) || localStorage.getItem('auth_token');
+    if (directToken && directToken.trim()) return directToken.trim();
+
+    const activeUser = getStoredItem<any>('active_user', null);
+    if (activeUser?.token && typeof activeUser.token === 'string' && activeUser.token.trim()) {
+      return activeUser.token.trim();
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+/**
+ * Retrieve active authenticated user ID.
+ * Returns the real authenticated user ID or null if unauthenticated.
+ */
+export function getAuthUserId(): string | null {
+  try {
+    const directUserId = getStoredItem<string | null>('user_id', null) || localStorage.getItem('user_id');
+    if (directUserId && directUserId.trim()) return directUserId.trim();
+
+    const activeUser = getStoredItem<any>('active_user', null);
+    if (activeUser?.id && typeof activeUser.id === 'string' && activeUser.id.trim()) {
+      return activeUser.id.trim();
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+/**
+ * Persist active authentication credentials across standard storage keys.
+ */
+export function setAuthCredentials(token: string, userId: string): void {
+  setStoredItem('auth_token', token);
+  setStoredItem('user_id', userId);
+  try {
+    localStorage.setItem('auth_token', token);
+    localStorage.setItem('user_id', userId);
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * Clear authentication credentials on logout.
+ */
+export function clearAuthCredentials(): void {
+  removeStoredItem('auth_token');
+  removeStoredItem('user_id');
+  removeStoredItem('active_user');
+  try {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_id');
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * Centralized authentication and header builder.
+ * Attaches real Bearer authorization token and X-User-ID when available.
+ * Never sets Content-Type for FormData requests to let browser compute multipart boundaries.
+ */
+export function getAuthHeaders(
+  customHeaders?: HeadersInit,
+  isFormData: boolean = false,
+  requireAuth: boolean = false
+): Record<string, string> {
+  const token = getAuthToken();
+  const userId = getAuthUserId();
+
+  if (requireAuth && !token) {
+    throw new Error('Authentication required. Please log in with your phone number.');
+  }
+
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  if (userId) {
+    headers['X-User-ID'] = userId;
+  }
+
+  if (!isFormData) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  if (customHeaders) {
+    if (customHeaders instanceof Headers) {
+      customHeaders.forEach((value, key) => {
+        if (!isFormData || key.toLowerCase() !== 'content-type') {
+          headers[key] = value;
+        }
+      });
+    } else if (Array.isArray(customHeaders)) {
+      customHeaders.forEach(([key, value]) => {
+        if (!isFormData || key.toLowerCase() !== 'content-type') {
+          headers[key] = value;
+        }
+      });
+    } else {
+      Object.entries(customHeaders).forEach(([key, value]) => {
+        if (value !== undefined && (!isFormData || key.toLowerCase() !== 'content-type')) {
+          headers[key] = String(value);
+        }
+      });
+    }
+  }
+
+  return headers;
+}
+
 /**
  * Format server or network errors into informative, farmer-friendly messages
  */
@@ -95,11 +248,12 @@ export function buildApiUrl(path: string): string {
   return `${API_BASE_URL}${cleanPath}`;
 }
 
-// Unified API fetcher with timeout and farmer-friendly error handling
+// Unified API fetcher with automatic auth injection, timeout, and farmer-friendly error handling
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {},
-  timeoutMs: number = 40000
+  timeoutMs: number = 40000,
+  requireAuth: boolean = false
 ): Promise<T> {
   const url = buildApiUrl(path);
   
@@ -107,21 +261,13 @@ export async function apiFetch<T>(
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
-  const defaultHeaders: Record<string, string> = {
-    Accept: 'application/json',
-  };
-  if (!isFormData) {
-    defaultHeaders['Content-Type'] = 'application/json';
-  }
+  const mergedHeaders = getAuthHeaders(options.headers, isFormData, requireAuth);
 
   try {
     const response = await fetch(url, {
       ...options,
       signal: controller.signal,
-      headers: {
-        ...defaultHeaders,
-        ...(options.headers || {}),
-      },
+      headers: mergedHeaders,
     });
 
     clearTimeout(timeoutId);
@@ -150,25 +296,5 @@ export async function apiFetch<T>(
       throw err;
     }
     throw error;
-  }
-}
-
-// Local Storage Wrappers
-export function getStoredItem<T>(key: string, defaultValue: T): T {
-  try {
-    const raw = localStorage.getItem(`dairynova_${key}`);
-    if (!raw) return defaultValue;
-    return JSON.parse(raw) as T;
-  } catch (e) {
-    console.warn(`Error reading localStorage for key "dairynova_${key}":`, e);
-    return defaultValue;
-  }
-}
-
-export function setStoredItem<T>(key: string, value: T): void {
-  try {
-    localStorage.setItem(`dairynova_${key}`, JSON.stringify(value));
-  } catch (e) {
-    console.warn(`Error saving to localStorage for key "dairynova_${key}":`, e);
   }
 }

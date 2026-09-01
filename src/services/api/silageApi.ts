@@ -12,6 +12,23 @@ export const silageApi = {
     return getStoredItem<SilageAnalysisResult[]>('silage_analyses', INITIAL_SILAGE_ANALYSES);
   },
 
+  /**
+   * Retrieve persistent silage analysis history from backend repository for authenticated user.
+   * Endpoint: GET /api/v1/analyze/history?analysis_type=silage
+   */
+  async getSilageAnalysisHistory(limit: number = 50): Promise<any[]> {
+    if (!navigator.onLine) {
+      return getStoredItem<SilageAnalysisResult[]>('silage_analyses', INITIAL_SILAGE_ANALYSES);
+    }
+    try {
+      return await apiFetch<any[]>(`/analyze/history?analysis_type=silage&limit=${limit}`, {
+        method: 'GET',
+      }, 10000, false);
+    } catch {
+      return getStoredItem<SilageAnalysisResult[]>('silage_analyses', INITIAL_SILAGE_ANALYSES);
+    }
+  },
+
   async getIoTReadings(): Promise<IoTSilageReading[]> {
     return MOCK_IOT_SILAGE_READINGS;
   },

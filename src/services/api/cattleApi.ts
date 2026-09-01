@@ -18,16 +18,6 @@ import {
   CalvingEventInput,
 } from '../../types/cattle';
 
-function getAuthHeaders(): HeadersInit {
-  const token = localStorage.getItem('auth_token') || 'demo_token';
-  const userId = localStorage.getItem('user_id') || 'farmer-demo';
-  return {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`,
-    'X-User-ID': userId,
-  };
-}
-
 export const cattleApi = {
   /**
    * Registers new cattle with a globally unique Tag ID.
@@ -37,7 +27,6 @@ export const cattleApi = {
     try {
       return await apiFetch<Cattle>('/cattle', {
         method: 'POST',
-        headers: getAuthHeaders(),
         body: JSON.stringify(input),
       });
     } catch (err: any) {
@@ -54,7 +43,6 @@ export const cattleApi = {
   async listCattle(): Promise<Cattle[]> {
     return await apiFetch<Cattle[]>('/cattle', {
       method: 'GET',
-      headers: getAuthHeaders(),
     });
   },
 
@@ -65,7 +53,6 @@ export const cattleApi = {
     const encoded = encodeURIComponent(tagId.trim());
     return await apiFetch<Cattle>(`/cattle/${encoded}`, {
       method: 'GET',
-      headers: getAuthHeaders(),
     });
   },
 
@@ -76,7 +63,6 @@ export const cattleApi = {
     const encoded = encodeURIComponent(tagId.trim());
     return await apiFetch<Cattle>(`/cattle/${encoded}`, {
       method: 'PUT',
-      headers: getAuthHeaders(),
       body: JSON.stringify(input),
     });
   },
@@ -88,7 +74,6 @@ export const cattleApi = {
     const encoded = encodeURIComponent(tagId.trim());
     await apiFetch<{ success?: boolean }>(`/cattle/${encoded}`, {
       method: 'DELETE',
-      headers: getAuthHeaders(),
     });
   },
 
@@ -100,7 +85,6 @@ export const cattleApi = {
     const encoded = encodeURIComponent(tagId.trim());
     return await apiFetch<MilkRecord>(`/cattle/${encoded}/milk`, {
       method: 'POST',
-      headers: getAuthHeaders(),
       body: JSON.stringify(input),
     });
   },
@@ -112,7 +96,6 @@ export const cattleApi = {
     const encoded = encodeURIComponent(tagId.trim());
     return await apiFetch<MilkHistoryResponse>(`/cattle/${encoded}/milk-history`, {
       method: 'GET',
-      headers: getAuthHeaders(),
     });
   },
 
@@ -123,7 +106,6 @@ export const cattleApi = {
     const encoded = encodeURIComponent(tagId.trim());
     return await apiFetch<VaccinationRecommendation[]>(`/cattle/${encoded}/vaccinations`, {
       method: 'GET',
-      headers: getAuthHeaders(),
     });
   },
 
@@ -134,7 +116,6 @@ export const cattleApi = {
     const encoded = encodeURIComponent(tagId.trim());
     return await apiFetch<VaccinationRecord>(`/cattle/${encoded}/vaccinations`, {
       method: 'POST',
-      headers: getAuthHeaders(),
       body: JSON.stringify(input),
     });
   },
@@ -146,7 +127,6 @@ export const cattleApi = {
     const encoded = encodeURIComponent(tagId.trim());
     return await apiFetch<LactationStatus>(`/cattle/${encoded}/lactation`, {
       method: 'GET',
-      headers: getAuthHeaders(),
     });
   },
 
@@ -157,7 +137,6 @@ export const cattleApi = {
     const encoded = encodeURIComponent(tagId.trim());
     return await apiFetch<LactationStatus>(`/cattle/${encoded}/calving`, {
       method: 'POST',
-      headers: getAuthHeaders(),
       body: JSON.stringify(input),
     });
   },

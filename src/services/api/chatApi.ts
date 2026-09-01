@@ -1,4 +1,4 @@
-import { apiFetch, delay } from './apiHelper';
+import { apiFetch, delay, getAuthUserId } from './apiHelper';
 import { AI_CHAT_RESPONSES } from '../../mocks/mockResponses';
 
 export interface ChatApiResult {
@@ -24,7 +24,7 @@ export const chatApi = {
   ): Promise<ChatApiResult> {
     const selectedLang = options?.language || 'en';
     const sessionId = options?.sessionId;
-    const userId = options?.userId;
+    const userId = options?.userId || getAuthUserId();
     const animalContext = options?.animalContext;
     const isOffline = !navigator.onLine;
 

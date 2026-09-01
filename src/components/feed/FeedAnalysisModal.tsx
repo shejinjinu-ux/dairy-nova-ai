@@ -95,13 +95,23 @@ export const FeedAnalysisModal: React.FC<FeedAnalysisModalProps> = ({
   const [showDetailedParameters, setShowDetailedParameters] = useState<boolean>(false);
   const [showReportModal, setShowReportModal] = useState<boolean>(false);
   const [showQRSuccess, setShowQRSuccess] = useState<boolean>(false);
+  const [isSaved, setIsSaved] = useState<boolean>(false);
 
   if (!isOpen) return null;
 
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (!file.type.startsWith('image/')) {
+        setErrorMessage('Please select a valid image file (JPEG, PNG, or WebP).');
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        setErrorMessage('Image size is too large (maximum 10 MB allowed).');
+        return;
+      }
       setImageFile(file);
+      setErrorMessage('');
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreviewUrl(reader.result as string);
@@ -132,6 +142,7 @@ export const FeedAnalysisModal: React.FC<FeedAnalysisModalProps> = ({
     setVisualResult(null);
     setManualReferenceResult(null);
     setCombinedResult(null);
+    setIsSaved(false);
 
     try {
       if (imageFile) {
@@ -185,6 +196,26 @@ export const FeedAnalysisModal: React.FC<FeedAnalysisModalProps> = ({
           qrBatchId: `QR-VIS-${Math.floor(Math.random() * 9000 + 1000)}`,
         };
         setPersistedFeedResult(historyItem);
+        // Automatically persist to History immediately upon successful completion
+        onAnalysisSaved(historyItem);
+        setIsSaved(true);
+
+        // Trigger authenticated backend persistence when online
+        if (navigator.onLine) {
+          feedApi
+            .analyzeFeedCombined({
+              feedName: imageOptionalFeedName.trim() || 'Feed Sample',
+              imageFile,
+            })
+            .then((res) => {
+              if (res.record_id) {
+                historyItem.id = res.record_id;
+              }
+            })
+            .catch((e) => {
+              console.warn('Backend feed persistence notice:', e);
+            });
+        }
       } else {
         setErrorMessage('Image sample not found.');
       }
@@ -207,6 +238,7 @@ export const FeedAnalysisModal: React.FC<FeedAnalysisModalProps> = ({
     setVisualResult(null);
     setManualReferenceResult(null);
     setCombinedResult(null);
+    setIsSaved(false);
 
     try {
       // 1. Fetch live ICAR proximate reference
@@ -261,6 +293,9 @@ export const FeedAnalysisModal: React.FC<FeedAnalysisModalProps> = ({
       };
 
       setPersistedFeedResult(historyItem);
+      // Automatically persist to History immediately upon successful completion
+      onAnalysisSaved(historyItem);
+      setIsSaved(true);
       setIsAnalyzing(false);
     } catch (err: any) {
       setIsAnalyzing(false);
@@ -270,7 +305,10 @@ export const FeedAnalysisModal: React.FC<FeedAnalysisModalProps> = ({
 
   const handleSave = () => {
     if (!persistedFeedResult) return;
-    onAnalysisSaved(persistedFeedResult);
+    if (!isSaved) {
+      onAnalysisSaved(persistedFeedResult);
+      setIsSaved(true);
+    }
     onClose();
   };
 

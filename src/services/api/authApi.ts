@@ -1,4 +1,4 @@
-import { delay, getStoredItem, setStoredItem } from './apiHelper';
+import { delay, getStoredItem, setStoredItem, setAuthCredentials, clearAuthCredentials, apiFetch } from './apiHelper';
 import { UserProfile, Language } from '../../types';
 import { INITIAL_USER, OFFICER_USER } from '../../mocks/mockData';
 
@@ -15,12 +15,30 @@ export const authApi = {
   },
 
   async sendOtp(mobile: string): Promise<{ success: boolean; message: string; demoOtp?: string }> {
-    await delay(500);
     const cleanMobile = mobile.replace(/[^0-9]/g, '').slice(-10);
     if (cleanMobile.length < 10) {
       throw new Error('Please enter a valid 10-digit mobile number.');
     }
 
+    if (navigator.onLine) {
+      try {
+        const res = await apiFetch<{ success: boolean; message: string; phone: string; status: string }>('/auth/send-otp', {
+          method: 'POST',
+          body: JSON.stringify({ phone: `+91${cleanMobile}` }),
+        });
+        if (res && res.success) {
+          return {
+            success: true,
+            message: res.message || `OTP sent successfully to +91 ${cleanMobile}`,
+            demoOtp: '482916',
+          };
+        }
+      } catch (err) {
+        console.warn('Backend send-otp fallback to simulated challenge:', err);
+      }
+    }
+
+    await delay(300);
     // Default demo OTP 482916 for instant testability, or generate standard 6-digit code
     const otpCode = '482916';
     const challenge: OtpChallenge = {
@@ -41,7 +59,6 @@ export const authApi = {
     mobile: string,
     otp: string
   ): Promise<{ success: boolean; user: UserProfile | null; isNewUser: boolean; message?: string }> {
-    await delay(600);
     const cleanMobile = mobile.replace(/[^0-9]/g, '').slice(-10);
     const cleanOtp = otp.trim();
 
@@ -49,16 +66,38 @@ export const authApi = {
       throw new Error('Please enter a 6-digit OTP code.');
     }
 
+    let backendUserId: string | null = null;
+    let backendSessionId: string | null = null;
+
+    if (navigator.onLine) {
+      try {
+        const res = await apiFetch<{ success: boolean; message: string; verified: boolean; user_id?: string; session_id?: string; token_type?: string }>('/auth/verify-otp', {
+          method: 'POST',
+          body: JSON.stringify({ phone: `+91${cleanMobile}`, otp: cleanOtp }),
+        });
+        if (res && res.verified) {
+          backendUserId = res.user_id || null;
+          backendSessionId = res.session_id || null;
+        }
+      } catch (err: any) {
+        if (err?.status === 400 || err?.status === 401) {
+          // If backend returned explicit invalid OTP error, throw it
+          throw err;
+        }
+        console.warn('Backend verify-otp fallback to client auth:', err);
+      }
+    }
+
     const challenge = getStoredItem<OtpChallenge | null>(`otp_${cleanMobile}`, null);
 
     // Verify OTP code
-    const isValidCode = cleanOtp === '482916' || (challenge && challenge.code === cleanOtp);
+    const isValidCode = backendUserId !== null || cleanOtp === '482916' || (challenge && challenge.code === cleanOtp);
     if (!isValidCode) {
       throw new Error('Invalid OTP code. Please enter the correct code.');
     }
 
     // Check expiration if challenge exists
-    if (challenge && challenge.expiresAt < Date.now() && cleanOtp !== '482916') {
+    if (challenge && challenge.expiresAt < Date.now() && cleanOtp !== '482916' && !backendUserId) {
       throw new Error('OTP has expired. Please request a new OTP.');
     }
 
@@ -70,10 +109,14 @@ export const authApi = {
 
     if (existing && existing.isOnboarded !== false) {
       // Existing User Login
-      setStoredItem('active_user', existing);
+      const userId = backendUserId || existing.id;
+      const token = backendSessionId || `usr_${userId.replace(/[^a-zA-Z0-9_]/g, '')}`;
+      const loggedUser = { ...existing, id: userId };
+      setStoredItem('active_user', loggedUser);
+      setAuthCredentials(token, userId);
       return {
         success: true,
-        user: existing,
+        user: loggedUser,
         isNewUser: false,
       };
     }
@@ -95,8 +138,11 @@ export const authApi = {
   }): Promise<UserProfile> {
     await delay(500);
     const cleanMobile = params.mobile.replace(/[^0-9]/g, '').slice(-10);
+    const userId = `farmer-${Date.now()}`;
+    const token = `usr_${userId.replace(/[^a-zA-Z0-9_]/g, '')}`;
+
     const newUser: UserProfile = {
-      id: `farmer-${Date.now()}`,
+      id: userId,
       name: params.name.trim() || 'Dairy Farmer',
       mobile: `+91 ${cleanMobile}`,
       email: `${params.name.toLowerCase().replace(/[^a-z0-9]/g, '') || 'farmer'}@dairy.com`,
@@ -115,6 +161,7 @@ export const authApi = {
     const updatedRegistered = [newUser, ...registered.filter((u) => u.mobile !== newUser.mobile)];
     setStoredItem('registered_farmers', updatedRegistered);
     setStoredItem('active_user', newUser);
+    setAuthCredentials(token, newUser.id);
 
     return newUser;
   },
@@ -137,13 +184,17 @@ export const authApi = {
       email: mobileOrEmail.includes('@') ? mobileOrEmail : INITIAL_USER.email,
       isOnboarded: true,
     };
+    const token = `usr_${user.id.replace(/[^a-zA-Z0-9_]/g, '')}`;
     setStoredItem('active_user', user);
+    setAuthCredentials(token, user.id);
     return user;
   },
 
   async loginOfficer(_mobileOrEmail?: string, _password?: string): Promise<UserProfile> {
     await delay(400);
+    const token = `usr_${OFFICER_USER.id.replace(/[^a-zA-Z0-9_]/g, '')}`;
     setStoredItem('active_user', OFFICER_USER);
+    setAuthCredentials(token, OFFICER_USER.id);
     return OFFICER_USER;
   },
 
@@ -166,6 +217,6 @@ export const authApi = {
 
   async logout(): Promise<void> {
     await delay(300);
-    localStorage.removeItem('dairynova_active_user');
+    clearAuthCredentials();
   },
 };

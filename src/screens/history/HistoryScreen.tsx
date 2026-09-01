@@ -104,6 +104,60 @@ export const HistoryScreen: React.FC = () => {
     return matchCat && matchSearch;
   });
 
+  const getEmptyStateConfig = () => {
+    switch (category) {
+      case 'Milk':
+        return {
+          title: t.noMilkRecordsYet || 'No milk records yet',
+          desc: 'Track daily morning and evening milk production for your cattle.',
+          ctaText: t.recordMilk || 'Record Milk',
+          action: () => navigate('milk'),
+          icon: Milk,
+          color: 'blue',
+        };
+      case 'Feed':
+        return {
+          title: t.noFeedRecordsYet || 'No feed quality tests yet',
+          desc: 'Test dry matter, protein, and visual mould risk for cattle feed.',
+          ctaText: t.testFeedQuality || 'Test Feed Quality',
+          action: () => navigate('rapid-test'),
+          icon: Wheat,
+          color: 'emerald',
+        };
+      case 'Silage':
+        return {
+          title: t.noSilageRecordsYet || 'No silage quality tests yet',
+          desc: 'Test pH acidity, FQI score, and fermentation quality for silage.',
+          ctaText: t.testSilageQuality || 'Test Silage Quality',
+          action: () => navigate('rapid-test'),
+          icon: Layers,
+          color: 'teal',
+        };
+      case 'Health':
+        return {
+          title: 'No health records yet',
+          desc: 'Screen cattle for clinical symptoms, lesions, and disease alerts.',
+          ctaText: t.diseaseCheck || 'Start Disease Screening',
+          action: () => navigate('health'),
+          icon: Stethoscope,
+          color: 'rose',
+        };
+      case 'All':
+      default:
+        return {
+          title: t.noTestsYet || 'No records yet',
+          desc: t.noTestsYetDesc || 'Your feed tests, silage tests, milk logs, and health screenings will appear here.',
+          ctaText: t.testFeedSilageCTA || t.testFeedQuality || 'Start Quality Test',
+          action: () => navigate('rapid-test'),
+          icon: History,
+          color: 'emerald',
+        };
+    }
+  };
+
+  const emptyConfig = getEmptyStateConfig();
+  const EmptyIcon = emptyConfig.icon;
+
   return (
     <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-950">
       <MobileHeader
@@ -120,7 +174,7 @@ export const HistoryScreen: React.FC = () => {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search feed, silage, or dairy tests..."
+            placeholder="Search feed, silage, milk, or health records..."
             className="w-full pl-9 pr-3 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm"
           />
           <Search size={15} className="absolute left-3 top-3 text-slate-400" />
@@ -138,7 +192,7 @@ export const HistoryScreen: React.FC = () => {
                   : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800'
               }`}
             >
-              {cat === 'All' ? 'All Records' : cat === 'Feed' ? '🌾 Feed Tests' : cat === 'Silage' ? '🌽 Silage Tests' : cat}
+              {cat === 'All' ? 'All Records' : cat === 'Feed' ? '🌾 Feed Tests' : cat === 'Silage' ? '🌽 Silage Tests' : cat === 'Milk' ? '🥛 Milk Logs' : '🩺 Health Records'}
             </button>
           ))}
         </div>
@@ -163,13 +217,23 @@ export const HistoryScreen: React.FC = () => {
                           ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-600'
                           : item.type === 'Silage'
                           ? 'bg-teal-100 dark:bg-teal-950 text-teal-600'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                          : item.type === 'Milk'
+                          ? 'bg-blue-100 dark:bg-blue-950 text-blue-600'
+                          : 'bg-rose-100 dark:bg-rose-950 text-rose-600'
                       }`}>
                         <Icon size={18} />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block">
+                          <span className={`text-[10px] font-bold uppercase tracking-wider block ${
+                            item.type === 'Feed'
+                              ? 'text-emerald-600'
+                              : item.type === 'Silage'
+                              ? 'text-teal-600'
+                              : item.type === 'Milk'
+                              ? 'text-blue-600'
+                              : 'text-rose-600'
+                          }`}>
                             {item.type}
                           </span>
                           <span className="text-[10px] text-slate-400 font-mono">
@@ -197,16 +261,38 @@ export const HistoryScreen: React.FC = () => {
                           {item.status === 'Good' ? '🟢 GOOD' : item.status === 'Moderate' ? '🟡 CAUTION' : '🔴 UNSAFE'}
                         </span>
                       </div>
+                    ) : item.type === 'Health' ? (
+                      <div className="text-right">
+                        <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full ${
+                          (item.raw as any)?.severity === 'critical'
+                            ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                            : (item.raw as any)?.severity === 'high'
+                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                            : 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300'
+                        }`}>
+                          {((item.raw as any)?.severity || 'HEALTH').toUpperCase()}
+                        </span>
+                      </div>
                     ) : (
                       <ChevronRight size={16} className="text-slate-400 mt-1" />
                     )}
                   </div>
 
                   <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800/80 text-[11px]">
-                    <span className="text-slate-500 truncate max-w-[200px]">{item.subtitle}</span>
+                    <span className="text-slate-500 truncate max-w-[220px]">{item.subtitle}</span>
                     {isTestItem && (
                       <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
                         <FileText size={11} /> View Report
+                      </span>
+                    )}
+                    {item.type === 'Health' && (
+                      <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 flex items-center gap-0.5">
+                        View Details <ChevronRight size={11} />
+                      </span>
+                    )}
+                    {item.type === 'Milk' && (
+                      <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 flex items-center gap-0.5">
+                        Milk Log <ChevronRight size={11} />
                       </span>
                     )}
                   </div>
@@ -216,24 +302,40 @@ export const HistoryScreen: React.FC = () => {
           </div>
         ) : (
           <div className="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-center space-y-3 shadow-sm">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 flex items-center justify-center mx-auto">
-              <History size={24} />
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mx-auto ${
+              emptyConfig.color === 'blue'
+                ? 'bg-blue-50 dark:bg-blue-950 text-blue-600'
+                : emptyConfig.color === 'rose'
+                ? 'bg-rose-50 dark:bg-rose-950 text-rose-600'
+                : emptyConfig.color === 'teal'
+                ? 'bg-teal-50 dark:bg-teal-950 text-teal-600'
+                : 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600'
+            }`}>
+              <EmptyIcon size={24} />
             </div>
             <div>
               <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                {t.noTestsYet || 'No tests yet'}
+                {emptyConfig.title}
               </h4>
               <p className="text-xs text-slate-500 max-w-xs mx-auto mt-1">
-                {t.noTestsYetDesc || 'Your completed feed and silage tests will appear here.'}
+                {emptyConfig.desc}
               </p>
             </div>
             <button
               type="button"
-              onClick={() => navigate('rapid-test')}
-              className="py-2.5 px-4 rounded-xl bg-emerald-600 text-white font-bold text-xs shadow-sm inline-flex items-center gap-1.5 active:scale-95 transition"
+              onClick={emptyConfig.action}
+              className={`py-2.5 px-4 rounded-xl text-white font-bold text-xs shadow-sm inline-flex items-center gap-1.5 active:scale-95 transition ${
+                emptyConfig.color === 'blue'
+                  ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'
+                  : emptyConfig.color === 'rose'
+                  ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/20'
+                  : emptyConfig.color === 'teal'
+                  ? 'bg-teal-600 hover:bg-teal-700 shadow-teal-600/20'
+                  : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
+              }`}
             >
               <Plus size={14} />
-              <span>{t.testFeedQuality || 'Test Feed or Silage Now'}</span>
+              <span>{emptyConfig.ctaText}</span>
             </button>
           </div>
         )}

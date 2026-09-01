@@ -706,17 +706,27 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const addFeedAnalysis = (result: FeedAnalysisResult) => {
-    const updated = [result, ...feedAnalyses];
-    setFeedAnalyses(updated);
-    setStoredItem(getUserKey('feed_analyses'), updated);
-    setStoredItem('feed_analyses', updated);
+    setFeedAnalyses((prev) => {
+      const exists = prev.some((f) => f.id === result.id || (f.batchId && f.batchId === result.batchId));
+      const updated = exists
+        ? prev.map((f) => (f.id === result.id || (f.batchId && f.batchId === result.batchId) ? result : f))
+        : [result, ...prev];
+      setStoredItem(getUserKey('feed_analyses'), updated);
+      setStoredItem('feed_analyses', updated);
+      return updated;
+    });
   };
 
   const addSilageAnalysis = (result: SilageAnalysisResult) => {
-    const updated = [result, ...silageAnalyses];
-    setSilageAnalyses(updated);
-    setStoredItem(getUserKey('silage_analyses'), updated);
-    setStoredItem('silage_analyses', updated);
+    setSilageAnalyses((prev) => {
+      const exists = prev.some((s) => s.id === result.id || (s.batchId && s.batchId === result.batchId));
+      const updated = exists
+        ? prev.map((s) => (s.id === result.id || (s.batchId && s.batchId === result.batchId) ? result : s))
+        : [result, ...prev];
+      setStoredItem(getUserKey('silage_analyses'), updated);
+      setStoredItem('silage_analyses', updated);
+      return updated;
+    });
   };
 
   const addQRBatch = (batch: QRBatch) => {

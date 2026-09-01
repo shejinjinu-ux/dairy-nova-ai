@@ -15,6 +15,23 @@ export const feedApi = {
   },
 
   /**
+   * Retrieve persistent feed analysis history from backend repository for authenticated user.
+   * Endpoint: GET /api/v1/analyze/history?analysis_type=feed
+   */
+  async getFeedAnalysisHistory(limit: number = 50): Promise<any[]> {
+    if (!navigator.onLine) {
+      return getStoredItem<FeedAnalysisResult[]>('feed_analyses', INITIAL_FEED_ANALYSES);
+    }
+    try {
+      return await apiFetch<any[]>(`/analyze/history?analysis_type=feed&limit=${limit}`, {
+        method: 'GET',
+      }, 10000, false);
+    } catch {
+      return getStoredItem<FeedAnalysisResult[]>('feed_analyses', INITIAL_FEED_ANALYSES);
+    }
+  },
+
+  /**
    * METHOD 1: Visual Mould & Spoilage Screening via Feed Image
    * Endpoint: POST /api/v1/predict/feed-visual (multipart/form-data with 'file')
    */

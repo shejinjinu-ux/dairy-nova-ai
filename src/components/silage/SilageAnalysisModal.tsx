@@ -92,13 +92,23 @@ export const SilageAnalysisModal: React.FC<SilageAnalysisModalProps> = ({
   const [showDetailedParameters, setShowDetailedParameters] = useState<boolean>(false);
   const [showReportModal, setShowReportModal] = useState<boolean>(false);
   const [showQRSuccess, setShowQRSuccess] = useState<boolean>(false);
+  const [isSaved, setIsSaved] = useState<boolean>(false);
 
   if (!isOpen) return null;
 
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (!file.type.startsWith('image/')) {
+        setErrorMessage('Please select a valid image file (JPEG, PNG, or WebP).');
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        setErrorMessage('Image size is too large (maximum 10 MB allowed).');
+        return;
+      }
       setImageFile(file);
+      setErrorMessage('');
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreviewUrl(reader.result as string);
@@ -128,6 +138,7 @@ export const SilageAnalysisModal: React.FC<SilageAnalysisModalProps> = ({
     setErrorMessage('');
     setVisualResult(null);
     setCombinedResult(null);
+    setIsSaved(false);
 
     try {
       if (imageFile) {
@@ -178,6 +189,27 @@ export const SilageAnalysisModal: React.FC<SilageAnalysisModalProps> = ({
         };
 
         setPersistedSilageResult(historyItem);
+        // Automatically persist to History immediately upon completion
+        onAnalysisSaved(historyItem);
+        setIsSaved(true);
+
+        // Trigger authenticated backend persistence when online
+        if (navigator.onLine && imageFile) {
+          silageApi
+            .analyzeSilageCombined({
+              pH: 4.0,
+              dmPercent: 32.0,
+              imageFile: imageFile,
+            })
+            .then((res) => {
+              if (res.record_id) {
+                historyItem.id = res.record_id;
+              }
+            })
+            .catch((e) => {
+              console.warn('Backend silage persistence notice:', e);
+            });
+        }
       }
       setIsAnalyzing(false);
     } catch (err: any) {
@@ -192,6 +224,7 @@ export const SilageAnalysisModal: React.FC<SilageAnalysisModalProps> = ({
     setErrorMessage('');
     setVisualResult(null);
     setCombinedResult(null);
+    setIsSaved(false);
 
     try {
       const combined = await silageApi.analyzeSilageCombined({
@@ -244,6 +277,9 @@ export const SilageAnalysisModal: React.FC<SilageAnalysisModalProps> = ({
       };
 
       setPersistedSilageResult(historyItem);
+      // Automatically persist to History immediately upon completion
+      onAnalysisSaved(historyItem);
+      setIsSaved(true);
       setIsAnalyzing(false);
     } catch (err: any) {
       setIsAnalyzing(false);
@@ -253,7 +289,10 @@ export const SilageAnalysisModal: React.FC<SilageAnalysisModalProps> = ({
 
   const handleSave = () => {
     if (!persistedSilageResult) return;
-    onAnalysisSaved(persistedSilageResult);
+    if (!isSaved) {
+      onAnalysisSaved(persistedSilageResult);
+      setIsSaved(true);
+    }
     onClose();
   };
 

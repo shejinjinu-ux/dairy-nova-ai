@@ -54,6 +54,8 @@ export const DiseaseScreeningModal: React.FC<DiseaseScreeningModalProps> = ({
   const [result, setResult] = useState<DiseaseScreeningOutput | null>(null);
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
 
+  const [isSaved, setIsSaved] = useState<boolean>(false);
+
   if (!isOpen) return null;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,6 +89,7 @@ export const DiseaseScreeningModal: React.FC<DiseaseScreeningModalProps> = ({
 
     setErrorMessage('');
     setIsAnalyzing(true);
+    setIsSaved(false);
     setStep(3);
 
     try {
@@ -99,6 +102,27 @@ export const DiseaseScreeningModal: React.FC<DiseaseScreeningModalProps> = ({
       });
 
       setResult(output);
+
+      // Automatically persist to Health Alerts and History immediately
+      if (onResultSaved) {
+        onResultSaved({
+          animalId: selectedAnimal?.id || 'ani-general',
+          animalTag: selectedAnimal?.tagId || 'HERD-TAG',
+          animalName: selectedAnimal?.name || 'Cattle',
+          severity: output.severity,
+          title: output.possibleConcern,
+          description: output.preliminaryGuidance,
+          symptoms: output.symptomsDetected,
+          possibleConcern: output.possibleConcern,
+          preliminaryGuidance: output.preliminaryGuidance,
+          veterinaryAdvice: output.veterinaryAdvice,
+          confidenceScore: output.confidenceScore,
+          status: 'active',
+          source: 'AI Screening',
+        });
+        setIsSaved(true);
+      }
+
       setIsAnalyzing(false);
       setStep(4);
     } catch (err: any) {
@@ -112,28 +136,31 @@ export const DiseaseScreeningModal: React.FC<DiseaseScreeningModalProps> = ({
   };
 
   const handleSaveAlert = () => {
-    if (!result || !onResultSaved) return;
+    if (!result) return;
 
-    onResultSaved({
-      animalId: selectedAnimal?.id || 'ani-general',
-      animalTag: selectedAnimal?.tagId || 'HERD-TAG',
-      animalName: selectedAnimal?.name || 'Cattle',
-      severity: result.severity,
-      title: result.possibleConcern,
-      description: result.preliminaryGuidance,
-      symptoms: result.symptomsDetected,
-      possibleConcern: result.possibleConcern,
-      preliminaryGuidance: result.preliminaryGuidance,
-      veterinaryAdvice: result.veterinaryAdvice,
-      confidenceScore: result.confidenceScore,
-      status: 'active',
-      source: 'AI Screening',
-    });
+    if (!isSaved && onResultSaved) {
+      onResultSaved({
+        animalId: selectedAnimal?.id || 'ani-general',
+        animalTag: selectedAnimal?.tagId || 'HERD-TAG',
+        animalName: selectedAnimal?.name || 'Cattle',
+        severity: result.severity,
+        title: result.possibleConcern,
+        description: result.preliminaryGuidance,
+        symptoms: result.symptomsDetected,
+        possibleConcern: result.possibleConcern,
+        preliminaryGuidance: result.preliminaryGuidance,
+        veterinaryAdvice: result.veterinaryAdvice,
+        confidenceScore: result.confidenceScore,
+        status: 'active',
+        source: 'AI Screening',
+      });
+      setIsSaved(true);
+    }
 
     setSavedSuccess(true);
     setTimeout(() => {
       onClose();
-    }, 1500);
+    }, 1200);
   };
 
   return (
