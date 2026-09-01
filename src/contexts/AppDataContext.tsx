@@ -529,7 +529,10 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         species: newAnimal.type,
         breed: newAnimal.breed,
         gender: newAnimal.sex,
-        age_months: (newAnimal.ageYears || 0) * 12 + (newAnimal.ageMonths || 0),
+        date_of_birth: newAnimal.dateOfBirth,
+        age_months: newAnimal.dateOfBirth
+          ? Math.max(0, Math.floor((new Date().getTime() - new Date(newAnimal.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 30.4375)))
+          : (newAnimal.ageYears || 0) * 12 + (newAnimal.ageMonths || 0),
         body_weight_kg: newAnimal.weightKg,
         calving_date: newAnimal.calvingDate,
         parity: newAnimal.parity || 1,

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Animal, LactationStage, PregnancyStatus, HealthStatus } from '../../types';
+import { Animal, PregnancyStatus, HealthStatus, LactationStage } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { X, Save, AlertCircle } from 'lucide-react';
 import { ConfirmationDialog } from '../common/ConfirmationDialog';
+import { getLactationDisplay } from '../../utils/formatters';
 
 interface EditAnimalModalProps {
   animal: Animal;
@@ -20,7 +21,7 @@ export const EditAnimalModal: React.FC<EditAnimalModalProps> = ({
   const { t } = useLanguage();
   const [name, setName] = useState<string>(animal.name);
   const [weightKg, setWeightKg] = useState<string>(animal.weightKg !== undefined ? String(animal.weightKg) : '');
-  const [lactationStage, setLactationStage] = useState<LactationStage>(animal.lactationStage);
+  const [calvingDate, setCalvingDate] = useState<string>(animal.calvingDate || '');
   const [pregnancyStatus, setPregnancyStatus] = useState<PregnancyStatus>(animal.pregnancyStatus);
   const [dailyMilkYieldL, setDailyMilkYieldL] = useState<string>(animal.dailyMilkYieldL !== undefined ? String(animal.dailyMilkYieldL) : '');
   const [healthStatus, setHealthStatus] = useState<HealthStatus>(animal.healthStatus);
@@ -30,10 +31,18 @@ export const EditAnimalModal: React.FC<EditAnimalModalProps> = ({
 
   if (!isOpen) return null;
 
+  const dynamicLactation = getLactationDisplay({
+    sex: animal.sex,
+    lactationStage: animal.lactationStage,
+    calvingDate: calvingDate || undefined,
+    lactationStartDate: animal.lactationStartDate,
+    daysInMilk: animal.daysInMilk,
+  });
+
   const isDirty =
     name !== animal.name ||
     weightKg !== (animal.weightKg !== undefined ? String(animal.weightKg) : '') ||
-    lactationStage !== animal.lactationStage ||
+    calvingDate !== (animal.calvingDate || '') ||
     pregnancyStatus !== animal.pregnancyStatus ||
     dailyMilkYieldL !== (animal.dailyMilkYieldL !== undefined ? String(animal.dailyMilkYieldL) : '') ||
     healthStatus !== animal.healthStatus ||
@@ -51,10 +60,27 @@ export const EditAnimalModal: React.FC<EditAnimalModalProps> = ({
     const parsedWeight = weightKg.trim() !== '' ? Number(weightKg) : undefined;
     const parsedYield = dailyMilkYieldL.trim() !== '' ? Number(dailyMilkYieldL) : undefined;
 
+    // Derive lactation stage automatically based on calving date and days in milk
+    let derivedStage: LactationStage = animal.lactationStage;
+    if (animal.sex === 'Male') {
+      derivedStage = 'Dry';
+    } else if (animal.lactationStage === 'Calf') {
+      derivedStage = 'Calf';
+    } else if (animal.lactationStage === 'Heifer' && !calvingDate) {
+      derivedStage = 'Heifer';
+    } else if (dynamicLactation.dimValue !== null) {
+      const dim = dynamicLactation.dimValue;
+      if (dim <= 100) derivedStage = 'Early';
+      else if (dim <= 200) derivedStage = 'Mid';
+      else if (dim <= 305) derivedStage = 'Late';
+      else derivedStage = 'Dry';
+    }
+
     onAnimalUpdated(animal.id, {
       name,
       weightKg: parsedWeight,
-      lactationStage,
+      calvingDate: calvingDate || undefined,
+      lactationStage: derivedStage,
       pregnancyStatus,
       dailyMilkYieldL: parsedYield,
       healthStatus,
@@ -129,22 +155,34 @@ export const EditAnimalModal: React.FC<EditAnimalModalProps> = ({
               </div>
             </div>
 
-            <div>
-              <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Lactation Stage
-              </label>
-              <select
-                value={lactationStage}
-                onChange={(e) => setLactationStage(e.target.value as LactationStage)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold"
-              >
-                <option value="Early">Early (0-100 Days)</option>
-                <option value="Mid">Mid (100-200 Days)</option>
-                <option value="Late">Late (200+ Days)</option>
-                <option value="Dry">Dry Cow</option>
-                <option value="Heifer">Heifer</option>
-                <option value="Calf">Calf</option>
-              </select>
+            {/* Automatic Lactation & Calving Info */}
+            <div className="p-3 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-900/50 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-teal-800 dark:text-teal-300">
+                  Lactation & Reproductive Status
+                </span>
+                <span className="text-[10px] font-extrabold bg-teal-600 text-white px-2 py-0.5 rounded-full">
+                  {dynamicLactation.stageBadge}
+                </span>
+              </div>
+              <p className="text-[10px] text-teal-700 dark:text-teal-400">
+                {dynamicLactation.statusText} • DIM: {dynamicLactation.dimText}
+              </p>
+
+              {animal.sex !== 'Male' && animal.lactationStage !== 'Calf' && (
+                <div className="pt-1">
+                  <label className="font-semibold text-teal-900 dark:text-teal-200 block mb-1 text-[11px]">
+                    Latest Calving Date
+                  </label>
+                  <input
+                    type="date"
+                    value={calvingDate}
+                    max={new Date().toISOString().split('T')[0]}
+                    onChange={(e) => setCalvingDate(e.target.value)}
+                    className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-800 font-medium text-slate-800 dark:text-slate-100 text-xs"
+                  />
+                </div>
+              )}
             </div>
 
             <div>

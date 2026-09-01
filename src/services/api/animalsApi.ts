@@ -10,8 +10,9 @@ function mapCattleToAnimal(c: any): Animal {
     name: c.name || `Cattle #${c.tag_id}`,
     type: (c.species === 'Buffalo' ? 'Buffalo' : 'Cow') as any,
     breed: c.breed || 'Gir',
-    ageYears: c.age_months ? Math.floor(c.age_months / 12) : 3,
-    ageMonths: c.age_months ? c.age_months % 12 : 0,
+    dateOfBirth: c.date_of_birth || undefined,
+    ageYears: c.age_months !== undefined && c.age_months !== null ? Math.floor(c.age_months / 12) : 3,
+    ageMonths: c.age_months !== undefined && c.age_months !== null ? c.age_months % 12 : 0,
     sex: (c.gender === 'Male' ? 'Male' : 'Female') as any,
     weightKg: c.body_weight_kg || undefined,
     lactationStage: (c.lactation_stage || 'Early') as any,
@@ -73,7 +74,10 @@ export const animalsApi = {
           species: animalData.type,
           breed: animalData.breed,
           gender: animalData.sex,
-          age_months: (animalData.ageYears || 0) * 12 + (animalData.ageMonths || 0),
+          date_of_birth: animalData.dateOfBirth,
+          age_months: animalData.dateOfBirth
+            ? Math.max(0, Math.floor((new Date().getTime() - new Date(animalData.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 30.4375)))
+            : (animalData.ageYears || 0) * 12 + (animalData.ageMonths || 0),
           body_weight_kg: animalData.weightKg,
           calving_date: animalData.calvingDate,
           parity: animalData.parity || 1,

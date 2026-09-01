@@ -111,6 +111,7 @@ export interface TranslationDictionary {
   dairyBuffaloes: string;
   dataSource: string;
   dateAdministered: string;
+  dateOfBirth?: string;
   decodingSeal: string;
   deleteVaccination: string;
   deleteVaccineConfirm: string;

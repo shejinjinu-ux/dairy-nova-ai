@@ -10,6 +10,17 @@ import { EmptyState } from '../../components/common/FeedbackStates';
 import { Animal, AnimalType, HealthStatus } from '../../types';
 import { Search, Plus, Filter, ArrowUpDown, Layers, Milk } from 'lucide-react';
 
+const getAnimalAgeMonths = (animal: Animal): number => {
+  if (animal.dateOfBirth) {
+    const b = new Date(animal.dateOfBirth);
+    const now = new Date();
+    if (!isNaN(b.getTime())) {
+      return Math.max(0, (now.getFullYear() - b.getFullYear()) * 12 + (now.getMonth() - b.getMonth()));
+    }
+  }
+  return (animal.ageYears || 0) * 12 + (animal.ageMonths || 0);
+};
+
 export const AnimalsScreen: React.FC = () => {
   const { animals, navigate, addAnimal, deleteAnimal } = useAppData();
   const { t } = useLanguage();
@@ -34,7 +45,7 @@ export const AnimalsScreen: React.FC = () => {
     })
     .sort((a, b) => {
       if (sortBy === 'milk') return (b.dailyMilkYieldL || 0) - (a.dailyMilkYieldL || 0);
-      if (sortBy === 'age') return b.ageYears * 12 + b.ageMonths - (a.ageYears * 12 + a.ageMonths);
+      if (sortBy === 'age') return getAnimalAgeMonths(b) - getAnimalAgeMonths(a);
       return a.tagId.localeCompare(b.tagId);
     });
 

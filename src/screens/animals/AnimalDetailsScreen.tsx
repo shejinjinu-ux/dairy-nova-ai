@@ -542,9 +542,9 @@ export const AnimalDetailsScreen: React.FC = () => {
           </div>
         )}
 
-        {/* Tab 4: Persistent Milk History & Logs */}
+        {/* Tab 4: Persistent Milk History, Trend Analysis & Advisory */}
         {activeTab === 'milk' && (
-          <div className="space-y-3 animate-fadeIn text-xs">
+          <div className="space-y-3.5 animate-fadeIn text-xs">
             {/* Backend Summary Box */}
             {backendMilkHistory && (
               <div className="p-4 rounded-3xl bg-gradient-to-br from-dairy-700 to-teal-800 text-white shadow-md space-y-2">
@@ -571,6 +571,77 @@ export const AnimalDetailsScreen: React.FC = () => {
                     <span className="text-base font-black">{backendMilkHistory.lowest_recorded_yield_litres.toFixed(1)} L</span>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Requirement 7: Milk Production Trend & Yield Improvement Advisory */}
+            {animalMilkRecords.length >= 1 && (
+              <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-card-soft space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <TrendingUp size={16} className="text-dairy-600 dark:text-dairy-400" />
+                    <h4 className="font-extrabold text-slate-900 dark:text-white">
+                      Production Trend & Advisory
+                    </h4>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                    Real Record Analysis
+                  </span>
+                </div>
+
+                {/* Derived Trend Statement */}
+                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/60 dark:border-slate-800/80 space-y-1.5">
+                  <p className="font-bold text-slate-800 dark:text-slate-200 text-xs">
+                    {animal.tagId} Current Daily Yield: <span className="text-dairy-600">{animal.dailyMilkYieldL || 0} L/day</span>
+                  </p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                    Lactation Stage: <strong className="text-slate-800 dark:text-slate-200">{getLactationDisplay(animal).stageBadge}</strong> • Days in Milk: <strong className="text-slate-800 dark:text-slate-200">{getLactationDisplay(animal).dimText}</strong>
+                  </p>
+                </div>
+
+                {/* Practical Actionable Advisory Points */}
+                <div className="space-y-2 text-[11px] text-slate-700 dark:text-slate-300">
+                  <span className="font-extrabold text-slate-900 dark:text-white text-[11px] block">
+                    Actionable Improvement Checks:
+                  </span>
+
+                  <div className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-dairy-500 mt-1.5 shrink-0" />
+                    <p>
+                      <strong>Feed & Nutrition:</strong> Maintain 60% high-quality green fodder (maize/napier) and 40% dry roughage, supplemented with 400g concentrate pellets per liter of milk produced above 5L.
+                    </p>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-dairy-500 mt-1.5 shrink-0" />
+                    <p>
+                      <strong>Water Access:</strong> Dairy cattle require 3 to 5 liters of clean, fresh drinking water per liter of milk. Ensure 24/7 ad-libitum trough access.
+                    </p>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-dairy-500 mt-1.5 shrink-0" />
+                    <p>
+                      <strong>Milking Consistency:</strong> Maintain strict 12-hour milking intervals. Perform teat dipping before and after milking to protect udder health.
+                    </p>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-dairy-500 mt-1.5 shrink-0" />
+                    <p>
+                      <strong>Health & Mastitis Watch:</strong> If sudden drops in yield occur, perform a California Mastitis Test (CMT) or strip cup exam immediately. Consult your local veterinary officer for persistent abnormalities.
+                    </p>
+                  </div>
+                </div>
+
+                {/* AI Consultation Shortcut */}
+                <button
+                  type="button"
+                  onClick={() => navigate('ai-chat', { chatAnimal: animal })}
+                  className="w-full py-2 px-3 rounded-xl bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/70 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-300 font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition"
+                >
+                  <Sparkles size={13} className="text-teal-600" /> Consult Dairy Nova AI for {animal.name}'s Yield Plan
+                </button>
               </div>
             )}
 

@@ -70,8 +70,9 @@ export interface Animal {
   name: string;
   type: AnimalType;
   breed: string;
-  ageYears: number;
-  ageMonths: number;
+  ageYears?: number;
+  ageMonths?: number;
+  dateOfBirth?: string;
   sex: 'Female' | 'Male';
   weightKg?: number;
   lactationStage: LactationStage;

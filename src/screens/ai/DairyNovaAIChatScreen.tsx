@@ -55,16 +55,30 @@ export const DairyNovaAIChatScreen: React.FC = () => {
     const text = (textToSend || inputText).trim();
     if (!text) return;
 
+    // Requirement 13: Automatically resolve Tag ID from message if user asks about a specific tag
+    let contextToUse = activeAnimalContext;
+    const tagMatch = text.match(/(TAG-\d+|COW-\d+|BUFF-\d+|[A-Z0-9]{3,}-\d+)/i);
+    if (tagMatch && tagMatch[1]) {
+      const searchedTag = tagMatch[1].toUpperCase();
+      const matched = animals.find(
+        (a) => a.tagId.toUpperCase() === searchedTag || a.tagId.toUpperCase().includes(searchedTag)
+      );
+      if (matched) {
+        contextToUse = matched;
+        setActiveAnimalContext(matched);
+      }
+    }
+
     const userMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
       sender: 'user',
       text,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      animalContext: activeAnimalContext
+      animalContext: contextToUse
         ? {
-            id: activeAnimalContext.id,
-            tag: activeAnimalContext.tagId,
-            name: activeAnimalContext.name,
+            id: contextToUse.id,
+            tag: contextToUse.tagId,
+            name: contextToUse.name,
           }
         : undefined,
     };
@@ -84,16 +98,16 @@ export const DairyNovaAIChatScreen: React.FC = () => {
         language,
         sessionId,
         userId: user?.id,
-        animalContext: activeAnimalContext
+        animalContext: contextToUse
           ? {
-              id: activeAnimalContext.id,
-              tag: activeAnimalContext.tagId,
-              name: activeAnimalContext.name,
-              type: activeAnimalContext.type,
-              breed: activeAnimalContext.breed,
-              dailyMilkYieldL: activeAnimalContext.dailyMilkYieldL,
-              weightKg: activeAnimalContext.weightKg,
-              healthStatus: activeAnimalContext.healthStatus,
+              id: contextToUse.id,
+              tag: contextToUse.tagId,
+              name: contextToUse.name,
+              type: contextToUse.type,
+              breed: contextToUse.breed,
+              dailyMilkYieldL: contextToUse.dailyMilkYieldL,
+              weightKg: contextToUse.weightKg,
+              healthStatus: contextToUse.healthStatus,
             }
           : undefined,
       });

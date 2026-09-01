@@ -2,13 +2,38 @@ import React, { useState } from 'react';
 import { Animal, AnimalType, LactationStage, PregnancyStatus } from '../../types';
 import { ALL_INDIAN_COW_BREEDS, ALL_INDIAN_BUFFALO_BREEDS } from '../../mocks/mockData';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { X, ArrowRight, ArrowLeft, Check, Sparkles, Loader2 } from 'lucide-react';
+import { X, ArrowRight, ArrowLeft, Check, Loader2 } from 'lucide-react';
+import { getLactationDisplay } from '../../utils/formatters';
 
 interface AddAnimalModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAnimalAdded: (animal: Omit<Animal, 'id' | 'createdDate' | 'lastCheckDate'>) => void;
 }
+
+const getAgeSummary = (dobString: string): { isCalf: boolean; computedYears: number; label: string } => {
+  if (!dobString) {
+    return { isCalf: false, computedYears: 3, label: 'Age: Adult' };
+  }
+  const birthDate = new Date(dobString);
+  const today = new Date();
+  if (isNaN(birthDate.getTime()) || birthDate > today) {
+    return { isCalf: true, computedYears: 0, label: 'Age: Calf' };
+  }
+  let years = today.getFullYear() - birthDate.getFullYear();
+  let months = today.getMonth() - birthDate.getMonth();
+  if (today.getDate() < birthDate.getDate()) {
+    months -= 1;
+  }
+  if (months < 0) {
+    years -= 1;
+    months += 12;
+  }
+  if (years <= 0) {
+    return { isCalf: true, computedYears: 0, label: 'Age: Calf' };
+  }
+  return { isCalf: false, computedYears: years, label: `Age: ${years} ${years === 1 ? 'year' : 'years'}` };
+};
 
 export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
   isOpen,
@@ -20,25 +45,35 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
 
-  // Form States
-  const [tagId, setTagId] = useState<string>(`TAG-${Math.floor(Math.random() * 800 + 200)}`);
+  // Form States - Requirement 1: Primary Identity from user input / backend, no random fake tag
+  const [tagId, setTagId] = useState<string>('');
   const [name, setName] = useState<string>('');
   const [type, setType] = useState<AnimalType>('Cow');
   const [breed, setBreed] = useState<string>('Gir');
   const [customBreedName, setCustomBreedName] = useState<string>('');
-  const [ageYears, setAgeYears] = useState<number>(3);
-  const [ageMonths, setAgeMonths] = useState<number>(6);
+  const [dateOfBirth, setDateOfBirth] = useState<string>('2022-06-15');
   const [sex, setSex] = useState<'Female' | 'Male'>('Female');
   const [weightKg, setWeightKg] = useState<string>('');
-  const [lactationStage, setLactationStage] = useState<LactationStage>('Early');
+
+  // Requirement 3 & 4: Auto-derived lactation state
+  const [hasCalved, setHasCalved] = useState<boolean>(true);
+  const [calvingDate, setCalvingDate] = useState<string>('2026-06-01');
   const [pregnancyStatus, setPregnancyStatus] = useState<PregnancyStatus>('Non-Pregnant');
-  const [calvingDate, setCalvingDate] = useState<string>('2026-06-15');
   const [dailyMilkYieldL, setDailyMilkYieldL] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [breedSearch, setBreedSearch] = useState<string>('');
   const [validationError, setValidationError] = useState<string>('');
 
   if (!isOpen) return null;
+
+  const ageEvaluation = getAgeSummary(dateOfBirth);
+
+  // Automatic lactation stage determination
+  const derivedLactationInfo = getLactationDisplay({
+    sex,
+    lactationStage: ageEvaluation.isCalf ? 'Calf' : !hasCalved ? 'Heifer' : undefined,
+    calvingDate: sex === 'Female' && !ageEvaluation.isCalf && hasCalved ? calvingDate : undefined,
+  });
 
   const rawBreedList = type === 'Buffalo' ? ALL_INDIAN_BUFFALO_BREEDS : ALL_INDIAN_COW_BREEDS;
   const currentBreedList = breedSearch.trim()
@@ -48,20 +83,28 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
   const handleNext = () => {
     setValidationError('');
     if (step === 1) {
+      if (!tagId.trim()) {
+        setValidationError('Please enter a valid Animal Tag ID.');
+        return;
+      }
       if (breed === 'Other' && !customBreedName.trim()) {
         setValidationError('Please specify the custom breed name.');
         return;
       }
     } else if (step === 2) {
+      if (!dateOfBirth) {
+        setValidationError('Please select the Date of Birth (DOB).');
+        return;
+      }
       if (weightKg.trim() !== '') {
         const w = Number(weightKg);
         if (isNaN(w) || w <= 0 || w > 1500) {
-          setValidationError('Please enter a valid positive weight in kg (e.g. 100 - 1200 kg).');
+          setValidationError('Please enter a valid positive weight in kg (e.g. 50 - 1200 kg).');
           return;
         }
       }
     } else if (step === 3) {
-      if (dailyMilkYieldL.trim() !== '') {
+      if (derivedLactationInfo.isLactating && dailyMilkYieldL.trim() !== '') {
         const y = Number(dailyMilkYieldL);
         if (isNaN(y) || y < 0 || y > 100) {
           setValidationError('Please enter a valid daily milk yield in L/day (e.g. 0 - 60 L).');
@@ -80,6 +123,8 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
 
   const handleSave = async () => {
     setIsSaving(true);
+    setValidationError('');
+
     setTimeout(() => {
       setIsSaving(false);
       setIsSuccess(true);
@@ -94,23 +139,38 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
           ? Number(dailyMilkYieldL)
           : undefined;
 
-      const normTag = tagId.trim();
+      const normTag = tagId.trim().toUpperCase();
+
+      // Final automatic stage calculation
+      let finalLactationStage: LactationStage = 'Early';
+      if (sex === 'Male') {
+        finalLactationStage = 'Dry';
+      } else if (ageEvaluation.isCalf) {
+        finalLactationStage = 'Calf';
+      } else if (!hasCalved) {
+        finalLactationStage = 'Heifer';
+      } else {
+        const stageBadge = derivedLactationInfo.stageBadge;
+        if (stageBadge === 'Mid') finalLactationStage = 'Mid';
+        else if (stageBadge === 'Late') finalLactationStage = 'Late';
+        else if (stageBadge === 'Dry') finalLactationStage = 'Dry';
+        else finalLactationStage = 'Early';
+      }
 
       const animalData: Omit<Animal, 'id' | 'createdDate' | 'lastCheckDate'> = {
         tagId: normTag,
-        name: name || `${finalBreed} #${normTag}`,
+        name: name.trim() || `${finalBreed} #${normTag}`,
         type,
         breed: finalBreed,
-        ageYears,
-        ageMonths,
+        dateOfBirth: dateOfBirth || undefined,
         sex,
         weightKg: parsedWeight,
-        lactationStage,
+        lactationStage: finalLactationStage,
         pregnancyStatus,
-        calvingDate: calvingDate || undefined,
-        lactationStartDate: calvingDate || undefined,
-        parity: 1,
-        dailyMilkYieldL: parsedYield,
+        calvingDate: sex === 'Female' && !ageEvaluation.isCalf && hasCalved ? calvingDate : undefined,
+        lactationStartDate: sex === 'Female' && !ageEvaluation.isCalf && hasCalved ? calvingDate : undefined,
+        parity: hasCalved ? 1 : 0,
+        dailyMilkYieldL: derivedLactationInfo.isLactating ? parsedYield : 0,
         healthStatus: 'Healthy',
         ruminationMinutesPerDay: 480,
         activityLevel: 'Normal',
@@ -192,6 +252,9 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
                 placeholder="e.g. TAG-115"
                 className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
               />
+              <p className="text-[10px] text-slate-400 mt-1">
+                Unique identifier assigned to cattle (INAPH/ear tag).
+              </p>
             </div>
 
             <div>
@@ -278,51 +341,28 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
           </div>
         )}
 
-        {/* Step 2 — Animal Details */}
+        {/* Step 2 — Animal Details (DOB, Sex, Weight) */}
         {step === 2 && (
           <div className="space-y-3 animate-fadeIn">
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                  {t.ageYears || 'Age (Years)'}
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="20"
-                  value={ageYears}
-                  onChange={(e) => setAgeYears(Number(e.target.value))}
-                  className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                  {t.ageMonths || 'Age (Months)'}
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="11"
-                  value={ageMonths}
-                  onChange={(e) => setAgeMonths(Number(e.target.value))}
-                  className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white"
-                />
-              </div>
-            </div>
-
             <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                {t.weightKgLabel || 'Measured Weight (kg)'}
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  {t.dateOfBirth || 'Date of Birth (DOB)'} *
+                </label>
+                <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                  {ageEvaluation.label}
+                </span>
+              </div>
               <input
-                type="number"
-                min="0"
-                max="1200"
-                value={weightKg}
-                onChange={(e) => setWeightKg(e.target.value)}
-                placeholder={t.weightKgPlaceholder || 'e.g. 380'}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white placeholder-slate-400"
+                type="date"
+                max={new Date().toISOString().split('T')[0]}
+                value={dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
               />
+              <p className="text-[10px] text-slate-400 mt-1">
+                Used to dynamically derive cattle age and calf/heifer status.
+              </p>
             </div>
 
             <div>
@@ -346,58 +386,131 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
                 ))}
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Step 3 — Health & Reproduction */}
-        {step === 3 && (
-          <div className="space-y-3 animate-fadeIn">
-            <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                {t.lactationStage || 'Lactation Stage'}
-              </label>
-              <select
-                value={lactationStage}
-                onChange={(e) => setLactationStage(e.target.value as LactationStage)}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white"
-              >
-                <option value="Early">Early Lactation (1-100 days)</option>
-                <option value="Mid">Mid Lactation (100-200 days)</option>
-                <option value="Late">Late Lactation (200+ days)</option>
-                <option value="Dry">Dry Cow / Non-Milking</option>
-              </select>
-            </div>
 
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                {t.pregnancyStatus || 'Pregnancy Status'}
-              </label>
-              <select
-                value={pregnancyStatus}
-                onChange={(e) => setPregnancyStatus(e.target.value as PregnancyStatus)}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white"
-              >
-                <option value="Non-Pregnant">Non-Pregnant</option>
-                <option value="Pregnant">Pregnant</option>
-                <option value="Inseminated">Recently Inseminated</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                {t.dailyYieldLabel || 'Daily Milk Yield (Liters/day)'}
+                {t.weightKgLabel || 'Measured Weight (kg)'}
               </label>
               <input
                 type="number"
-                step="0.5"
                 min="0"
-                max="60"
-                value={dailyMilkYieldL}
-                onChange={(e) => setDailyMilkYieldL(e.target.value)}
-                placeholder={t.dailyYieldPlaceholder || 'e.g. 12.5'}
+                max="1200"
+                value={weightKg}
+                onChange={(e) => setWeightKg(e.target.value)}
+                placeholder={t.weightKgPlaceholder || 'e.g. 380'}
                 className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white placeholder-slate-400"
               />
             </div>
+          </div>
+        )}
+
+        {/* Step 3 — Health & Reproduction (Requirement 3: Automatic Lactation Derivation) */}
+        {step === 3 && (
+          <div className="space-y-3 animate-fadeIn">
+            {/* Auto-derived Lactation Badge */}
+            <div className="p-3 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-900/50 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-teal-800 dark:text-teal-300">
+                  Auto-Derived Lactation Status
+                </span>
+                <span className="text-[10px] font-extrabold bg-teal-600 text-white px-2 py-0.5 rounded-full">
+                  {derivedLactationInfo.stageBadge}
+                </span>
+              </div>
+              <p className="text-[10px] text-teal-700 dark:text-teal-400">
+                {derivedLactationInfo.statusText} • Days in Milk: {derivedLactationInfo.dimText}
+              </p>
+            </div>
+
+            {/* Calving History for Adult Females */}
+            {sex === 'Female' && !ageEvaluation.isCalf && (
+              <div className="space-y-2.5 pt-1">
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                    Has this animal calved before?
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setHasCalved(true)}
+                      className={`py-2 px-3 rounded-xl border text-xs font-semibold ${
+                        hasCalved
+                          ? 'bg-emerald-50 dark:bg-emerald-950 border-emerald-500 text-emerald-700 dark:text-emerald-300'
+                          : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                      }`}
+                    >
+                      Yes (Calved)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setHasCalved(false)}
+                      className={`py-2 px-3 rounded-xl border text-xs font-semibold ${
+                        !hasCalved
+                          ? 'bg-emerald-50 dark:bg-emerald-950 border-emerald-500 text-emerald-700 dark:text-emerald-300'
+                          : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                      }`}
+                    >
+                      No (Heifer)
+                    </button>
+                  </div>
+                </div>
+
+                {hasCalved && (
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                      Latest Calving Date *
+                    </label>
+                    <input
+                      type="date"
+                      value={calvingDate}
+                      max={new Date().toISOString().split('T')[0]}
+                      onChange={(e) => setCalvingDate(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-900 dark:text-white"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      Used to automatically calculate Days in Milk (DIM) and lactation stage.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Pregnancy Status */}
+            {sex === 'Female' && !ageEvaluation.isCalf && (
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  {t.pregnancyStatus || 'Pregnancy Status'}
+                </label>
+                <select
+                  value={pregnancyStatus}
+                  onChange={(e) => setPregnancyStatus(e.target.value as PregnancyStatus)}
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white"
+                >
+                  <option value="Non-Pregnant">Non-Pregnant</option>
+                  <option value="Pregnant">Pregnant</option>
+                  <option value="Inseminated">Recently Inseminated</option>
+                </select>
+              </div>
+            )}
+
+            {/* Daily Milk Yield (only when lactating) */}
+            {derivedLactationInfo.isLactating && (
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  {t.dailyYieldLabel || 'Daily Milk Yield (Liters/day)'}
+                </label>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  max="60"
+                  value={dailyMilkYieldL}
+                  onChange={(e) => setDailyMilkYieldL(e.target.value)}
+                  placeholder={t.dailyYieldPlaceholder || 'e.g. 14.5'}
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white placeholder-slate-400"
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -407,8 +520,14 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
             <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2">
               <div className="flex justify-between">
                 <span className="text-slate-400">{t.tagIdLabel || 'Tag ID'}:</span>
+                <strong className="text-teal-600 dark:text-teal-400 font-mono font-bold">
+                  {tagId.trim().toUpperCase() || 'Not specified'}
+                </strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Calling Name:</span>
                 <strong className="text-slate-900 dark:text-white">
-                  {tagId} — {name || 'Unnamed'}
+                  {name.trim() || `${breed} #${tagId.trim()}`}
                 </strong>
               </div>
               <div className="flex justify-between">
@@ -418,15 +537,15 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
                 </strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">{t.ageYears || 'Age'}:</span>
+                <span className="text-slate-400">Age & Weight:</span>
                 <strong className="text-slate-900 dark:text-white">
-                  {ageYears <= 0 ? 'Calf' : `${ageYears} ${ageYears === 1 ? 'year' : 'years'}`} • {weightKg.trim() !== '' ? `${weightKg.trim()} kg` : 'Not specified'}
+                  {ageEvaluation.label} • {weightKg.trim() !== '' ? `${weightKg.trim()} kg` : 'Not specified'}
                 </strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">{t.lactationStage || 'Lactation'}:</span>
+                <span className="text-slate-400">Reproductive State:</span>
                 <strong className="text-emerald-600 dark:text-emerald-400">
-                  {lactationStage} {dailyMilkYieldL.trim() !== '' ? `(${dailyMilkYieldL.trim()} L/day)` : ''}
+                  {derivedLactationInfo.statusText} {derivedLactationInfo.isLactating && dailyMilkYieldL.trim() !== '' ? `• ${dailyMilkYieldL.trim()} L/day` : ''}
                 </strong>
               </div>
             </div>
