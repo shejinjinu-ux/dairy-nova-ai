@@ -145,15 +145,33 @@ interface AppDataContextType {
   resetOnLogout: () => void;
 }
 
-const sanitizeAndMigrateAnimals = (rawAnimals: any[]): Animal[] => {
-  if (!Array.isArray(rawAnimals)) return [];
-  return rawAnimals.map((a: any) => {
-    const { temperatureC, bodyTemperature, body_temperature, ...cleanAnimal } = a;
-    return cleanAnimal as Animal;
-  });
+export const normalizeTagId = (tag?: string): string => {
+  if (!tag) return '';
+  return tag.trim().toUpperCase();
 };
 
-// Safe and idempotent localStorage migration function
+const sanitizeAndMigrateAnimals = (rawAnimals: any[]): Animal[] => {
+  if (!Array.isArray(rawAnimals)) return [];
+  const seenTags = new Set<string>();
+  const uniqueAnimals: Animal[] = [];
+
+  for (const a of rawAnimals) {
+    if (!a || (!a.tagId && !a.id)) continue;
+    const { temperatureC, bodyTemperature, body_temperature, ...cleanAnimal } = a;
+    const normTag = normalizeTagId(cleanAnimal.tagId || cleanAnimal.id);
+    if (!seenTags.has(normTag)) {
+      seenTags.add(normTag);
+      uniqueAnimals.push({
+        ...cleanAnimal,
+        tagId: normTag,
+      } as Animal);
+    }
+  }
+
+  return uniqueAnimals;
+};
+
+// Safe and idempotent localStorage migration function ensuring no duplicate Tag IDs exist
 const runLocalStorageMigration = () => {
   try {
     const keysToCheck = ['animals_demo', 'animals'];
@@ -270,14 +288,15 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try {
       const mappedAnimals = await animalsApi.getAnimals();
       if (Array.isArray(mappedAnimals) && mappedAnimals.length > 0) {
-        setAnimals(mappedAnimals);
+        const sanitized = sanitizeAndMigrateAnimals(mappedAnimals);
+        setAnimals(sanitized);
         const uid = targetUserId || user?.id;
         if (uid && uid !== 'farmer-demo') {
-          setStoredItem(`animals_${uid}`, mappedAnimals);
+          setStoredItem(`animals_${uid}`, sanitized);
         } else if (uid === 'farmer-demo') {
-          setStoredItem('animals_demo', mappedAnimals);
+          setStoredItem('animals_demo', sanitized);
         }
-        setStoredItem('animals', mappedAnimals);
+        setStoredItem('animals', sanitized);
       }
     } catch (err) {
       console.warn('Backend live cattle sync fallback (offline/unavailable):', err);
@@ -495,7 +514,16 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const addAnimal = (animalData: Omit<Animal, 'id' | 'createdDate' | 'lastCheckDate'>) => {
-    const normTag = animalData.tagId.trim();
+    const normTag = normalizeTagId(animalData.tagId);
+    if (!normTag) {
+      throw new Error('Please enter a valid Animal Tag ID.');
+    }
+
+    const isDuplicate = animals.some((a) => normalizeTagId(a.tagId) === normTag);
+    if (isDuplicate) {
+      throw new Error('Tag ID already exists. Please use a unique Tag ID.');
+    }
+
     let dim: number | undefined = undefined;
     let stage: LactationStage = animalData.lactationStage;
     if (animalData.calvingDate) {
@@ -518,7 +546,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       createdDate: new Date().toISOString().split('T')[0],
       lastCheckDate: new Date().toISOString().split('T')[0],
     };
-    const updated = [newAnimal, ...animals.filter((a) => a.tagId.toUpperCase() !== normTag.toUpperCase())];
+    const updated = sanitizeAndMigrateAnimals([newAnimal, ...animals]);
     setAnimals(updated);
     setStoredItem(getUserKey('animals'), updated);
     setStoredItem('animals', updated);

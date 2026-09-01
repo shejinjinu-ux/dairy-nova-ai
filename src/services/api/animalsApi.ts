@@ -65,7 +65,7 @@ export const animalsApi = {
   },
 
   async addAnimal(animalData: Omit<Animal, 'id' | 'createdDate' | 'lastCheckDate'>): Promise<Animal> {
-    const normTag = animalData.tagId.trim();
+    const normTag = animalData.tagId.trim().toUpperCase();
     if (navigator.onLine) {
       try {
         const registered = await cattleApi.registerCattle({
@@ -87,7 +87,7 @@ export const animalsApi = {
         });
         const mapped = mapCattleToAnimal(registered);
         const currentAnimals = getStoredItem<Animal[]>('animals', INITIAL_ANIMALS);
-        setStoredItem('animals', [mapped, ...currentAnimals.filter((a) => a.tagId !== mapped.tagId)]);
+        setStoredItem('animals', [mapped, ...currentAnimals.filter((a) => a.tagId.trim().toUpperCase() !== mapped.tagId.trim().toUpperCase())]);
         return mapped;
       } catch (err: any) {
         if (err?.message?.includes('already exists')) {
@@ -99,7 +99,7 @@ export const animalsApi = {
 
     await delay(400);
     const currentAnimals = getStoredItem<Animal[]>('animals', INITIAL_ANIMALS);
-    const exists = currentAnimals.some((a) => a.tagId.trim().toUpperCase() === normTag.toUpperCase());
+    const exists = currentAnimals.some((a) => a.tagId.trim().toUpperCase() === normTag);
     if (exists) {
       throw new Error('Tag ID already exists. Please use a unique Tag ID.');
     }
@@ -111,7 +111,7 @@ export const animalsApi = {
       createdDate: new Date().toISOString().split('T')[0],
       lastCheckDate: new Date().toISOString().split('T')[0],
     };
-    const updated = [newAnimal, ...currentAnimals];
+    const updated = [newAnimal, ...currentAnimals.filter((a) => a.tagId.trim().toUpperCase() !== normTag)];
     setStoredItem('animals', updated);
     return newAnimal;
   },

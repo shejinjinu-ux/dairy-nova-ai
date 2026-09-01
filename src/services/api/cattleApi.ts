@@ -24,10 +24,14 @@ export const cattleApi = {
    * Enforces uniqueness at database level.
    */
   async registerCattle(input: CattleCreateInput): Promise<Cattle> {
+    const normalizedTag = (input.tag_id || '').trim().toUpperCase();
     try {
       return await apiFetch<Cattle>('/cattle', {
         method: 'POST',
-        body: JSON.stringify(input),
+        body: JSON.stringify({
+          ...input,
+          tag_id: normalizedTag,
+        }),
       });
     } catch (err: any) {
       if (err?.status === 409 || err?.message?.includes('already exists') || err?.rawError?.detail?.includes('already exists')) {

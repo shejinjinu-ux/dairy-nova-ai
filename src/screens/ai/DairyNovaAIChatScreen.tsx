@@ -55,17 +55,38 @@ export const DairyNovaAIChatScreen: React.FC = () => {
     const text = (textToSend || inputText).trim();
     if (!text) return;
 
-    // Requirement 13: Automatically resolve Tag ID from message if user asks about a specific tag
+    // Requirement: Automatically resolve Tag ID from message if user asks about a specific tag
     let contextToUse = activeAnimalContext;
     const tagMatch = text.match(/(TAG-\d+|COW-\d+|BUFF-\d+|[A-Z0-9]{3,}-\d+)/i);
     if (tagMatch && tagMatch[1]) {
-      const searchedTag = tagMatch[1].toUpperCase();
-      const matched = animals.find(
-        (a) => a.tagId.toUpperCase() === searchedTag || a.tagId.toUpperCase().includes(searchedTag)
+      const searchedTag = tagMatch[1].trim().toUpperCase();
+      const matchingAnimals = animals.filter(
+        (a) => a.tagId.trim().toUpperCase() === searchedTag
       );
-      if (matched) {
-        contextToUse = matched;
-        setActiveAnimalContext(matched);
+      if (matchingAnimals.length === 1) {
+        contextToUse = matchingAnimals[0];
+        setActiveAnimalContext(matchingAnimals[0]);
+      } else if (matchingAnimals.length > 1) {
+        // Data integrity guard: duplicate Tag ID detected across records
+        const duplicateMsg: ChatMessage = {
+          id: `ai-${Date.now()}`,
+          sender: 'ai',
+          text: `⚠️ Multiple cattle records were detected with the same Tag ID (${searchedTag}). Tag IDs must be unique across your herd. Please resolve the duplicate record in the Animals management screen before requesting personalized AI analysis.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `msg-${Date.now()}`,
+            sender: 'user',
+            text,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+          duplicateMsg,
+        ]);
+        setInputText('');
+        setIsThinking(false);
+        return;
       }
     }
 

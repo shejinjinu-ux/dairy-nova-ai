@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Animal, AnimalType, LactationStage, PregnancyStatus } from '../../types';
 import { ALL_INDIAN_COW_BREEDS, ALL_INDIAN_BUFFALO_BREEDS } from '../../mocks/mockData';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useAppData, normalizeTagId } from '../../contexts/AppDataContext';
 import { X, ArrowRight, ArrowLeft, Check, Loader2 } from 'lucide-react';
 import { getLactationDisplay } from '../../utils/formatters';
 
@@ -41,6 +42,7 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
   onAnimalAdded,
 }) => {
   const { t } = useLanguage();
+  const { animals } = useAppData();
   const [step, setStep] = useState<number>(1);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
@@ -83,8 +85,13 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
   const handleNext = () => {
     setValidationError('');
     if (step === 1) {
-      if (!tagId.trim()) {
+      const normTag = normalizeTagId(tagId);
+      if (!normTag) {
         setValidationError('Please enter a valid Animal Tag ID.');
+        return;
+      }
+      if (animals.some((a) => normalizeTagId(a.tagId) === normTag)) {
+        setValidationError('Tag ID already exists. Please use a unique Tag ID.');
         return;
       }
       if (breed === 'Other' && !customBreedName.trim()) {
@@ -124,6 +131,18 @@ export const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
   const handleSave = async () => {
     setIsSaving(true);
     setValidationError('');
+
+    const normTag = normalizeTagId(tagId);
+    if (!normTag) {
+      setValidationError('Please enter a valid Animal Tag ID.');
+      setIsSaving(false);
+      return;
+    }
+    if (animals.some((a) => normalizeTagId(a.tagId) === normTag)) {
+      setValidationError('Tag ID already exists. Please use a unique Tag ID.');
+      setIsSaving(false);
+      return;
+    }
 
     setTimeout(() => {
       setIsSaving(false);
