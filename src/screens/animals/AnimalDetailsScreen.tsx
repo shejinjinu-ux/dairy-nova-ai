@@ -16,7 +16,7 @@ import {
   VaccinationRecommendation,
   MilkHistoryResponse,
 } from '../../types';
-import { formatDate, formatAnimalAge, getLactationDisplay } from '../../utils/formatters';
+import { formatDate, formatAnimalAge, getLactationDisplay, checkMilkEligibility } from '../../utils/formatters';
 import {
   Sparkles,
   Milk,
@@ -33,6 +33,7 @@ import {
   CheckCircle2,
   Clock,
   AlertTriangle,
+  ShieldAlert,
   Loader2,
   ExternalLink,
   Info,
@@ -662,6 +663,16 @@ export const AnimalDetailsScreen: React.FC = () => {
                   </div>
                 </div>
               ))
+            ) : !checkMilkEligibility(animal).isEligible ? (
+              <div className="p-5 text-center rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/40 text-xs space-y-1.5">
+                <div className="flex items-center justify-center gap-1.5 text-amber-900 dark:text-amber-200 font-bold">
+                  <ShieldAlert size={16} className="text-amber-600" />
+                  <span>Milk Recording Unavailable</span>
+                </div>
+                <p className="text-[11px] text-amber-800 dark:text-amber-300 font-medium">
+                  {checkMilkEligibility(animal).reason}
+                </p>
+              </div>
             ) : (
               <div className="p-6 text-center rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 text-xs text-slate-500">
                 No recent milk records. Tap "Log Milk" above to log a shift yield.

@@ -29,6 +29,7 @@ import {
   CONTAMINATION_ALERTS,
 } from '../mocks/mockData';
 import { getStoredItem, setStoredItem } from '../services/api/apiHelper';
+import { checkMilkEligibility } from '../utils/formatters';
 import { useOffline } from './OfflineContext';
 import { useAuth } from './AuthContext';
 
@@ -573,6 +574,19 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const recordMilk = (record: Omit<MilkRecord, 'id' | 'isSynced'>) => {
+    // Safety guard: ensure the animal is eligible before creating or syncing milk records
+    const targetAnimal = animals.find(
+      (a) => (record.animalTag && a.tagId.trim().toUpperCase() === record.animalTag.trim().toUpperCase()) || a.id === record.animalId
+    );
+
+    if (targetAnimal) {
+      const eligibility = checkMilkEligibility(targetAnimal);
+      if (!eligibility.isEligible) {
+        console.warn(`[Milk Gate] Blocked milk record for ineligible cattle ${record.animalTag || targetAnimal.tagId}: ${eligibility.reason}`);
+        return;
+      }
+    }
+
     const newRecord: MilkRecord = {
       ...record,
       id: `rec-${Date.now()}`,
