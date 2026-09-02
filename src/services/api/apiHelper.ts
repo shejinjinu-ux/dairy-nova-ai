@@ -253,7 +253,7 @@ export function formatFarmerErrorMessage(error: any, status?: number): string {
       (error.detail.includes('network issue') || error.detail.includes('connection refused')));
 
   if (isNetworkError && (!status || status === 0)) {
-    return 'Cannot connect to the backend server. Make sure the FastAPI server is running.';
+    return 'The AI backend server is waking up or unreachable. Please wait a moment and try again.';
   }
 
   if (status === 429) {
@@ -261,7 +261,7 @@ export function formatFarmerErrorMessage(error: any, status?: number): string {
   }
 
   if (error?.name === 'AbortError' || error?.message?.includes('aborted') || error?.message?.includes('timeout')) {
-    return 'The request timed out. Please verify that the FastAPI backend server is responsive.';
+    return 'The request timed out while waiting for the AI backend server. The service may still be waking up—please try again in a few moments.';
   }
 
   if (status === 400 || status === 422) {
@@ -302,7 +302,7 @@ export function formatFarmerErrorMessage(error: any, status?: number): string {
   }
 
   if (status === 502 || status === 503 || status === 504) {
-    return 'The AI backend server is currently starting up or unreachable. Please verify that the FastAPI server is running.';
+    return 'The AI backend server is currently waking up or temporarily busy. Please wait a moment and try again.';
   }
 
   if (status && status >= 500) {
@@ -318,7 +318,7 @@ export function formatFarmerErrorMessage(error: any, status?: number): string {
     return genericMsg;
   }
 
-  return 'Cannot connect to the backend server. Make sure the FastAPI server is running.';
+  return 'Cannot connect to the backend server. The AI service may be starting up—please wait a moment and try again.';
 }
 
 export function buildApiUrl(path: string): string {
@@ -337,53 +337,115 @@ export function buildApiUrl(path: string): string {
   return `${API_BASE_URL}${cleanPath}`;
 }
 
-// Unified API fetcher with automatic auth injection, timeout, and farmer-friendly error handling
+// Unified API fetcher with automatic auth injection, cold-start timeout resilience, and retry handling
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {},
-  timeoutMs: number = 40000,
-  requireAuth: boolean = false
+  timeoutMs: number = 90000,
+  requireAuth: boolean = false,
+  maxRetries: number = 2
 ): Promise<T> {
   const url = buildApiUrl(path);
-  
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
-  const mergedHeaders = getAuthHeaders(options.headers, isFormData, requireAuth);
+  const retryDelayMs = 3500;
 
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-      headers: mergedHeaders,
-    });
+  let lastError: any = null;
 
-    clearTimeout(timeoutId);
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    const mergedHeaders = getAuthHeaders(options.headers, isFormData, requireAuth);
 
-    if (!response.ok) {
-      let errorJson: any = null;
-      try {
-        errorJson = await response.json();
-      } catch {
-        errorJson = { message: response.statusText };
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+        headers: mergedHeaders,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        let errorJson: any = null;
+        try {
+          errorJson = await response.json();
+        } catch {
+          errorJson = { message: response.statusText };
+        }
+
+        // Retry ONLY on transient cold start / gateway errors (502, 503, 504)
+        const isTransientServerError =
+          response.status === 502 || response.status === 503 || response.status === 504;
+
+        if (isTransientServerError && attempt < maxRetries && navigator.onLine) {
+          console.warn(
+            `[DairyNova API] Transient HTTP ${response.status} from ${path} (attempt ${attempt + 1}/${maxRetries + 1}). Server may be waking up. Retrying in ${retryDelayMs / 1000}s...`
+          );
+          await delay(retryDelayMs);
+          continue;
+        }
+
+        // Non-retryable HTTP errors (400, 401, 403, 404, 422, 500, etc.) or exhausted retries
+        const farmerMsg = formatFarmerErrorMessage(errorJson, response.status);
+        const err = new Error(farmerMsg);
+        (err as any).status = response.status;
+        (err as any).rawError = errorJson;
+        throw err;
       }
-      const farmerMsg = formatFarmerErrorMessage(errorJson, response.status);
-      const err = new Error(farmerMsg);
-      (err as any).status = response.status;
-      (err as any).rawError = errorJson;
-      throw err;
-    }
 
-    return (await response.json()) as T;
-  } catch (error: any) {
-    clearTimeout(timeoutId);
-    if (!error.status) {
-      const friendlyMsg = formatFarmerErrorMessage(error);
+      return (await response.json()) as T;
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+
+      // Never retry missing production configuration error or non-retryable response errors that were already thrown
+      if (
+        (error as any).status ||
+        (typeof error?.message === 'string' &&
+          error.message.includes('Production backend API URL is not configured'))
+      ) {
+        throw error;
+      }
+
+      // Check if the error is a timeout or transient network failure
+      const isTimeout =
+        error?.name === 'AbortError' ||
+        error?.message?.includes('aborted') ||
+        error?.message?.includes('timeout');
+
+      const isTransientNetwork =
+        error instanceof TypeError ||
+        error?.name === 'TypeError' ||
+        (typeof error?.message === 'string' &&
+          (error.message.includes('fetch') ||
+            error.message.includes('Failed to fetch') ||
+            error.message.includes('NetworkError') ||
+            error.message.includes('Network request failed') ||
+            error.message.includes('network issue') ||
+            error.message.includes('ECONNREFUSED')));
+
+      if ((isTimeout || isTransientNetwork) && attempt < maxRetries && navigator.onLine) {
+        console.warn(
+          `[DairyNova API] Network/timeout error on ${path} (attempt ${attempt + 1}/${maxRetries + 1}). Server may be waking up. Retrying in ${retryDelayMs / 1000}s...`
+        );
+        await delay(retryDelayMs);
+        continue;
+      }
+
+      lastError = error;
+      break;
+    }
+  }
+
+  // Format final network/timeout error
+  if (lastError) {
+    if (!lastError.status) {
+      const friendlyMsg = formatFarmerErrorMessage(lastError);
       const err = new Error(friendlyMsg);
-      (err as any).original = error;
+      (err as any).original = lastError;
       throw err;
     }
-    throw error;
+    throw lastError;
   }
+
+  throw new Error('No response received from the Dairy Nova AI server.');
 }
