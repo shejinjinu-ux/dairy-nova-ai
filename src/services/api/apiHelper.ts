@@ -18,7 +18,7 @@ const resolveApiBaseUrl = (): string => {
     return `${trimmed}/api/v1`;
   }
 
-  return 'https://dairy-ai-assistant.onrender.com/api/v1';
+  return 'http://127.0.0.1:8000/api/v1';
 };
 
 export const API_BASE_URL = resolveApiBaseUrl();
@@ -96,14 +96,38 @@ export function getAuthUserId(): string | null {
 }
 
 /**
+ * Retrieve active authenticated user phone number.
+ */
+export function getAuthPhone(): string | null {
+  try {
+    const directPhone = getStoredItem<string | null>('user_phone', null) || localStorage.getItem('user_phone');
+    if (directPhone && directPhone.trim()) return directPhone.trim();
+
+    const activeUser = getStoredItem<any>('active_user', null);
+    if (activeUser?.mobile && typeof activeUser.mobile === 'string' && activeUser.mobile.trim()) {
+      return activeUser.mobile.trim();
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+/**
  * Persist active authentication credentials across standard storage keys.
  */
-export function setAuthCredentials(token: string, userId: string): void {
+export function setAuthCredentials(token: string, userId: string, phone?: string): void {
   setStoredItem('auth_token', token);
   setStoredItem('user_id', userId);
+  if (phone && phone.trim()) {
+    setStoredItem('user_phone', phone.trim());
+  }
   try {
     localStorage.setItem('auth_token', token);
     localStorage.setItem('user_id', userId);
+    if (phone && phone.trim()) {
+      localStorage.setItem('user_phone', phone.trim());
+    }
   } catch {
     // ignore
   }
@@ -115,10 +139,12 @@ export function setAuthCredentials(token: string, userId: string): void {
 export function clearAuthCredentials(): void {
   removeStoredItem('auth_token');
   removeStoredItem('user_id');
+  removeStoredItem('user_phone');
   removeStoredItem('active_user');
   try {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user_id');
+    localStorage.removeItem('user_phone');
   } catch {
     // ignore
   }
@@ -189,28 +215,66 @@ export function formatFarmerErrorMessage(error: any, status?: number): string {
     return 'Internet connection unavailable. You are currently offline. Local actions will sync when connected.';
   }
 
+  // Detect network unreachable / failed to fetch conditions
+  const isNetworkError =
+    !status ||
+    status === 0 ||
+    error instanceof TypeError ||
+    error?.name === 'TypeError' ||
+    (typeof error?.message === 'string' &&
+      (error.message.includes('fetch') ||
+       error.message.includes('Failed to fetch') ||
+       error.message.includes('NetworkError') ||
+       error.message.includes('Network request failed') ||
+       error.message.includes('network issue') ||
+       error.message.includes('ECONNREFUSED') ||
+       error.message.includes('Failed to load resource') ||
+       error.message.includes('Unknown'))) ||
+    (typeof error?.detail === 'string' &&
+      (error.detail.includes('network issue') || error.detail.includes('connection refused')));
+
+  if (isNetworkError && (!status || status === 0)) {
+    return 'Cannot connect to the backend server. Make sure the FastAPI server is running.';
+  }
+
   if (status === 429) {
     return 'Too many requests. Please wait a moment before trying again.';
   }
 
   if (error?.name === 'AbortError' || error?.message?.includes('aborted') || error?.message?.includes('timeout')) {
-    return 'AI service is waking up or request timed out. Please wait a moment and try again.';
+    return 'The request timed out. Please verify that the FastAPI backend server is responsive.';
   }
 
   if (status === 400 || status === 422) {
     const rawDetail = error?.detail || error?.message || '';
-    if (typeof rawDetail === 'string' && rawDetail.length > 0 && !rawDetail.includes('Traceback')) {
-      return `Some test information is missing or invalid: ${rawDetail}`;
+    if (typeof rawDetail === 'string' && rawDetail.trim().length > 0 && !rawDetail.includes('Traceback')) {
+      if (
+        rawDetail.toLowerCase().includes('otp') ||
+        rawDetail.toLowerCase().includes('phone') ||
+        rawDetail.toLowerCase().includes('auth') ||
+        rawDetail.toLowerCase().includes('credential')
+      ) {
+        return rawDetail;
+      }
+      return rawDetail.length < 120 ? rawDetail : `Invalid request: ${rawDetail}`;
     }
-    return 'Some test information is missing or invalid. Please check the values and retry.';
+    return 'Invalid request information. Please check the values and retry.';
   }
 
   if (status === 401 || status === 403) {
+    const rawDetail = error?.detail || error?.message || '';
+    if (typeof rawDetail === 'string' && rawDetail.trim().length > 0 && !rawDetail.includes('Traceback')) {
+      return rawDetail;
+    }
     return 'Session expired or unauthorized. Please log in with your phone number again.';
   }
 
   if (status === 404) {
-    return 'Requested dairy record or AI model resource was not found on the server.';
+    const rawDetail = error?.detail || error?.message || '';
+    if (typeof rawDetail === 'string' && rawDetail.trim().length > 0 && !rawDetail.includes('Traceback') && rawDetail.length < 120) {
+      return rawDetail;
+    }
+    return 'Requested dairy record or API resource was not found on the server.';
   }
 
   if (error?.error_type === 'ModelInferenceError' || error?.message?.includes('Inference failed') || error?.message?.includes('ModelInferenceError')) {
@@ -219,22 +283,23 @@ export function formatFarmerErrorMessage(error: any, status?: number): string {
   }
 
   if (status === 502 || status === 503 || status === 504) {
-    return 'The AI backend server is currently starting up or experiencing high load. Please try again in 30 seconds.';
+    return 'The AI backend server is currently starting up or unreachable. Please verify that the FastAPI server is running.';
   }
 
   if (status && status >= 500) {
     const backendMsg = error?.message || error?.detail;
     if (backendMsg && typeof backendMsg === 'string' && !backendMsg.includes('Traceback') && backendMsg.length < 150) {
-      return `AI analysis is temporarily unavailable (${backendMsg}). Please try again.`;
+      return `Backend server error (${backendMsg}). Please try again.`;
     }
-    return 'AI analysis is temporarily unavailable on the server. Please try again in a few moments.';
+    return 'Backend server encountered an error. Please try again in a few moments.';
   }
 
-  if (error instanceof TypeError && (error.message.includes('fetch') || error.message.includes('Failed to fetch') || error.message.includes('NetworkError'))) {
-    return `Unable to connect to the backend server (${API_BASE_URL}). Please verify that the backend is running and reachable.`;
+  const genericMsg = error?.message || error?.detail;
+  if (typeof genericMsg === 'string' && genericMsg.trim() && !genericMsg.includes('Unknown:')) {
+    return genericMsg;
   }
 
-  return error?.message || 'Unable to connect to the AI service. Please check your connection and try again.';
+  return 'Cannot connect to the backend server. Make sure the FastAPI server is running.';
 }
 
 export function buildApiUrl(path: string): string {

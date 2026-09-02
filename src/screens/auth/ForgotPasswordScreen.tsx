@@ -11,7 +11,7 @@ export const ForgotPasswordScreen: React.FC = () => {
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [mobileOrEmail, setMobileOrEmail] = useState<string>('9845023456');
-  const [otp, setOtp] = useState<string>('482916');
+  const [otp, setOtp] = useState<string>(import.meta.env.DEV ? '123456' : '');
   const [newPassword, setNewPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -157,14 +157,16 @@ export const ForgotPasswordScreen: React.FC = () => {
                   maxLength={6}
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
-                  placeholder="482916"
+                  placeholder={import.meta.env.DEV ? '123456' : '• • • • • •'}
                   className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center font-mono font-black text-lg tracking-widest text-slate-900 dark:text-white focus:ring-2 focus:ring-dairy-500"
                 />
                 <KeyRound size={14} className="absolute left-3 top-3.5 text-slate-400" />
               </div>
-              <span className="text-[10px] text-slate-400 mt-1 block">
-                Demo code preset: <strong className="text-teal-600">482916</strong>
-              </span>
+              {import.meta.env.DEV && (
+                <span className="text-[10px] text-slate-400 mt-1 block">
+                  Demo OTP: <strong className="text-teal-600">123456</strong>
+                </span>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-2">

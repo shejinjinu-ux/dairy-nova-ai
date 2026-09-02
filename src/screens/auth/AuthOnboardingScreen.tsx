@@ -348,9 +348,17 @@ export const AuthOnboardingScreen: React.FC<AuthOnboardingScreenProps> = ({
 
             <form onSubmit={handleVerifyOtp} className="space-y-4 pt-2">
               <div>
-                <label className="font-bold text-xs text-slate-700 dark:text-slate-300 block mb-1.5">
-                  6-Digit OTP *
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="font-bold text-xs text-slate-700 dark:text-slate-300 block">
+                    6-Digit OTP *
+                  </label>
+                  {import.meta.env.DEV && (
+                    <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/80 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                      <Sparkles size={11} className="text-emerald-500" />
+                      Demo OTP: <strong className="font-mono font-bold">123456</strong>
+                    </span>
+                  )}
+                </div>
                 <input
                   type="text"
                   value={otp}
@@ -360,6 +368,21 @@ export const AuthOnboardingScreen: React.FC<AuthOnboardingScreenProps> = ({
                   autoFocus
                   className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center font-mono text-xl tracking-[0.5em] font-black text-slate-900 dark:text-white placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-sm"
                 />
+                {import.meta.env.DEV && (
+                  <div className="mt-2 p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-[11px] text-amber-800 dark:text-amber-300 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                      Demo Mode (Dev): Enter <strong className="font-mono font-bold">123456</strong>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setOtp('123456')}
+                      className="px-2.5 py-0.5 text-[10px] font-bold bg-amber-200 dark:bg-amber-900/60 hover:bg-amber-300 dark:hover:bg-amber-800/80 text-amber-900 dark:text-amber-200 rounded-md transition active:scale-95"
+                    >
+                      Fill 123456
+                    </button>
+                  </div>
+                )}
               </div>
 
               <button
