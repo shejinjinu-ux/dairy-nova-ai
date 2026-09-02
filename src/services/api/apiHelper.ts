@@ -2,6 +2,7 @@
 
 const resolveApiBaseUrl = (): string => {
   const envObj = (import.meta as any).env || {};
+  const isDev = Boolean(envObj.DEV);
   const rawUrl: string =
     envObj.VITE_API_BASE_URL ||
     envObj.VITE_API_URL ||
@@ -18,7 +19,13 @@ const resolveApiBaseUrl = (): string => {
     return `${trimmed}/api/v1`;
   }
 
-  return 'http://127.0.0.1:8000/api/v1';
+  // In development mode, allow default local FastAPI backend
+  if (isDev) {
+    return 'http://127.0.0.1:8000/api/v1';
+  }
+
+  // In production mode, NEVER fall back to localhost / 127.0.0.1
+  return '';
 };
 
 export const API_BASE_URL = resolveApiBaseUrl();
@@ -211,6 +218,18 @@ export function getAuthHeaders(
  * Format server or network errors into informative, farmer-friendly messages
  */
 export function formatFarmerErrorMessage(error: any, status?: number): string {
+  // Explicit configuration error check for production deployment
+  if (
+    typeof error?.message === 'string' &&
+    error.message.includes('Production backend API URL is not configured')
+  ) {
+    return error.message;
+  }
+
+  if (!API_BASE_URL && !(import.meta as any).env?.DEV) {
+    return 'Production backend API URL is not configured. Please set the VITE_API_BASE_URL environment variable in your Vercel deployment settings.';
+  }
+
   if (!navigator.onLine) {
     return 'Internet connection unavailable. You are currently offline. Local actions will sync when connected.';
   }
@@ -305,6 +324,11 @@ export function formatFarmerErrorMessage(error: any, status?: number): string {
 export function buildApiUrl(path: string): string {
   if (path.startsWith('http://') || path.startsWith('https://')) {
     return path;
+  }
+  if (!API_BASE_URL) {
+    throw new Error(
+      'Production backend API URL is not configured. Please set the VITE_API_BASE_URL environment variable in your Vercel deployment settings.'
+    );
   }
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   if (cleanPath.startsWith('/api/v1') && API_BASE_URL.endsWith('/api/v1')) {
